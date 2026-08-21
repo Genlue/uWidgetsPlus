@@ -1,0 +1,222 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Folders.Locales"
+             xmlns:local="clr-namespace:Folders.Views"
+             x:Class="Folders.Views.Settings.FolderSettings">
+    <UserControl.Styles>
+        <Style Selector="Button.small-button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinWidth" Value="24" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.small-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+        </Style>
+        <Style Selector="TextBox.rename-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBlock.setting-label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="ComboBox.setting-combo">
+            <Setter Property="Width" Value="80" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBlock.group-header">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,12,0,0" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Orientation="Vertical" Spacing="8" Margin="0,2,16,4">
+
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Content}" />
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock x:Name="LayoutLabel" Classes="setting-label" Text="{x:Static locales:Locale.Folders_Layout}" />
+                <ComboBox x:Name="LayoutModeBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnLayoutModeChanged" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_WatchFolder}" />
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock x:Name="WatchFolderText" VerticalAlignment="Center" FontSize="12"
+                               TextTrimming="CharacterEllipsis" Opacity="0.7" Margin="8,0,0,0"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <Button Grid.Column="1" Classes="small-button" Margin="6,0,0,0"
+                            Content="{x:Static locales:Locale.Folders_WatchPick}" Click="OnPickWatchFolder" />
+                    <Button Grid.Column="2" Classes="small-button" Margin="4,0,0,0" Content="✕"
+                            Click="OnClearWatchFolder" ToolTip.Tip="{x:Static locales:Locale.Folders_WatchClear}" />
+                </Grid>
+            </Grid>
+
+            <TextBlock x:Name="WatchFolderHint" Text="{x:Static locales:Locale.Folders_WatchHint}" FontSize="12"
+                       Opacity="0.5" TextWrapping="Wrap" IsVisible="False"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+
+            <Grid x:Name="WatchSortRow" ColumnDefinitions="Auto,*" IsVisible="False">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_WatchSort}" />
+                <ComboBox x:Name="WatchSortBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnWatchSortChanged" />
+            </Grid>
+
+            <CheckBox x:Name="DirsFirstToggle" Content="{x:Static locales:Locale.Folders_WatchDirsFirst}"
+                      Checked="OnToggleDirsFirst" Unchecked="OnToggleDirsFirst" FontSize="13" IsVisible="False" />
+
+            <CheckBox x:Name="ShowHiddenToggle" Content="{x:Static locales:Locale.Folders_WatchShowHidden}"
+                      Checked="OnToggleShowHidden" Unchecked="OnToggleShowHidden" FontSize="13" IsVisible="False" />
+
+            <CheckBox x:Name="HideExtToggle" Content="{x:Static locales:Locale.Folders_WatchHideExt}"
+                      Checked="OnToggleHideExt" Unchecked="OnToggleHideExt" FontSize="13" IsVisible="False" />
+
+            <CheckBox x:Name="SortDescToggle" Content="{x:Static locales:Locale.Folders_WatchDesc}"
+                      Checked="OnToggleSortDesc" Unchecked="OnToggleSortDesc" FontSize="13" IsVisible="False" />
+
+            <CheckBox x:Name="HideSubfoldersToggle" Content="{x:Static locales:Locale.Folders_WatchHideSubfolders}"
+                      Checked="OnToggleHideSubfolders" Unchecked="OnToggleHideSubfolders" FontSize="13" IsVisible="False" />
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock x:Name="ColumnsLabel" Classes="setting-label" Text="{x:Static locales:Locale.Folders_Columns}" />
+                <ComboBox x:Name="ColumnsBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnColumnsChanged" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_RowSpacing}" />
+                <ComboBox x:Name="RowSpacingBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnRowSpacingChanged" />
+            </Grid>
+
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Name}" />
+
+            <CheckBox x:Name="ShowNamesToggle" Content="{x:Static locales:Locale.Folders_ShowNames}"
+                      Checked="OnToggleNames" Unchecked="OnToggleNames" FontSize="13" />
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_MaxNameLines}" />
+                <ComboBox x:Name="MaxNameLinesBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnMaxNameLinesChanged" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_MaxNameChars}" />
+                <ComboBox x:Name="MaxNameCharsBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnMaxNameCharsChanged" />
+            </Grid>
+
+            <CheckBox x:Name="CamelCaseWrapToggle" Content="{x:Static locales:Locale.Folders_CamelCaseWrap}"
+                      Checked="OnToggleCamelCaseWrap" Unchecked="OnToggleCamelCaseWrap" FontSize="13" />
+
+            <CheckBox x:Name="BoldNamesToggle" Content="{x:Static locales:Locale.Folders_BoldNames}"
+                      Checked="OnToggleBoldNames" Unchecked="OnToggleBoldNames" FontSize="13" />
+
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Title}" />
+
+            <CheckBox x:Name="ShowTitleToggle" Content="{x:Static locales:Locale.Folders_ShowTitle}"
+                      Checked="OnToggleTitle" Unchecked="OnToggleTitle" FontSize="13" />
+
+            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding IsChecked, ElementName=ShowTitleToggle}">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_TitleLabel}" />
+                <TextBox x:Name="TitleBox" Grid.Column="1" Margin="8,0,0,0" MinHeight="26" FontSize="13"
+                         VerticalContentAlignment="Center"
+                         KeyDown="OnTitleKeyDown" LostFocus="OnTitleLostFocus" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding IsChecked, ElementName=ShowTitleToggle}">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_TitleOffset}" />
+                <Slider x:Name="TitleOffsetSlider" Grid.Column="1" Margin="8,0" MinHeight="26"
+                        Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                        VerticalAlignment="Center" ValueChanged="OnTitleOffsetChanged" />
+                <TextBlock x:Name="TitleOffsetValue" Grid.Column="2" Classes="setting-label" MinWidth="34"
+                           TextAlignment="Right" />
+            </Grid>
+
+            <CheckBox x:Name="BoldTitleToggle" Content="{x:Static locales:Locale.Folders_BoldTitle}"
+                      Checked="OnToggleBoldTitle" Unchecked="OnToggleBoldTitle" FontSize="13" />
+
+            <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Appearance}" />
+
+            <CheckBox x:Name="ShowScrollbarToggle" Content="{x:Static locales:Locale.Folders_ShowScrollbar}"
+                      Checked="OnToggleScrollbar" Unchecked="OnToggleScrollbar" FontSize="13" />
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_IconSize}" />
+                <ComboBox x:Name="IconSizeBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnIconSizeChanged" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_FontSize}" />
+                <ComboBox x:Name="FontSizeBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnFontSizeChanged" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_Padding}" />
+                <ComboBox x:Name="PaddingBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnPaddingChanged" />
+            </Grid>
+
+            <TextBlock x:Name="ItemsGroupHeader" Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Items}" />
+
+            <StackPanel x:Name="ItemsEditor" Orientation="Vertical" Spacing="8">
+
+                <TextBox x:Name="PathBox" MinHeight="30" Watermark="{x:Static locales:Locale.Folders_Add_Hint}"
+                         FontSize="13" VerticalContentAlignment="Center" />
+
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <Button Content="{x:Static locales:Locale.Folders_PickFolder}" Click="OnPickFolder" MinHeight="30" />
+                    <Button Grid.Column="1" Content="{x:Static locales:Locale.Folders_PickFile}" Click="OnPickFile" MinHeight="30" Margin="6,0,0,0" />
+                    <Button Grid.Column="2" Content="{x:Static locales:Locale.Folders_Add}" Click="OnAdd" MinHeight="30" Margin="6,0,0,0" />
+                </Grid>
+
+                <ItemsControl x:Name="ItemList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="local:FolderItem">
+                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,1" MinHeight="26"
+                                  DragDrop.AllowDrop="True"
+                                  PointerPressed="OnItemPointerPressed" PointerMoved="OnItemPointerMoved">
+                                <Grid.Styles>
+                                    <Style Selector="Grid:pointerover">
+                                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                                    </Style>
+                                </Grid.Styles>
+                                <Image Width="18" Height="18" Source="{Binding Icon}" Stretch="Uniform"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Classes="rename-box" Margin="8,0" VerticalAlignment="Center"
+                                         Text="{Binding Name}" LostFocus="OnRename" KeyDown="OnNameKeyDown" />
+                                <Button Grid.Column="2" Classes="small-button" Content="✕" Click="OnRemove" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock x:Name="EmptyHint" Text="{x:Static locales:Locale.Folders_Empty}" FontSize="12"
+                           Opacity="0.5" HorizontalAlignment="Center" IsVisible="False"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

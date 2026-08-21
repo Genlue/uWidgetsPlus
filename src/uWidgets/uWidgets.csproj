@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
@@ -16,16 +16,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.1.3" />
-        <PackageReference Include="Avalonia.Controls.ColorPicker" Version="11.1.3" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.1.3" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.3" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.3" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.3" />
+        <PackageReference Include="Avalonia" />
+        <PackageReference Include="Avalonia.Controls.ColorPicker" />
+        <PackageReference Include="Avalonia.Desktop" />
+        <PackageReference Include="Avalonia.ReactiveUI" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
+        <PackageReference Include="Avalonia.Fonts.Inter" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.3" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.Win32.SystemEvents" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,7 +51,39 @@
       <None Include="..\..\.github\images\icon.ico">
         <Link>icon.ico</Link>
       </None>
+      <!-- Single-file mode: defaults shipped inside the exe, extracted to the data folder on first run. -->
+      <EmbeddedResource Include="appSettings.json">
+        <LogicalName>uWidgets.Resources.appSettings.json</LogicalName>
+      </EmbeddedResource>
+      <EmbeddedResource Include="layout.json">
+        <LogicalName>uWidgets.Resources.layout.json</LogicalName>
+      </EmbeddedResource>
     </ItemGroup>
+
+    <!--
+      Single-file widget bundle: publish every widget (flat, like the official layout),
+      clean pdb/xml/runtimeconfig, zip it and embed it as a resource.
+      WidgetBundle.ExtractIfNeeded() unzips it into the data folder at startup.
+
+      Only runs on RID-specific Release publishes (the single-file path); dev/Debug builds
+      keep the classic portable layout (exe + Widgets folder next to it).
+      'BuildingWidgetBundle' guards against recursion when widgets build the app as a reference.
+    -->
+    <PropertyGroup>
+      <WidgetsBundleDir>$(MSBuildProjectDirectory)\obj\widgets-bundle</WidgetsBundleDir>
+      <WidgetsBundleZip>$(WidgetsBundleDir)\widgets.zip</WidgetsBundleZip>
+      <WidgetsSourceDir>$(MSBuildProjectDirectory)\..\Widgets</WidgetsSourceDir>
+    </PropertyGroup>
+
+    <Target Name="BuildWidgetsBundle" BeforeTargets="AssignTargetPaths"
+            Condition="'$(RuntimeIdentifier)' != '' and '$(Configuration)' == 'Release' and '$(BuildingWidgetBundle)' != 'true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">
+      <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\build-widgets-bundle.ps1&quot; -WidgetsSourceDir &quot;$(WidgetsSourceDir)&quot; -StageDir &quot;$(WidgetsBundleDir)\stage&quot; -ZipPath &quot;$(WidgetsBundleZip)&quot; -Configuration $(Configuration) -RuntimeIdentifier $(RuntimeIdentifier)" />
+      <ItemGroup>
+        <EmbeddedResource Include="$(WidgetsBundleZip)" Condition="Exists('$(WidgetsBundleZip)')">
+          <LogicalName>uWidgets.Resources.widgets.zip</LogicalName>
+        </EmbeddedResource>
+      </ItemGroup>
+    </Target>
 
     <ItemGroup>
       <EmbeddedResource Update="Locales\Locale.resx">
@@ -82,9 +114,4 @@
       <AdditionalFiles Include="Views\Controls\Setting.axaml" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="System.Xaml">
-        <HintPath>..\..\..\..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Xaml\v4.0_4.0.0.0__b77a5c561934e089\System.Xaml.dll</HintPath>
-      </Reference>
-    </ItemGroup>
 </Project>

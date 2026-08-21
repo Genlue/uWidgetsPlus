@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Folders" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="Folders_Title" xml:space="preserve">
+    <value>文件夹</value>
+  </data>
+  <data name="Folders_Subtitle" xml:space="preserve">
+    <value>固定你的文件夹、文件和快捷方式</value>
+  </data>
+  <data name="Folders_Empty" xml:space="preserve">
+    <value>将文件或文件夹拖放到此处</value>
+  </data>
+  <data name="Folders_Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Folders_Remove" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="Folders_Add" xml:space="preserve">
+    <value>添加路径</value>
+  </data>
+  <data name="Folders_Add_Hint" xml:space="preserve">
+    <value>输入路径或浏览</value>
+  </data>
+  <data name="Folders_Browse" xml:space="preserve">
+    <value>浏览...</value>
+  </data>
+  <data name="Folders_Clear" xml:space="preserve">
+    <value>全部清空</value>
+  </data>
+  <data name="Folders_Help" xml:space="preserve">
+    <value>提示：你也可以将文件或文件夹直接拖到小组件上</value>
+  </data>
+  <data name="Folders_ShowNames" xml:space="preserve">
+    <value>显示条目名称</value>
+  </data>
+  <data name="Folders_Columns" xml:space="preserve">
+    <value>每行数量</value>
+  </data>
+  <data name="Folders_RowSpacing" xml:space="preserve">
+    <value>行间距</value>
+  </data>
+  <data name="Folders_ShowScrollbar" xml:space="preserve">
+    <value>显示滚动条</value>
+  </data>
+  <data name="Folders_ShowTitle" xml:space="preserve">
+    <value>显示标题</value>
+  </data>
+  <data name="Folders_TitleLabel" xml:space="preserve">
+    <value>标题</value>
+  </data>
+  <data name="Folders_ClassicIcon" xml:space="preserve">
+    <value>使用经典金色文件夹图标</value>
+  </data>
+  <data name="Folders_PickFolder" xml:space="preserve">
+    <value>选择文件夹</value>
+  </data>
+  <data name="Folders_PickFile" xml:space="preserve">
+    <value>选择文件</value>
+  </data>
+  <data name="Folders_IconSize" xml:space="preserve">
+    <value>图标大小</value>
+  </data>
+  <data name="Folders_FontSize" xml:space="preserve">
+    <value>字体大小</value>
+  </data>
+    <data name="Folders_Layout" xml:space="preserve">
+        <value>排列方式</value>
+    </data>
+    <data name="Folders_Layout_Grid" xml:space="preserve">
+        <value>网格</value>
+    </data>
+    <data name="Folders_Layout_List" xml:space="preserve">
+        <value>列表</value>
+    </data>
+    <data name="Folders_TitleOffset" xml:space="preserve">
+        <value>标题偏移</value>
+    </data>
+    <data name="Folders_BoldTitle" xml:space="preserve">
+        <value>加粗标题</value>
+    </data>
+    <data name="Folders_BoldNames" xml:space="preserve">
+        <value>加粗名称</value>
+    </data>
+    <data name="Folders_WatchFolder" xml:space="preserve">
+        <value>展示文件夹</value>
+    </data>
+    <data name="Folders_WatchPick" xml:space="preserve">
+        <value>选择</value>
+    </data>
+    <data name="Folders_WatchClear" xml:space="preserve">
+        <value>清除</value>
+    </data>
+    <data name="Folders_WatchHint" xml:space="preserve">
+        <value>内容由所选文件夹实时驱动，拖放添加已禁用</value>
+    </data>
+    <data name="Folders_Empty_Folder" xml:space="preserve">
+        <value>文件夹为空</value>
+    </data>
+    <data name="Folders_Group_Content" xml:space="preserve">
+        <value>内容</value>
+    </data>
+    <data name="Folders_Group_Name" xml:space="preserve">
+        <value>名称</value>
+    </data>
+    <data name="Folders_Group_Title" xml:space="preserve">
+        <value>标题</value>
+    </data>
+    <data name="Folders_Group_Appearance" xml:space="preserve">
+        <value>外观</value>
+    </data>
+    <data name="Folders_Group_Items" xml:space="preserve">
+        <value>固定项</value>
+    </data>
+    <data name="Folders_MaxNameLines" xml:space="preserve">
+        <value>最多行数</value>
+    </data>
+    <data name="Folders_MaxNameChars" xml:space="preserve">
+        <value>每行字符数（0 为不限）</value>
+    </data>
+    <data name="Folders_CamelCaseWrap" xml:space="preserve">
+        <value>大写智能换行</value>
+    </data>
+    <data name="Folders_WatchSort" xml:space="preserve">
+        <value>排序方式</value>
+    </data>
+    <data name="Folders_WatchDirsFirst" xml:space="preserve">
+        <value>文件夹在前</value>
+    </data>
+    <data name="Folders_WatchShowHidden" xml:space="preserve">
+        <value>显示隐藏/系统文件</value>
+    </data>
+    <data name="Folders_SortName" xml:space="preserve">
+        <value>名称</value>
+    </data>
+    <data name="Folders_SortCreated" xml:space="preserve">
+        <value>创建时间</value>
+    </data>
+    <data name="Folders_SortModified" xml:space="preserve">
+        <value>修改时间</value>
+    </data>
+    <data name="Folders_Padding" xml:space="preserve">
+        <value>内边距</value>
+    </data>
+    <data name="Folders_WatchHideExt" xml:space="preserve">
+        <value>不显示后缀名</value>
+    </data>
+    <data name="Folders_WatchDesc" xml:space="preserve">
+        <value>降序</value>
+    </data>
+    <data name="Folders_WatchHideSubfolders" xml:space="preserve">
+        <value>不显示子文件夹</value>
+    </data>
+</root>

@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Folders.Locales"
+             xmlns:local="clr-namespace:Folders.Views"
+             x:Class="Folders.Views.Folder"
+             x:DataType="local:Folder"
+             Margin="0">
+    <UserControl.Resources>
+        <local:SpacingConverter x:Key="SpacingConverter" />
+        <local:RowSpacingConverter x:Key="RowSpacingConverter" />
+        <local:BoolToScrollBarVisibilityConverter x:Key="ScrollBarConverter" />
+        <local:BoolToFontWeightConverter x:Key="FontWeightConverter" />
+        <local:BoolToFontWeightConverter x:Key="BoldNamesConverter" />
+        <local:TitleOffsetConverter x:Key="TitleOffsetConverter" />
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector=":not(:pointerover) ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+        <Style Selector=":pointerover ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border x:Name="RootBorder">
+    <Grid RowDefinitions="Auto,*" DragDrop.AllowDrop="True">
+        <TextBlock x:Name="TitleText"
+                   Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:Folder}}"
+                   IsVisible="{Binding ShowTitle, RelativeSource={RelativeSource AncestorType=local:Folder}}"
+                   FontWeight="{Binding BoldTitle, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource FontWeightConverter}}"
+                   FontSize="15" Margin="0,4,0,0"
+                   VerticalAlignment="Center" HorizontalAlignment="Left"
+                   ToolTip.Tip="{Binding WatchFolderPath, RelativeSource={RelativeSource AncestorType=local:Folder}}"
+                   PointerPressed="OnTitlePointerPressed"
+                   Foreground="{DynamicResource SystemControlForegroundAccentBrush}">
+            <TextBlock.RenderTransform>
+                <TranslateTransform>
+                    <TranslateTransform.X>
+                        <MultiBinding Converter="{StaticResource TitleOffsetConverter}">
+                            <Binding Path="TitleOffsetX" RelativeSource="{RelativeSource AncestorType=local:Folder}" />
+                            <Binding Path="Bounds.Width" RelativeSource="{RelativeSource AncestorType=local:Folder}" />
+                        </MultiBinding>
+                    </TranslateTransform.X>
+                </TranslateTransform>
+            </TextBlock.RenderTransform>
+        </TextBlock>
+
+        <ScrollViewer Grid.Row="1" DragDrop.AllowDrop="True"
+                     VerticalScrollBarVisibility="{Binding ShowScrollbar, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource ScrollBarConverter}}">
+            <Grid>
+
+            <ItemsControl x:Name="GridItems" DragDrop.AllowDrop="True">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=local:Folder}}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="local:FolderItem">
+<Border Margin="{Binding RowSpacing, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource SpacingConverter}}"
+                                Padding="4,6" CornerRadius="8" Background="Transparent" DragDrop.AllowDrop="True"
+                                RenderTransformOrigin="0.5,0.5"
+                                PointerPressed="OnItemPointerPressed"
+                                PointerEntered="OnItemPointerEntered" PointerExited="OnItemPointerExited">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
+                            <Border.Styles>
+                                <Style Selector="Border:pointerover">
+                                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                                </Style>
+                            </Border.Styles>
+                            <StackPanel IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Top" Spacing="2">
+                                <Image Width="{Binding IconSize}" Height="{Binding IconSize}"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality"
+                                       Source="{Binding Icon}" Stretch="Uniform" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding NameText}" FontSize="{Binding FontSize}"
+                                           FontWeight="{Binding BoldName, Converter={StaticResource BoldNamesConverter}}"
+                                           TextAlignment="Center" TextWrapping="Wrap"
+                                           MaxLines="{Binding MaxLines}" TextTrimming="CharacterEllipsis"
+                                           HorizontalAlignment="Center"
+                                           IsVisible="{Binding ShowName}"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <ItemsControl x:Name="ListItems" DragDrop.AllowDrop="True">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="local:FolderItem">
+                        <Border Margin="{Binding RowSpacing, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource RowSpacingConverter}}"
+                                Padding="4,4" CornerRadius="8" Background="Transparent" DragDrop.AllowDrop="True"
+                                PointerPressed="OnItemPointerPressed">
+                            <Border.Styles>
+                                <Style Selector="Border:pointerover">
+                                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                                </Style>
+                            </Border.Styles>
+                            <Grid ColumnDefinitions="Auto,*">
+                                <Image Width="{Binding IconSize}" Height="{Binding IconSize}"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality"
+                                       Source="{Binding Icon}" Stretch="Uniform"
+                                       HorizontalAlignment="Left" VerticalAlignment="Center"
+                                       RenderTransformOrigin="0.5,0.5"
+                                       PointerEntered="OnItemPointerEntered" PointerExited="OnItemPointerExited">
+                                    <Image.RenderTransform>
+                                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                                    </Image.RenderTransform>
+                                </Image>
+                                <TextBlock Grid.Column="1" Text="{Binding NameText}" FontSize="{Binding FontSize}"
+                                           FontWeight="{Binding BoldName, Converter={StaticResource BoldNamesConverter}}"
+                                           TextAlignment="Left" TextWrapping="Wrap"
+                                           MaxLines="{Binding MaxLines}" TextTrimming="CharacterEllipsis"
+                                           Margin="8,0,4,0" VerticalAlignment="Center"
+                                           IsVisible="{Binding ShowName}"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+
+        <StackPanel x:Name="EmptyHint" Grid.Row="1" DragDrop.AllowDrop="True" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" IsVisible="False">
+            <Path IsHitTestVisible="False" Width="36" Height="36" Stretch="Uniform" HorizontalAlignment="Center"
+                  Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                  Data="M2.5,5 C2.5,3.8954305 3.3954305,3 4.5,3 L8.256,3 C8.818,3 9.357,3.224 9.756,3.624 L11.133,5 L17.5,5 C18.6045695,5 19.5,5.8954305 19.5,7 L19.5,16.5 C19.5,17.6045695 18.6045695,18.5 17.5,18.5 L4.5,18.5 C3.3954305,18.5 2.5,17.6045695 2.5,16.5 L2.5,5 Z" />
+            <TextBlock x:Name="EmptyText" IsHitTestVisible="False" FontSize="12" Opacity="0.5" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </StackPanel>
+
+        <Border x:Name="DropHint" CornerRadius="12" IsHitTestVisible="False" IsVisible="False"
+                Background="Transparent" />
+    </Grid>
+    </Border>
+</UserControl>

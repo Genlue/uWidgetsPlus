@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+            
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Folders" xml:space="preserve">
+        <value>Folders</value>
+    </data>
+    <data name="Folders_Title" xml:space="preserve">
+        <value>Folder</value>
+    </data>
+    <data name="Folders_Subtitle" xml:space="preserve">
+        <value>Pin your folders, files and shortcuts</value>
+    </data>
+    <data name="Folders_Empty" xml:space="preserve">
+        <value>Drag files or folders here</value>
+    </data>
+    <data name="Folders_Open" xml:space="preserve">
+        <value>Open</value>
+    </data>
+    <data name="Folders_Remove" xml:space="preserve">
+        <value>Remove</value>
+    </data>
+    <data name="Folders_Add" xml:space="preserve">
+        <value>Add path</value>
+    </data>
+    <data name="Folders_Add_Hint" xml:space="preserve">
+        <value>Type a path or browse</value>
+    </data>
+    <data name="Folders_Browse" xml:space="preserve">
+        <value>Browse...</value>
+    </data>
+    <data name="Folders_Clear" xml:space="preserve">
+        <value>Clear all</value>
+    </data>
+    <data name="Folders_Help" xml:space="preserve">
+        <value>Tip: you can also drag files and folders directly onto the widget</value>
+    </data>
+    <data name="Folders_ShowNames" xml:space="preserve">
+        <value>Show item names</value>
+    </data>
+    <data name="Folders_Columns" xml:space="preserve">
+        <value>Items per row</value>
+    </data>
+    <data name="Folders_RowSpacing" xml:space="preserve">
+        <value>Row spacing</value>
+    </data>
+    <data name="Folders_ShowScrollbar" xml:space="preserve">
+        <value>Show scrollbar</value>
+    </data>
+    <data name="Folders_ShowTitle" xml:space="preserve">
+        <value>Show title</value>
+    </data>
+    <data name="Folders_TitleLabel" xml:space="preserve">
+        <value>Title</value>
+    </data>
+    <data name="Folders_ClassicIcon" xml:space="preserve">
+        <value>Use classic golden folder icon</value>
+    </data>
+    <data name="Folders_PickFolder" xml:space="preserve">
+        <value>Pick folder</value>
+    </data>
+    <data name="Folders_PickFile" xml:space="preserve">
+        <value>Pick file</value>
+    </data>
+    <data name="Folders_IconSize" xml:space="preserve">
+        <value>Icon size</value>
+    </data>
+    <data name="Folders_FontSize" xml:space="preserve">
+        <value>Font size</value>
+    </data>
+        <data name="Folders_Layout" xml:space="preserve">
+            <value>Layout</value>
+        </data>
+        <data name="Folders_Layout_Grid" xml:space="preserve">
+            <value>Grid</value>
+        </data>
+        <data name="Folders_Layout_List" xml:space="preserve">
+            <value>List</value>
+        </data>
+        <data name="Folders_TitleOffset" xml:space="preserve">
+            <value>Title offset</value>
+        </data>
+        <data name="Folders_BoldTitle" xml:space="preserve">
+            <value>Bold title</value>
+        </data>
+        <data name="Folders_BoldNames" xml:space="preserve">
+            <value>Bold names</value>
+        </data>
+        <data name="Folders_WatchFolder" xml:space="preserve">
+            <value>Show folder</value>
+        </data>
+        <data name="Folders_WatchPick" xml:space="preserve">
+            <value>Pick</value>
+        </data>
+        <data name="Folders_WatchClear" xml:space="preserve">
+            <value>Clear</value>
+        </data>
+        <data name="Folders_WatchHint" xml:space="preserve">
+            <value>Content is driven by the selected folder</value>
+        </data>
+        <data name="Folders_Empty_Folder" xml:space="preserve">
+            <value>Folder is empty</value>
+        </data>
+        <data name="Folders_Group_Content" xml:space="preserve">
+            <value>Content</value>
+        </data>
+        <data name="Folders_Group_Name" xml:space="preserve">
+            <value>Name</value>
+        </data>
+        <data name="Folders_Group_Title" xml:space="preserve">
+            <value>Title</value>
+        </data>
+        <data name="Folders_Group_Appearance" xml:space="preserve">
+            <value>Appearance</value>
+        </data>
+        <data name="Folders_Group_Items" xml:space="preserve">
+            <value>Pinned items</value>
+        </data>
+        <data name="Folders_MaxNameLines" xml:space="preserve">
+            <value>Max lines</value>
+        </data>
+        <data name="Folders_MaxNameChars" xml:space="preserve">
+            <value>Chars per line (0 = unlimited)</value>
+        </data>
+        <data name="Folders_CamelCaseWrap" xml:space="preserve">
+            <value>Smart wrap at capitals</value>
+        </data>
+        <data name="Folders_WatchSort" xml:space="preserve">
+            <value>Sort by</value>
+        </data>
+        <data name="Folders_WatchDirsFirst" xml:space="preserve">
+            <value>Folders first</value>
+        </data>
+        <data name="Folders_WatchShowHidden" xml:space="preserve">
+            <value>Show hidden/system files</value>
+        </data>
+        <data name="Folders_SortName" xml:space="preserve">
+            <value>Name</value>
+        </data>
+        <data name="Folders_SortCreated" xml:space="preserve">
+            <value>Created</value>
+        </data>
+        <data name="Folders_SortModified" xml:space="preserve">
+            <value>Modified</value>
+        </data>
+        <data name="Folders_Padding" xml:space="preserve">
+            <value>Padding</value>
+        </data>
+        <data name="Folders_WatchHideExt" xml:space="preserve">
+            <value>Hide file extensions</value>
+        </data>
+        <data name="Folders_WatchDesc" xml:space="preserve">
+            <value>Descending</value>
+        </data>
+        <data name="Folders_WatchHideSubfolders" xml:space="preserve">
+            <value>Hide subfolders</value>
+        </data>
+</root>

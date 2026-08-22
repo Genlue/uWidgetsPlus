@@ -195,7 +195,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         if (appSettingsProvider.Get().Theme.UseNativeFrame)
         {
             InteropService.ClearWidgetRegion(this);
-            ApplySurfaceBackdrop();
             return;
         }
 
@@ -216,21 +215,6 @@ public partial class Widget : Window, INotifyPropertyChanged
             cardWidth,
             cardHeight,
             appSettingsProvider.Get().Dimensions.Radius);
-
-        ApplySurfaceBackdrop();
-    }
-
-    /// <summary>
-    /// Liquid-glass material: apply the Windows 11 system gradient-blur backdrop
-    /// with the user's adjustable glass strength; other materials clear it.
-    /// </summary>
-    private void ApplySurfaceBackdrop()
-    {
-        var theme = appSettingsProvider.Get().Theme;
-        if (theme.EffectiveSurface == SurfaceStyle.LiquidGlass)
-            InteropService.SetLiquidGlassBackdrop(this, theme.EffectiveBlur);
-        else
-            InteropService.ClearLiquidGlassBackdrop(this);
     }
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)

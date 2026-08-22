@@ -21,11 +21,6 @@ public class ThemeService : IThemeService
         Source = new Uri("avares://uWidgets/Styles/Transparent.axaml")
     };
     
-    private readonly StyleInclude liquidGlassStyle = new(new Uri("avares://uWidgets/"))
-    {
-        Source = new Uri("avares://uWidgets/Styles/LiquidGlass.axaml")
-    };
-    
     private readonly StyleInclude monochromeStyle = new(new Uri("avares://uWidgets/"))
     {
         Source = new Uri("avares://uWidgets/Styles/Monochrome.axaml")
@@ -52,11 +47,14 @@ public class ThemeService : IThemeService
             Application.Current.Resources["SystemAccentColorLight1"] = color;
         }
         
-        // Surface material drives transparency: Solid is opaque (no translucency style),
-        // Acrylic uses Avalonia's own AcrylicBlur, LiquidGlass defers to the Windows 11
-        // system gradient-blur backdrop (InteropService.SetLiquidGlassBackdrop).
-        SwitchStyle(transparentStyle, theme.EffectiveSurface == SurfaceStyle.Acrylic);
-        SwitchStyle(liquidGlassStyle, theme.EffectiveSurface == SurfaceStyle.LiquidGlass);
+        // Surface material drives transparency: Solid is opaque (no translucency style);
+        // Acrylic and LiquidGlass both render via Avalonia's own AcrylicBlur, which is
+        // clipped per-card by SetWindowRgn (margin + corner radius). The Windows 11 DWM
+        // system backdrop was tried for LiquidGlass but it ignores the window region and
+        // fills the whole cell — the real gradient/refraction engine is a later native
+        // (D3D/Win2D) phase.
+        var translucent = theme.EffectiveSurface != SurfaceStyle.Solid;
+        SwitchStyle(transparentStyle, translucent);
         SwitchStyle(monochromeStyle, theme.Monochrome);
     }
 

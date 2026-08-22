@@ -37,6 +37,12 @@ public partial class About : UserControl
             new ProcessStartInfo("https://www.github.com/creewick/uWidgets/releases/latest") { UseShellExecute = true });
     }
 
+    private void GoToMyRepository(object? sender, RoutedEventArgs e)
+    {
+        Process.Start(
+            new ProcessStartInfo("https://github.com/Genlue/uWidgetsPlus") { UseShellExecute = true });
+    }
+
     private void GoToRepository(object? sender, RoutedEventArgs e)
     {
         Process.Start(

@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls"
              xmlns:viewModels="clr-namespace:uWidgets.ViewModels"
@@ -77,14 +77,22 @@
         <controls:Setting Icon="{DynamicResource Font}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_FontFamily_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_FontFamily_Subtitle}">
-            <ComboBox ItemsSource="{Binding Fonts}" MinWidth="130" 
-                      SelectedItem="{Binding Font}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Margin="0 4" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+            <StackPanel Orientation="Vertical" Spacing="6" MinWidth="260">
+                <TextBox Watermark="{x:Static locales:Locale.Settings_Appearance_FontSearchWatermark}"
+                         Text="{Binding FontSearchText}" />
+                <ComboBox ItemsSource="{Binding FilteredFonts}" 
+                          SelectedItem="{Binding Font}"
+                          VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{x:Static locales:Locale.Settings_Appearance_FontNoResults}"
+                           IsVisible="{Binding NoFontResults}"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            </StackPanel>
         </controls:Setting>
         <controls:Setting Icon="{DynamicResource WidgetRadius}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_UseNativeFrame_Title}" 

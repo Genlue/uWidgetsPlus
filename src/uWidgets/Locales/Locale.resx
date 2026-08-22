@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <root>
     <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
@@ -112,10 +112,10 @@
         <value>uWidgets will appear in this language</value>
     </data>
     <data name="Settings_Advanced_WidgetMargin_Subtitle" xml:space="preserve">
-        <value>Minimal distance between widgets</value>
+        <value>Margin between a widget and the grid lines in pixels</value>
     </data>
     <data name="Settings_Advanced_WidgetSize_Subtitle" xml:space="preserve">
-        <value>Size of the small widget</value>
+        <value>Size of a 1×1 virtual grid unit in pixels</value>
     </data>
     <data name="Settings_General_Exit_Title" xml:space="preserve">
         <value>Exit the application</value>
@@ -137,6 +137,15 @@
     </data>
     <data name="Settings_About_Repository_Action" xml:space="preserve">
         <value>Visit</value>
+    </data>
+    <data name="Settings_About_MyRepository" xml:space="preserve">
+        <value>My repository</value>
+    </data>
+    <data name="Settings_About_OriginalRepository" xml:space="preserve">
+        <value>Original author's repository</value>
+    </data>
+    <data name="Settings_About_OriginalReportBug" xml:space="preserve">
+        <value>Report a bug to the original author</value>
     </data>
     <data name="Widgets" xml:space="preserve">
         <value>Widgets</value>
@@ -263,5 +272,128 @@
     </data>
     <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
         <value>Opacity level of widget's background</value>
+    </data>
+    <data name="Settings_Advanced_GridMode" xml:space="preserve">
+        <value>Grid</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Title" xml:space="preserve">
+        <value>Grid mode</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Subtitle" xml:space="preserve">
+        <value>How widgets are arranged on the desktop</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Virtual" xml:space="preserve">
+        <value>Virtual grid</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Manual" xml:space="preserve">
+        <value>Manual grid</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Free" xml:space="preserve">
+        <value>Free layout</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Title" xml:space="preserve">
+        <value>Columns</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Subtitle" xml:space="preserve">
+        <value>Number of grid columns (n)</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Title" xml:space="preserve">
+        <value>Rows</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Subtitle" xml:space="preserve">
+        <value>Number of grid rows (m)</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Title" xml:space="preserve">
+        <value>Cell size</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Subtitle" xml:space="preserve">
+        <value>Cell size, % of the screen width (vertical follows, so cells stay square)</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Title" xml:space="preserve">
+        <value>Grid position</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Subtitle" xml:space="preserve">
+        <value>Grid area X/Y, % of the working area</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit" xml:space="preserve">
+        <value>Edit grid</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit_Subtitle" xml:space="preserve">
+        <value>Drag the grid on the desktop to move it, drag the corner handle to resize cells</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
+        <value>Drag the grid to move it · right-click to edit rows/columns/cell size · Esc to close</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
+        <value>{0} × {1} · cell {2} px</value>
+    </data>
+    <data name="Settings_Advanced_ContentScale_Title" xml:space="preserve">
+        <value>Content scale</value>
+    </data>
+    <data name="Settings_Advanced_ContentScale_Subtitle" xml:space="preserve">
+        <value>Scale the widget content (0.5× – 2×)</value>
+    </data>
+    <data name="Settings_Advanced_Network" xml:space="preserve">
+        <value>Network</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Title" xml:space="preserve">
+        <value>HTTP proxy</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
+        <value>How weather and update requests reach the network. Direct bypasses a stale system proxy</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Direct" xml:space="preserve">
+        <value>Direct connection</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_System" xml:space="preserve">
+        <value>System proxy</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Custom" xml:space="preserve">
+        <value>Custom...</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Title" xml:space="preserve">
+        <value>Custom proxy URL</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Subtitle" xml:space="preserve">
+        <value>Used when the proxy mode is Custom</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Watermark" xml:space="preserve">
+        <value>http://host:port</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Title" xml:space="preserve">
+        <value>Update source</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Subtitle" xml:space="preserve">
+        <value>Custom update URL (releases/latest page); empty disables update checks</value>
+    </data>
+    <data name="Widget_Size_Single" xml:space="preserve">
+        <value>1×1</value>
+    </data>
+    <data name="Widget_Size_Grid" xml:space="preserve">
+        <value>Grid size</value>
+    </data>
+    <data name="Settings_Appearance_FontSearchWatermark" xml:space="preserve">
+        <value>Search fonts...</value>
+    </data>
+    <data name="Settings_Appearance_FontNoResults" xml:space="preserve">
+        <value>No matching fonts</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorSave" xml:space="preserve">
+        <value>Save &amp; close</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorCenterX" xml:space="preserve">
+        <value>Center on X axis</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeLeft" xml:space="preserve">
+        <value>←</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeRight" xml:space="preserve">
+        <value>→</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeUp" xml:space="preserve">
+        <value>↑</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeDown" xml:space="preserve">
+        <value>↓</value>
     </data>
 </root>

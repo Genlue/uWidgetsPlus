@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:locales="clr-namespace:uWidgets.Locales"
         xmlns:views="clr-namespace:uWidgets.Views"
@@ -19,11 +19,24 @@
         <ContextMenu>
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
             <Separator IsVisible="{Binding ShowEditButton}"/>
-            <MenuItem Header="{x:Static locales:Locale.Widget_Size}" IsEnabled="False" />
-            <MenuItem Header="{x:Static locales:Locale.Widget_Size_Small}" Command="{Binding ResizeSmall}" />
-            <MenuItem Header="{x:Static locales:Locale.Widget_Size_Medium}" Command="{Binding ResizeMedium}" />
-            <MenuItem Header="{x:Static locales:Locale.Widget_Size_Large}" Command="{Binding ResizeLarge}" />
-            <MenuItem Header="{x:Static locales:Locale.Widget_Size_ExtraLarge}" Command="{Binding ResizeExtraLarge}" />
+            <MenuItem Header="{Binding SizeMenuTitle}">
+                <MenuItem Header="1×1"  Command="{Binding ResizeSize}" CommandParameter="1,1"  />
+                <MenuItem Header="1×2"  Command="{Binding ResizeSize}" CommandParameter="1,2"  />
+                <MenuItem Header="1×3"  Command="{Binding ResizeSize}" CommandParameter="1,3"  />
+                <MenuItem Header="1×4"  Command="{Binding ResizeSize}" CommandParameter="1,4"  />
+                <MenuItem Header="2×1"  Command="{Binding ResizeSize}" CommandParameter="2,1"  />
+                <MenuItem Header="2×2"  Command="{Binding ResizeSize}" CommandParameter="2,2"  />
+                <MenuItem Header="2×3"  Command="{Binding ResizeSize}" CommandParameter="2,3"  />
+                <MenuItem Header="2×4"  Command="{Binding ResizeSize}" CommandParameter="2,4"  />
+                <MenuItem Header="3×1"  Command="{Binding ResizeSize}" CommandParameter="3,1"  />
+                <MenuItem Header="3×2"  Command="{Binding ResizeSize}" CommandParameter="3,2"  />
+                <MenuItem Header="3×3"  Command="{Binding ResizeSize}" CommandParameter="3,3"  />
+                <MenuItem Header="3×4"  Command="{Binding ResizeSize}" CommandParameter="3,4"  />
+                <MenuItem Header="4×1"  Command="{Binding ResizeSize}" CommandParameter="4,1"  />
+                <MenuItem Header="4×2"  Command="{Binding ResizeSize}" CommandParameter="4,2"  />
+                <MenuItem Header="4×3"  Command="{Binding ResizeSize}" CommandParameter="4,3"  />
+                <MenuItem Header="4×4"  Command="{Binding ResizeSize}" CommandParameter="4,4"  />
+            </MenuItem>
             <Separator />
             <MenuItem Header="{x:Static locales:Locale.Widget_Remove}" Command="{Binding Remove}" />
             <Separator />
@@ -60,14 +73,26 @@
     </ToolTip.Tip>
     
     <Grid>
-        <Border CornerRadius="{Binding Radius}" Background="{DynamicResource WidgetBackground}" 
-                VerticalAlignment="Top"
-                HorizontalAlignment="Left"
-                ClipToBounds="True"
-                Name="Border"
-                Width="{Binding Width, RelativeSource={RelativeSource AncestorType=Window}}"
-                Height="{Binding Height, RelativeSource={RelativeSource AncestorType=Window}}">
-            <ContentPresenter Name="ContentPresenter" />
+        <!-- Card (frosted glass): fills the grid cell minus the configured margin,
+             with the configured corner radius. The native window region is clipped
+             to the same rectangle (see ApplyWidgetRegion) so the OS-level acrylic
+             blur follows the card instead of covering the whole grid cell. -->
+        <Border Name="Border"
+                CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                Background="{DynamicResource WidgetBackground}"
+                Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                ClipToBounds="True">
+            <!-- Content: sized by the card only; the content scale (Scale()) is a
+                 render transform on this presenter, so it never resizes the card. -->
+            <ContentPresenter Name="ContentPresenter"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                <ContentPresenter.ContentTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding}" />
+                    </DataTemplate>
+                </ContentPresenter.ContentTemplate>
+            </ContentPresenter>
         </Border>
     </Grid>
     

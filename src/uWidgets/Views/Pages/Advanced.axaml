@@ -7,6 +7,43 @@
              x:DataType="viewModels:AdvancedViewModel">
     <StackPanel Orientation="Vertical" Spacing="3">
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 0 0 10"
+                   Text="{x:Static locales:Locale.Settings_Advanced_GridMode}"/>
+        <controls:Setting Icon="{DynamicResource SnapSize}" 
+                          Title="{x:Static locales:Locale.Settings_Advanced_GridMode_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_GridMode_Subtitle}">
+            <ComboBox ItemsSource="{Binding GridModes}" SelectedItem="{Binding GridMode}" MinWidth="150" />
+        </controls:Setting>
+        <StackPanel Orientation="Vertical" Spacing="3" IsVisible="{Binding IsManualGrid}">
+            <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                              Title="{x:Static locales:Locale.Settings_Advanced_GridColumns_Title}" 
+                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridColumns_Subtitle}">
+                <NumericUpDown MinWidth="130" Minimum="1" Maximum="20" Value="{Binding GridColumns, StringFormat=F0}" />
+            </controls:Setting>
+            <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                              Title="{x:Static locales:Locale.Settings_Advanced_GridRows_Title}" 
+                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridRows_Subtitle}">
+                <NumericUpDown MinWidth="130" Minimum="1" Maximum="20" Value="{Binding GridRows, StringFormat=F0}" />
+            </controls:Setting>
+            <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                              Title="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Title}" 
+                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Subtitle}">
+                <NumericUpDown MinWidth="130" Minimum="1" Maximum="50" Increment="1" Value="{Binding GridCellPercent, StringFormat=F0}" />
+            </controls:Setting>
+            <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                              Title="{x:Static locales:Locale.Settings_Advanced_GridPosition_Title}" 
+                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridPosition_Subtitle}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <NumericUpDown MinWidth="80" Minimum="0" Maximum="100" Increment="1" Value="{Binding GridXPercent, StringFormat=F0}" />
+                    <NumericUpDown MinWidth="80" Minimum="0" Maximum="100" Increment="1" Value="{Binding GridYPercent, StringFormat=F0}" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                              Title="{x:Static locales:Locale.Settings_Advanced_GridEdit}"
+                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridEdit_Subtitle}">
+                <Button Content="{x:Static locales:Locale.Settings_Advanced_GridEdit}" Click="OnEditGridClicked" />
+            </controls:Setting>
+        </StackPanel>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Size}"/>
         <controls:Setting Icon="{DynamicResource SnapSize}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_SnapSize_Title}" 
@@ -32,11 +69,6 @@
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="{x:Static locales:Locale.Settings_Advanced_Dimensions}"/>
-        <controls:Setting Icon="{DynamicResource WidgetSize}" 
-            Title="{x:Static locales:Locale.Settings_Advanced_WidgetSize_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Advanced_WidgetSize_Subtitle}">
-            <NumericUpDown MinWidth="130" Minimum="36" Maximum="144" Value="{Binding Size, StringFormat=F0}" />
-        </controls:Setting>
         <controls:Setting Icon="{DynamicResource WidgetMargin}" 
             Title="{x:Static locales:Locale.Settings_Advanced_WidgetMargin_Title}"
             Subtitle="{x:Static locales:Locale.Settings_Advanced_WidgetMargin_Subtitle}">
@@ -48,6 +80,30 @@
                           IsEnabled="{Binding RadiusEnabled}"
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_WidgetRadius_Subtitle}">
             <NumericUpDown MinWidth="130" Minimum="0" Maximum="48" Value="{Binding Radius, StringFormat=F0}" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource WidgetSize}" 
+            Title="{x:Static locales:Locale.Settings_Advanced_ContentScale_Title}"
+            Subtitle="{x:Static locales:Locale.Settings_Advanced_ContentScale_Subtitle}">
+            <NumericUpDown MinWidth="130" Minimum="0.5" Maximum="2" Increment="0.05" Value="{Binding ContentScale, StringFormat=F2}" />
+        </controls:Setting>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
+                   Text="{x:Static locales:Locale.Settings_Advanced_Network}"/>
+        <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                          Title="{x:Static locales:Locale.Settings_Advanced_Proxy_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_Proxy_Subtitle}">
+            <ComboBox ItemsSource="{Binding ProxyOptions}" SelectedItem="{Binding ProxyMode}" MinWidth="150" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource SnapPosition}"
+                          Title="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Title}"
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Subtitle}">
+            <TextBox MinWidth="260" Watermark="{x:Static locales:Locale.Settings_Advanced_ProxyCustom_Watermark}"
+                     Text="{Binding ProxyCustomUrl}" />
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Refresh}" 
+                          Title="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_UpdateUrl_Subtitle}">
+            <TextBox MinWidth="260" Watermark="https://github.com/owner/repo/releases/latest"
+                     Text="{Binding UpdateUrl}" />
         </controls:Setting>
     </StackPanel>
 </UserControl>

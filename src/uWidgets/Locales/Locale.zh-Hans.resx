@@ -211,10 +211,10 @@
     <value>uWidgets 将以所选语言显示</value>
   </data>
   <data name="Settings_Advanced_WidgetMargin_Subtitle" xml:space="preserve">
-    <value>小部件之间的最小距离</value>
+    <value>组件与网格线之间的边距（像素）</value>
   </data>
   <data name="Settings_Advanced_WidgetSize_Subtitle" xml:space="preserve">
-    <value>最小部件的尺寸</value>
+    <value>1×1 虚拟网格单位的大小（像素）</value>
   </data>
   <data name="Settings_General_Exit_Title" xml:space="preserve">
     <value>退出程序</value>
@@ -236,6 +236,15 @@
   </data>
   <data name="Settings_About_Repository_Action" xml:space="preserve">
     <value>访问</value>
+  </data>
+  <data name="Settings_About_MyRepository" xml:space="preserve">
+    <value>我的仓库</value>
+  </data>
+  <data name="Settings_About_OriginalRepository" xml:space="preserve">
+    <value>原作者仓库</value>
+  </data>
+  <data name="Settings_About_OriginalReportBug" xml:space="preserve">
+    <value>向原作者反馈 bug</value>
   </data>
   <data name="Widgets" xml:space="preserve">
     <value>小部件</value>
@@ -363,4 +372,127 @@
   <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
     <value>小部件背景的不透明度</value>
   </data>
+    <data name="Settings_Advanced_GridMode" xml:space="preserve">
+        <value>网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Title" xml:space="preserve">
+        <value>网格模式</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Subtitle" xml:space="preserve">
+        <value>组件在桌面上的排列方式</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Virtual" xml:space="preserve">
+        <value>虚拟网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Manual" xml:space="preserve">
+        <value>自定义网格</value>
+    </data>
+    <data name="Settings_Advanced_GridMode_Free" xml:space="preserve">
+        <value>自由布局</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Title" xml:space="preserve">
+        <value>列数</value>
+    </data>
+    <data name="Settings_Advanced_GridColumns_Subtitle" xml:space="preserve">
+        <value>网格列数（n）</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Title" xml:space="preserve">
+        <value>行数</value>
+    </data>
+    <data name="Settings_Advanced_GridRows_Subtitle" xml:space="preserve">
+        <value>网格行数（m）</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Title" xml:space="preserve">
+        <value>格子大小</value>
+    </data>
+    <data name="Settings_Advanced_GridCellSize_Subtitle" xml:space="preserve">
+        <value>格子边长（屏幕宽度的百分比，纵向沿用该像素值，保证正方形）</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Title" xml:space="preserve">
+        <value>网格位置</value>
+    </data>
+    <data name="Settings_Advanced_GridPosition_Subtitle" xml:space="preserve">
+        <value>网格区域 X/Y（工作区的百分比）</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit" xml:space="preserve">
+        <value>编辑网格</value>
+    </data>
+    <data name="Settings_Advanced_GridEdit_Subtitle" xml:space="preserve">
+        <value>在桌面上拖动网格可移动位置，拖动右下角手柄可调整格子大小</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
+        <value>拖动网格移动位置 · 右键编辑行列与格子大小 · Esc 关闭</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
+        <value>{0} × {1} · 格子 {2} px</value>
+    </data>
+    <data name="Settings_Advanced_ContentScale_Title" xml:space="preserve">
+        <value>内容缩放</value>
+    </data>
+    <data name="Settings_Advanced_ContentScale_Subtitle" xml:space="preserve">
+        <value>组件内容的缩放比例（0.5× – 2×）</value>
+    </data>
+    <data name="Settings_Advanced_Network" xml:space="preserve">
+        <value>网络</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Title" xml:space="preserve">
+        <value>HTTP 代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Subtitle" xml:space="preserve">
+        <value>天气与更新请求的网络连接方式。直连可绕过失效的系统代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Direct" xml:space="preserve">
+        <value>直连</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_System" xml:space="preserve">
+        <value>系统代理</value>
+    </data>
+    <data name="Settings_Advanced_Proxy_Custom" xml:space="preserve">
+        <value>自定义…</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Title" xml:space="preserve">
+        <value>自定义代理地址</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Subtitle" xml:space="preserve">
+        <value>代理模式为“自定义”时生效</value>
+    </data>
+    <data name="Settings_Advanced_ProxyCustom_Watermark" xml:space="preserve">
+        <value>http://host:port</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Title" xml:space="preserve">
+        <value>更新源</value>
+    </data>
+    <data name="Settings_Advanced_UpdateUrl_Subtitle" xml:space="preserve">
+        <value>自定义更新地址（releases/latest 页面）；留空则禁用更新检查</value>
+    </data>
+    <data name="Widget_Size_Single" xml:space="preserve">
+        <value>1×1</value>
+    </data>
+    <data name="Widget_Size_Grid" xml:space="preserve">
+        <value>网格大小</value>
+    </data>
+    <data name="Settings_Appearance_FontSearchWatermark" xml:space="preserve">
+        <value>搜索字体…</value>
+    </data>
+    <data name="Settings_Appearance_FontNoResults" xml:space="preserve">
+        <value>没有匹配的字体</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorSave" xml:space="preserve">
+        <value>保存并关闭</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorCenterX" xml:space="preserve">
+        <value>X 轴居中</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeLeft" xml:space="preserve">
+        <value>←</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeRight" xml:space="preserve">
+        <value>→</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeUp" xml:space="preserve">
+        <value>↑</value>
+    </data>
+    <data name="Settings_Advanced_GridEditorNudgeDown" xml:space="preserve">
+        <value>↓</value>
+    </data>
 </root>

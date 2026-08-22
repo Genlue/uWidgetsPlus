@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="uWidgets.Views.GridEditor"
+        SystemDecorations="None"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        CanResize="False"
+        WindowStartupLocation="Manual">
+
+    <Panel>
+        <!-- Full-screen dim overlay -->
+        <Border Background="#66000000" />
+
+        <!-- The grid area (draggable; right-click opens the parameters panel) -->
+        <Canvas Name="GridCanvas">
+            <Border Name="GridVisual"
+                    Background="#4000B4FF"
+                    BorderBrush="#FF3388FF"
+                    BorderThickness="2"
+                    CornerRadius="4"
+                    ClipToBounds="True"
+                    PointerPressed="OnGridPressed"
+                    PointerMoved="OnGridMoved"
+                    PointerReleased="OnGridReleased">
+                <Grid Name="CellsGrid" />
+            </Border>
+        </Canvas>
+
+        <!-- Parameters panel (right-click on the grid to show it) -->
+        <Border Name="ParamPanel"
+                IsVisible="False"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Background="#EE202028"
+                CornerRadius="8"
+                Padding="16"
+                Margin="16"
+                BoxShadow="0 4 16 0 #80000000">
+            <StackPanel Spacing="6" Width="240">
+                <TextBlock Name="ParamTitle" FontWeight="Bold" Foreground="White" FontSize="14" />
+                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="列数 (Columns)" />
+                <NumericUpDown Name="ColumnsInput" Minimum="1" Maximum="30" Increment="1" FormatString="F0" />
+                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="行数 (Rows)" />
+                <NumericUpDown Name="RowsInput" Minimum="1" Maximum="30" Increment="1" FormatString="F0" />
+                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="格子边长 (%)" />
+                <NumericUpDown Name="CellInput" Minimum="1" Maximum="50" Increment="1" FormatString="F0" />
+                <Separator Margin="0 6" />
+                <Button Name="CenterButton" Click="OnCenterClicked" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Name="NudgeLeftButton" Click="OnNudgeLeftClicked" />
+                    <Button Name="NudgeRightButton" Click="OnNudgeRightClicked" />
+                    <Button Name="NudgeUpButton" Click="OnNudgeUpClicked" />
+                    <Button Name="NudgeDownButton" Click="OnNudgeDownClicked" />
+                </StackPanel>
+                <Separator Margin="0 6" />
+                <Button Name="SaveButton" Click="OnSaveClicked" />
+                <Button Click="OnCloseClicked" />
+            </StackPanel>
+        </Border>
+
+        <!-- Top hint bar -->
+        <Border VerticalAlignment="Top"
+                Background="#CC101018"
+                CornerRadius="8"
+                Margin="8"
+                Padding="12 8"
+                IsHitTestVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <TextBlock Name="HintText" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Name="InfoText" Foreground="#80FFFFFF" FontSize="12" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- Close button -->
+        <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="8" Padding="8"
+                Background="#66101018"
+                CornerRadius="8"
+                Content="✕"
+                Click="OnCloseClicked" />
+    </Panel>
+</Window>

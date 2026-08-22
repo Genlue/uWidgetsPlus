@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
@@ -47,7 +47,10 @@ public class ThemeService : IThemeService
             Application.Current.Resources["SystemAccentColorLight1"] = color;
         }
         
-        SwitchStyle(transparentStyle, theme.OpacityLevel < 1);
+        // Surface material drives transparency: Solid is opaque (no translucency style),
+        // Acrylic/LiquidGlass are translucent. Both use OpacityLevel for the coating alpha.
+        var translucent = theme.EffectiveSurface != SurfaceStyle.Solid;
+        SwitchStyle(transparentStyle, translucent);
         SwitchStyle(monochromeStyle, theme.Monochrome);
     }
 

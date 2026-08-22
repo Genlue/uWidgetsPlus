@@ -6,12 +6,12 @@ using Reminders.Models;
 using Reminders.ViewModels;
 using Reminders.Views.Controls;
 using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models;
 
 namespace Reminders.Views;
 
-public partial class List : UserControl
+public partial class List : UserControl, IWidgetSelfRefreshing
 {
-    private RemindersListModel model;
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly RemindersViewModel viewModel;
 
@@ -21,12 +21,19 @@ public partial class List : UserControl
     public List(RemindersListModel model, IWidgetLayoutProvider widgetLayoutProvider)
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
-        this.model = model;
         viewModel = new RemindersViewModel(model);
-        Content = new ListSmall(viewModel);
+        Content = new ListSmall(this, viewModel);
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
         InitializeComponent();
+    }
+
+    /// <inheritdoc />
+    public void Refresh(WidgetLayout layout)
+    {
+        var newModel = layout.GetModel<RemindersListModel>();
+        if (newModel == null) return;
+        viewModel.Update(newModel);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -43,22 +50,21 @@ public partial class List : UserControl
         
         Content = (small, wide) switch
         {
-            (true, _) => new ListSmall(viewModel),
-            (_, true) => new ListWide(viewModel),
-            _ => new ListLarge(viewModel)
+            (true, _) => new ListSmall(this, viewModel),
+            (_, true) => new ListWide(this, viewModel),
+            _ => new ListLarge(this, viewModel)
         };
     }
 
     public void ListNameChanged(object? sender, RoutedEventArgs e)
     {
         var listName = (sender as TextBox)!.Text;
-        UpdateModel(model with { ListName = listName });
+        UpdateModel(viewModel.Model with { ListName = listName });
     }
 
     private void UpdateModel(RemindersListModel newModel)
     {
-        model = newModel;
-        DataContext = new RemindersViewModel(newModel);
+        viewModel.Update(newModel);
         var newSettings = JsonSerializer.SerializeToElement(newModel);
         var newLayout = widgetLayoutProvider.Get() with { Settings = newSettings };
         
@@ -68,23 +74,25 @@ public partial class List : UserControl
     public void CompleteReminder(object? sender, RoutedEventArgs e)
     {
         var reminder = (sender as Button)!.DataContext as ReminderModel;
-        var index = model.Reminders.IndexOf(reminder!);
-        model.Reminders[index] = model.Reminders[index] with { Completed = !model.Reminders[index].Completed };
-        UpdateModel(model);
+        var reminders = viewModel.Model.Reminders;
+        var index = reminders.IndexOf(reminder!);
+        reminders[index] = reminders[index] with { Completed = !reminders[index].Completed };
+        UpdateModel(viewModel.Model);
     }
     
     public void EditReminder(object? sender, RoutedEventArgs e)
     {
         var text = (sender as TextBox)!.Text;
         var reminder = (sender as TextBox)!.DataContext as ReminderModel;
-        var index = model.Reminders.IndexOf(reminder!);
+        var reminders = viewModel.Model.Reminders;
+        var index = reminders.IndexOf(reminder!);
 
         if (string.IsNullOrEmpty(text))
-            model.Reminders.Remove(reminder!);
+            reminders.Remove(reminder!);
         else
-            model.Reminders[index] = model.Reminders[index] with { Title = (sender as TextBox)!.Text ?? "" };
+            reminders[index] = reminders[index] with { Title = text };
         
-        UpdateModel(model);
+        UpdateModel(viewModel.Model);
     }
     
     public void CreateReminder(object? sender, RoutedEventArgs e)
@@ -94,9 +102,9 @@ public partial class List : UserControl
         if (string.IsNullOrEmpty(text))
             return;
         
-        model.Reminders.Add(new ReminderModel(false, text));
+        viewModel.Model.Reminders.Add(new ReminderModel(false, text));
 
         (sender as TextBox)!.Clear();
-        UpdateModel(model);
+        UpdateModel(viewModel.Model);
     }
 }

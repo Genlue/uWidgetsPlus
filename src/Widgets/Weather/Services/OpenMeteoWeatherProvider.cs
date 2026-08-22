@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using uWidgets.Core.Services;
 using Weather.Models.Forecast;
 using Weather.Models.Geocoding;
 
@@ -7,7 +8,10 @@ namespace Weather.Services;
 
 public class OpenMeteoWeatherProvider
 {
-    private readonly HttpClient httpClient = new();
+    // Follows the configurable proxy setting (default: direct connection, bypassing
+    // the system proxy — a stale proxy from a shut-down proxy client used to break
+    // weather updates). See ProxySettings.
+    private readonly HttpClient httpClient = ProxySettings.CreateHttpClient();
 
     public async Task<ForecastResponse?> GetForecastAsync(double latitude, double longitude, string temperatureUnit)
     {

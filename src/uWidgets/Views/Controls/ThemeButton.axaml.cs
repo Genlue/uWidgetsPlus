@@ -67,32 +67,19 @@ public partial class ThemeButton : UserControl
         return renderTarget;
     }
 
+    /// <summary>
+    /// Applies only the surface material (glass vs solid). Dark mode, accent color,
+    /// monochrome, font and native frame are set by their own controls and preserved,
+    /// so choosing a material no longer resets the user's other appearance choices.
+    /// </summary>
     private void Apply(object? sender, RoutedEventArgs e)
     {
         var settings = appSettingsProvider.Get();
-        var newSettings = settings with { Theme = AppTheme };
-        
-        appSettingsProvider.Save(newSettings);
-        if (settings.Theme.UseNativeFrame != newSettings.Theme.UseNativeFrame)
-            Restart();
-    }
-    
-    private void Restart()
-    {
-        var executablePath = Process.GetCurrentProcess().MainModule?.FileName;
-        if (executablePath == null) return;
-        
-        var process = Process.Start(executablePath, "--settings");
-        var tryCount = 0;
-        var maxTryCount = 10;
-        
-        while (process.MainWindowHandle == IntPtr.Zero && !process.HasExited && tryCount++ < maxTryCount)
+        var newTheme = settings.Theme with
         {
-            Thread.Sleep(100);
-            process.Refresh();
-        }
-
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp) 
-            desktopApp.Shutdown();
+            Surface = AppTheme.EffectiveSurface,
+            OpacityLevel = AppTheme.OpacityLevel
+        };
+        appSettingsProvider.Save(settings with { Theme = newTheme });
     }
 }

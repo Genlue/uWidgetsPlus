@@ -3,7 +3,8 @@ namespace uWidgets.Core.Models.Settings;
 /// <summary>
 /// Dimensions of a widget.
 /// </summary>
-/// <param name="Size">Size of 1x1 widget in pixels</param>
-/// <param name="Margin">Margin between widgets in pixels</param>
+/// <param name="Size">Size of a 1x1 virtual grid unit in pixels (Virtual mode)</param>
+/// <param name="Margin">Margin between a widget and the grid lines in pixels</param>
 /// <param name="Radius">Widget's corner radius in pixels</param>
-public record Dimensions(int Size, int Margin, int Radius);
+/// <param name="ContentScale">Custom content scale (1.0 = content matches the design size for the current cell size)</param>
+public record Dimensions(int Size, int Margin, int Radius, double ContentScale = 1.0);

@@ -15,4 +15,10 @@ public interface IStartupService
     /// <c>true</c> if the operation was successful, <c>false</c> otherwise.
     /// </returns>
     public bool SetRunOnStartup(bool value);
+
+    /// <summary>
+    /// Whether the application is currently registered to run on startup
+    /// (reflects the actual Windows auto-start state).
+    /// </summary>
+    public bool IsEnabled();
 }

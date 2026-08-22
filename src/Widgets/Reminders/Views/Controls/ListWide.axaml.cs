@@ -6,15 +6,17 @@ namespace Reminders.Views.Controls;
 
 public partial class ListWide : UserControl
 {
-    public ListWide(RemindersViewModel viewModel)
+    private readonly List owner;
+
+    public ListWide(List owner, RemindersViewModel viewModel)
     {
+        this.owner = owner;
         DataContext = viewModel;
         InitializeComponent();
     }
-    
-    public void ListNameChanged(object? sender, RoutedEventArgs e) => (Parent as List)!.ListNameChanged(sender, e);
-    public void CompleteReminder(object? sender, RoutedEventArgs e) => (Parent as List)!.CompleteReminder(sender, e);
-    public void EditReminder(object? sender, RoutedEventArgs e) => (Parent as List)!.EditReminder(sender, e);
-    public void CreateReminder(object? sender, RoutedEventArgs e) => (Parent as List)!.CreateReminder(sender, e);
 
+    public void ListNameChanged(object? sender, RoutedEventArgs e) => owner.ListNameChanged(sender, e);
+    public void CompleteReminder(object? sender, RoutedEventArgs e) => owner.CompleteReminder(sender, e);
+    public void EditReminder(object? sender, RoutedEventArgs e) => owner.EditReminder(sender, e);
+    public void CreateReminder(object? sender, RoutedEventArgs e) => owner.CreateReminder(sender, e);
 }

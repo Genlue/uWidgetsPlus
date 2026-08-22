@@ -27,7 +27,7 @@ public class GeneralViewModel(IAppSettingsProvider appSettingsProvider) : Reacti
     
     public bool RunOnStartup
     {
-        get => appSettingsProvider.Get().RunOnStartup;
+        get => new StartupService().IsEnabled();
         set
         {
             if (!new StartupService().SetRunOnStartup(value)) return;

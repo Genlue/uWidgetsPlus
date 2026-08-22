@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using uWidgets.Core;
 
 namespace uWidgets.Services;
@@ -41,10 +42,14 @@ public static class WidgetBundle
         if (stream == null)
             return; // dev build without an embedded bundle (portable mode)
 
-        var version = assembly.GetName().Version?.ToString() ?? "0";
+        // Marker is the SHA-256 hash of the embedded zip, so ANY change to the widget
+        // bundle (a bumped widget DLL version, a new widget, a resource change) triggers
+        // a re-extract — not just main-exe version bumps.
+        var hash = Convert.ToHexString(SHA256.HashData(stream));
+        stream.Position = 0;
         var marker = Path.Combine(Const.WidgetsFolder, ".version");
 
-        if (File.Exists(marker) && File.ReadAllText(marker) == version)
+        if (File.Exists(marker) && File.ReadAllText(marker) == hash)
             return;
 
         if (Directory.Exists(Const.WidgetsFolder))
@@ -71,7 +76,7 @@ public static class WidgetBundle
             entry.ExtractToFile(destination, true);
         }
 
-        File.WriteAllText(marker, version);
+        File.WriteAllText(marker, hash);
     }
 
     /// <summary>

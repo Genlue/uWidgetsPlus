@@ -28,11 +28,14 @@ public partial class Forecast : UserControl
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
+        // The small layout scales itself to its slot (see ForecastSmall) and only
+        // falls back to the temperature-only tiny layout for genuinely tiny cards
+        // (a single grid cell on any DPI scale).
         Content = e.NewSize switch
         {
             { Width: > 230, Height: > 230 } => new ForecastLarge(viewModel),
-            { Width: > 230, Height: > 150 } => new ForecastWide(viewModel),
-            { Width: > 150, Height: > 150 } => new ForecastSmall(viewModel),
+            { Width: > 230, Height: > 140 } => new ForecastWide(viewModel),
+            { Width: > 75, Height: > 75 } => new ForecastSmall(viewModel),
             _ => new ForecastTiny(viewModel)
         };
     }

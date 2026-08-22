@@ -3,14 +3,30 @@ using System.Linq;
 using Avalonia.Media;
 using ReactiveUI;
 using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
+using uWidgets.Services;
 using uWidgets.Views.Controls;
 
 namespace uWidgets.ViewModels;
 
 public class AppearanceViewModel(IAppSettingsProvider appSettingsProvider) : ReactiveObject
 {
-    public ThemeButton[] Themes => appSettingsProvider.Get().Templates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray();
+    /// <summary>
+    /// The surface presets. There are exactly two (毛玻璃 / 纯色); the old eight
+    /// templates were only corner-radius / dark-light / font variants of these two
+    /// and those are now controlled by their own settings. A liquid-glass preset
+    /// will be added here later — it is already reserved via <see cref="SurfaceStyle"/>.
+    /// </summary>
+    private static readonly Theme[] SurfaceTemplates =
+    [
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid)
+    ];
+
+    public ThemeButton[] Themes { get; } =
+        // Built once; keyed off the fixed presets, so every install shows exactly two.
+        SurfaceTemplates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray();
     
     public DarkModeViewModel[] DarkModes =>
     [
@@ -88,7 +104,39 @@ public class AppearanceViewModel(IAppSettingsProvider appSettingsProvider) : Rea
         }
     }
     
-    public List<string> Fonts => ["Inter", "Segoe UI", "Microsoft YaHei"];
+    /// <summary>
+    /// Every font available: all fonts installed on the system, plus the bundled Inter font.
+    /// </summary>
+    public IReadOnlyList<string> AllFonts { get; } = SystemFonts.GetFonts().ToArray();
+
+    private string fontSearchText = "";
+    public string FontSearchText
+    {
+        get => fontSearchText;
+        set
+        {
+            if (fontSearchText == value) return;
+            fontSearchText = value;
+            this.RaisePropertyChanged();
+            this.RaisePropertyChanged(nameof(FilteredFonts));
+            this.RaisePropertyChanged(nameof(NoFontResults));
+        }
+    }
+
+    /// <summary>
+    /// Fonts filtered by <see cref="FontSearchText"/>.
+    /// </summary>
+    public IReadOnlyList<string> FilteredFonts =>
+        string.IsNullOrWhiteSpace(FontSearchText)
+            ? AllFonts
+            : AllFonts
+                .Where(font => font.Contains(FontSearchText.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+    /// <summary>
+    /// True when the font search matched nothing.
+    /// </summary>
+    public bool NoFontResults => FilteredFonts.Count == 0;
 
     public string Font
     {

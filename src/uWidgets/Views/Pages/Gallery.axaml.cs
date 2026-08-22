@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,6 +8,8 @@ using Avalonia.Interactivity;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Attributes;
+using uWidgets.Core.Models.Settings;
+using uWidgets.Services;
 using uWidgets.ViewModels;
 
 namespace uWidgets.Views.Pages;
@@ -69,11 +72,31 @@ public partial class Gallery : UserControl
     {
         var button = sender as Button;
         var viewModel = button!.DataContext as WidgetPreviewViewModel;
-        var dimensions = appSettingsProvider.Get().Dimensions;
-        var size = 2 * dimensions.Size + dimensions.Margin;
+        var settings = appSettingsProvider.Get();
         var position = button.PointToScreen(new Point(0, 0));
 
-        var widgetSettings = new WidgetLayout(viewModel!.Type, viewModel.Subtype, position.X, position.Y, size, size, null);
+        int x = position.X, y = position.Y, size;
+        if (settings.Layout.GridMode == GridMode.Manual)
+        {
+            // Manual grid: 1×1 cell by default, snapped to the nearest cell.
+            // Grid metrics are physical; window size is a DIP → convert.
+            var screen = (VisualRoot as Window)?.Screens.Primary;
+            var area = screen?.WorkingArea;
+            var (cell, gridX, gridY) = GridMetrics.Resolve(
+                settings.Grid,
+                area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
+            var scaling = screen?.Scaling ?? 1.0;
+            size = (int) Math.Round(cell / scaling);
+            x = gridX + (int) Math.Round((position.X - gridX) / (double) cell) * cell;
+            y = gridY + (int) Math.Round((position.Y - gridY) / (double) cell) * cell;
+        }
+        else
+        {
+            var dimensions = settings.Dimensions;
+            size = 2 * dimensions.Size + dimensions.Margin;
+        }
+
+        var widgetSettings = new WidgetLayout(viewModel!.Type, viewModel.Subtype, x, y, size, size, null);
         widgetFactory.Add(widgetSettings).Show();
     }
 }

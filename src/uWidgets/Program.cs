@@ -21,6 +21,10 @@ class Program
             // so the rest of the app sees a regular data folder. No-op in portable mode.
             WidgetBundle.ExtractIfNeeded();
 
+            // Keep the Windows auto-start entry in sync with the saved preference so the
+            // feature reliably takes effect (re-asserts the path each launch; safe when off).
+            SyncRunOnStartup();
+
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
         }
@@ -29,6 +33,24 @@ class Program
             var fileName = Path.Combine(Const.DataFolder, "crash_log.txt");
             File.WriteAllText(fileName, $"{e.Message}{Environment.NewLine}{e.StackTrace}");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Re-asserts the Windows auto-start registry entry when the user has enabled it.
+    /// This is best-effort and never blocks app startup; it fixes a stale or missing
+    /// entry (e.g. after the exe was moved) so "Run on startup" reliably takes effect.
+    /// </summary>
+    private static void SyncRunOnStartup()
+    {
+        try
+        {
+            if (new AppSettingsProvider().Get().RunOnStartup)
+                new StartupService().SetRunOnStartup(true);
+        }
+        catch
+        {
+            // Auto-start is non-critical; ignore any failure here.
         }
     }
 

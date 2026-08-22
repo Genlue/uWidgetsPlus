@@ -34,6 +34,63 @@ public class InteropService
         SetWindowLong(handle.Value, GWL_EXSTYLE, exStyle);
     }
 
+    /// <summary>
+    /// Clip the window (including its acrylic backdrop) to a rounded rectangle.
+    /// <para>
+    /// The widget window spans the whole grid cell, but the frosted-glass card
+    /// only occupies the cell minus the margin, with rounded corners. Clipping
+    /// the native window region makes the OS-side blur follow the card exactly,
+    /// and makes the transparent margin area click-through (clicks outside the
+    /// card fall through to the desktop instead of being captured by the widget).
+    /// </para>
+    /// </summary>
+    /// <param name="window">The target window.</param>
+    /// <param name="x">Region left edge (physical pixels, relative to the window).</param>
+    /// <param name="y">Region top edge (physical pixels, relative to the window).</param>
+    /// <param name="width">Region width (physical pixels).</param>
+    /// <param name="height">Region height (physical pixels).</param>
+    /// <param name="radius">Corner radius (physical pixels, typically <c>Dimensions.Radius</c>).</param>
+    public static void SetWidgetRegion(Window window, int x, int y, int width, int height, int radius)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null) return;
+
+        width = Math.Max(1, width);
+        height = Math.Max(1, height);
+        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
+
+        var region = radius > 0
+            ? CreateRoundRectRgn(x, y, x + width, y + height, radius * 2, radius * 2)
+            : CreateRectRgn(x, y, x + width, y + height);
+        if (region == IntPtr.Zero) return;
+
+        // On success the system owns the region; only delete it on failure.
+        if (SetWindowRgn(handle.Value, region, true) == 0)
+            DeleteObject(region);
+    }
+
+    /// <summary>
+    /// Remove a previously applied window region (full-window rectangle again).
+    /// </summary>
+    public static void ClearWidgetRegion(Window window)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null) return;
+        SetWindowRgn(handle.Value, IntPtr.Zero, true);
+    }
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+    [DllImport("gdi32.dll")]
+    private static extern bool DeleteObject(IntPtr hObject);
+
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindowLong(IntPtr hWnd, int nIndex);
 

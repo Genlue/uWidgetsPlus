@@ -48,6 +48,12 @@
             Subtitle="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Subtitle}">
             <NumericUpDown MinWidth="130" Minimum="0" Maximum="1" Increment="0.05" Value="{Binding OpacityLevel}" />
         </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Transparency}" 
+            Title="{x:Static locales:Locale.Settings_Appearance_BlurLevel_Title}" 
+            Subtitle="{x:Static locales:Locale.Settings_Appearance_BlurLevel_Subtitle}"
+            IsVisible="{Binding ShowBlurLevel}">
+            <NumericUpDown MinWidth="130" Minimum="0" Maximum="1" Increment="0.05" Value="{Binding BlurLevel}" />
+        </controls:Setting>
         <controls:Setting Icon="{DynamicResource Color}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}">
             <StackPanel Orientation="Horizontal" Spacing="16">

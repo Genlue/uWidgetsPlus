@@ -79,6 +79,96 @@ public class InteropService
         SetWindowRgn(handle.Value, IntPtr.Zero, true);
     }
 
+    // ---------- Liquid glass: Windows 11 system gradient-blur backdrop ----------
+    // Phase 1 prototype: uses the OS-level "glass" backdrop (DWMSBT_TABBEDWINDOW)
+    // plus an accent gradient whose alpha is the adjustable glass strength.
+    // Full refraction/distortion via a custom D3D/Win2D pass is a later phase.
+
+    private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
+    private const int DWMSBT_NONE = 1;
+    private const int DWMSBT_TABBEDWINDOW = 3;
+    private const int WCA_ACCENT_POLICY = 19;
+    private const int ACCENT_DISABLED = 0;
+    private const int ACCENT_ENABLE_HOSTBACKDROP = 11;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AccentPolicy
+    {
+        public int AccentState;
+        public int AccentFlags;
+        public uint GradientColor; // 0xAABBGGRR
+        public int AnimationId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowCompositionAttributeData
+    {
+        public int Attribute;
+        public IntPtr Data;
+        public int SizeOfData;
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+    /// <summary>
+    /// Apply the Windows 11 system gradient-blur "liquid glass" backdrop to a window.
+    /// <param name="intensity">Glass strength 0–1 (alpha of the gradient tint).</param>
+    /// </summary>
+    public static void SetLiquidGlassBackdrop(Window window, double intensity)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null) return;
+
+        var backdropType = DWMSBT_TABBEDWINDOW;
+        DwmSetWindowAttribute(handle.Value, DWMWA_SYSTEMBACKDROP_TYPE, ref backdropType, sizeof(int));
+
+        var alpha = (byte)(Math.Clamp(intensity, 0, 1) * 255);
+        var policy = new AccentPolicy
+        {
+            AccentState = ACCENT_ENABLE_HOSTBACKDROP,
+            AccentFlags = 0,
+            GradientColor = (uint)alpha << 24,
+            AnimationId = 0
+        };
+        SetAccentPolicy(handle.Value, policy);
+    }
+
+    /// <summary>
+    /// Remove the liquid-glass backdrop (back to the default window backdrop).
+    /// </summary>
+    public static void ClearLiquidGlassBackdrop(Window window)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null) return;
+
+        var backdropType = DWMSBT_NONE;
+        DwmSetWindowAttribute(handle.Value, DWMWA_SYSTEMBACKDROP_TYPE, ref backdropType, sizeof(int));
+        SetAccentPolicy(handle.Value, new AccentPolicy { AccentState = ACCENT_DISABLED });
+    }
+
+    private static void SetAccentPolicy(IntPtr hwnd, AccentPolicy policy)
+    {
+        var data = new WindowCompositionAttributeData
+        {
+            Attribute = WCA_ACCENT_POLICY,
+            Data = Marshal.AllocHGlobal(Marshal.SizeOf<AccentPolicy>()),
+            SizeOfData = Marshal.SizeOf<AccentPolicy>()
+        };
+        try
+        {
+            Marshal.StructureToPtr(policy, data.Data, false);
+            SetWindowCompositionAttribute(hwnd, ref data);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(data.Data);
+        }
+    }
+
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
 

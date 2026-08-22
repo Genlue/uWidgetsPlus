@@ -372,6 +372,12 @@
   <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
     <value>小部件背景的不透明度</value>
   </data>
+  <data name="Settings_Appearance_BlurLevel_Title" xml:space="preserve">
+    <value>玻璃模糊</value>
+  </data>
+  <data name="Settings_Appearance_BlurLevel_Subtitle" xml:space="preserve">
+    <value>毛玻璃与液态玻璃的模糊 / 玻璃强度</value>
+  </data>
     <data name="Settings_Advanced_GridMode" xml:space="preserve">
         <value>网格</value>
     </data>

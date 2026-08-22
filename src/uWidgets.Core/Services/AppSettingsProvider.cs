@@ -14,6 +14,10 @@ public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFi
             // Backfill the surface material from OpacityLevel for configurations
             // that predate the SurfaceStyle field so old "solid" setups aren't
             // mistaken for acrylic by the enum default.
-            Theme = settings.Theme with { Surface = settings.Theme.EffectiveSurface }
+            Theme = settings.Theme with
+            {
+                Surface = settings.Theme.EffectiveSurface,
+                BlurLevel = settings.Theme.EffectiveBlur
+            }
         };
 }

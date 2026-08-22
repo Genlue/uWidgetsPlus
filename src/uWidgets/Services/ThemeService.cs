@@ -21,6 +21,11 @@ public class ThemeService : IThemeService
         Source = new Uri("avares://uWidgets/Styles/Transparent.axaml")
     };
     
+    private readonly StyleInclude liquidGlassStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/LiquidGlass.axaml")
+    };
+    
     private readonly StyleInclude monochromeStyle = new(new Uri("avares://uWidgets/"))
     {
         Source = new Uri("avares://uWidgets/Styles/Monochrome.axaml")
@@ -48,9 +53,10 @@ public class ThemeService : IThemeService
         }
         
         // Surface material drives transparency: Solid is opaque (no translucency style),
-        // Acrylic/LiquidGlass are translucent. Both use OpacityLevel for the coating alpha.
-        var translucent = theme.EffectiveSurface != SurfaceStyle.Solid;
-        SwitchStyle(transparentStyle, translucent);
+        // Acrylic uses Avalonia's own AcrylicBlur, LiquidGlass defers to the Windows 11
+        // system gradient-blur backdrop (InteropService.SetLiquidGlassBackdrop).
+        SwitchStyle(transparentStyle, theme.EffectiveSurface == SurfaceStyle.Acrylic);
+        SwitchStyle(liquidGlassStyle, theme.EffectiveSurface == SurfaceStyle.LiquidGlass);
         SwitchStyle(monochromeStyle, theme.Monochrome);
     }
 

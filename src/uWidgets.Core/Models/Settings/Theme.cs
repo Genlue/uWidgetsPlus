@@ -28,6 +28,11 @@ namespace uWidgets.Core.Models.Settings;
 /// material is then derived from <see cref="OpacityLevel"/>. Preferred over the
 /// raw <see cref="OpacityLevel"/>&gt;1 heuristic once liquid glass is added.
 /// </param>
+/// <param name="BlurLevel">
+/// Glass blur/intensity strength (0.0 – 1.0). Applies to the glass surfaces
+/// (<see cref="SurfaceStyle.Acrylic"/>, <see cref="SurfaceStyle.LiquidGlass"/>).
+/// Null means "not explicitly set"; the effective value defaults to 0.5.
+/// </param>
 public record Theme(
     bool? DarkMode, 
     string? AccentColor, 
@@ -35,7 +40,8 @@ public record Theme(
     bool Monochrome, 
     bool UseNativeFrame, 
     string FontFamily,
-    SurfaceStyle? Surface = null)
+    SurfaceStyle? Surface = null,
+    double? BlurLevel = null)
 {
     /// <summary>
     /// The effective surface material. Falls back to deriving it from
@@ -44,4 +50,9 @@ public record Theme(
     /// </summary>
     public SurfaceStyle EffectiveSurface =>
         Surface ?? (OpacityLevel < 1 ? SurfaceStyle.Acrylic : SurfaceStyle.Solid);
+
+    /// <summary>
+    /// The effective glass blur/intensity (0–1), defaulting to 0.5.
+    /// </summary>
+    public double EffectiveBlur => Math.Clamp(BlurLevel ?? 0.5, 0, 1);
 }

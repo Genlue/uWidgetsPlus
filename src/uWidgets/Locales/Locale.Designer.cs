@@ -492,6 +492,24 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Blur / glass strength of the frosted &amp; liquid glass surfaces.
+        /// </summary>
+        public static string Settings_Appearance_BlurLevel_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_BlurLevel_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Glass blur.
+        /// </summary>
+        public static string Settings_Appearance_BlurLevel_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_BlurLevel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Opacity Level.
         /// </summary>
         public static string Settings_Appearance_OpacityLevel_Title {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Media;
@@ -13,15 +14,16 @@ namespace uWidgets.ViewModels;
 public class AppearanceViewModel(IAppSettingsProvider appSettingsProvider) : ReactiveObject
 {
     /// <summary>
-    /// The surface presets. There are exactly two (毛玻璃 / 纯色); the old eight
-    /// templates were only corner-radius / dark-light / font variants of these two
-    /// and those are now controlled by their own settings. A liquid-glass preset
-    /// will be added here later — it is already reserved via <see cref="SurfaceStyle"/>.
+    /// The surface presets: 毛玻璃 (acrylic) / 纯色 (solid) / 液态玻璃 (liquid glass,
+    /// Phase 1 prototype using the Windows 11 system gradient-blur backdrop).
+    /// The old eight templates were only corner-radius / dark-light / font variants
+    /// of these materials and are now controlled by their own settings.
     /// </summary>
     private static readonly Theme[] SurfaceTemplates =
     [
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid)
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic, BlurLevel: 0.5),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid, BlurLevel: 0.5),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.55, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass, BlurLevel: 0.7)
     ];
 
     public ThemeButton[] Themes { get; } =
@@ -91,6 +93,26 @@ public class AppearanceViewModel(IAppSettingsProvider appSettingsProvider) : Rea
             appSettingsProvider.Save(newSettings);
         }
     }
+    
+    /// <summary>
+    /// Glass blur/intensity for the glass surfaces (acrylic &amp; liquid glass), 0–1.
+    /// </summary>
+    public double BlurLevel
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveBlur;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            var newTheme = settings.Theme with { BlurLevel = Math.Clamp(value, 0, 1) };
+            var newSettings = settings with { Theme = newTheme };
+            appSettingsProvider.Save(newSettings);
+        }
+    }
+
+    /// <summary>
+    /// Whether the blur-level control is relevant (hidden for the opaque surface).
+    /// </summary>
+    public bool ShowBlurLevel => appSettingsProvider.Get().Theme.EffectiveSurface != SurfaceStyle.Solid;
     
     public bool Monochrome
     {

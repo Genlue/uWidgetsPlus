@@ -28,10 +28,27 @@ namespace uWidgets.Core.Models.Settings;
 /// material is then derived from <see cref="OpacityLevel"/>. Preferred over the
 /// raw <see cref="OpacityLevel"/>&gt;1 heuristic once liquid glass is added.
 /// </param>
-/// <param name="BlurLevel">
-/// Glass blur/intensity strength (0.0 – 1.0). Applies to the glass surfaces
-/// (<see cref="SurfaceStyle.Acrylic"/>, <see cref="SurfaceStyle.LiquidGlass"/>).
-/// Null means "not explicitly set"; the effective value defaults to 0.5.
+/// <param name="OutlineColor">
+/// Highlight ring color of the glass outline, in HEX format (RGBA, alpha is kept).
+/// <c>null</c> uses <see cref="DefaultOutlineColor"/>.
+/// </param>
+/// <param name="OutlineWidth">
+/// Highlight ring thickness in DIPs for the frosted glass; <c>0</c> (default)
+/// hides the ring. The outline is part of the 毛玻璃 theme — any glass surface
+/// draws it when this is greater than 0.
+/// </param>
+/// <param name="SolidBackgroundDark">
+/// 纯色 surface background color in dark mode, HEX format. <c>null</c> uses
+/// <see cref="DefaultSolidBackgroundDark"/>.
+/// </param>
+/// <param name="SolidBackgroundLight">
+/// 纯色 surface background color in light mode, HEX format. <c>null</c> uses
+/// <see cref="DefaultSolidBackgroundLight"/>.
+/// </param>
+/// <param name="MonochromeVariant">
+/// Monochrome color source when <see cref="Monochrome"/> is enabled.
+/// <c>null</c> uses <see cref="DefaultMonochromeVariant"/> (强调色, the historic
+/// behavior, so old configurations keep their look).
 /// </param>
 public record Theme(
     bool? DarkMode, 
@@ -41,8 +58,28 @@ public record Theme(
     bool UseNativeFrame, 
     string FontFamily,
     SurfaceStyle? Surface = null,
-    double? BlurLevel = null)
+    string? OutlineColor = null,
+    double OutlineWidth = 0,
+    string? SolidBackgroundDark = null,
+    string? SolidBackgroundLight = null,
+    MonochromeStyle? MonochromeVariant = null)
 {
+    /// <summary>Default highlight-ring color when <see cref="OutlineColor"/> is not set
+    /// (soft gray-white, less stark than pure white).</summary>
+    public const string DefaultOutlineColor = "#B3FFFFFF";
+
+    /// <summary>Default highlight-ring thickness (DIPs): 0 = outline hidden.</summary>
+    public const double DefaultOutlineWidth = 0;
+
+    /// <summary>Default 纯色 background in dark mode (dark gray, the historic look).</summary>
+    public const string DefaultSolidBackgroundDark = "#2E2E2E";
+
+    /// <summary>Default 纯色 background in light mode (white, the historic look).</summary>
+    public const string DefaultSolidBackgroundLight = "#FFFFFF";
+
+    /// <summary>Default monochrome color source (强调色, the historic look).</summary>
+    public const MonochromeStyle DefaultMonochromeVariant = MonochromeStyle.Accent;
+
     /// <summary>
     /// The effective surface material. Falls back to deriving it from
     /// <see cref="OpacityLevel"/> when <see cref="Surface"/> is not set
@@ -52,7 +89,34 @@ public record Theme(
         Surface ?? (OpacityLevel < 1 ? SurfaceStyle.Acrylic : SurfaceStyle.Solid);
 
     /// <summary>
-    /// The effective glass blur/intensity (0–1), defaulting to 0.5.
+    /// True for surfaces that use a translucent, blur-capable backdrop
+    /// (frosted glass and its outlined variant); false for <see cref="SurfaceStyle.Solid"/>.
     /// </summary>
-    public double EffectiveBlur => Math.Clamp(BlurLevel ?? 0.5, 0, 1);
+    public bool IsGlass => EffectiveSurface != SurfaceStyle.Solid;
+
+    /// <summary>
+    /// The highlighted glass ring color; falls back to <see cref="DefaultOutlineColor"/>
+    /// when <see cref="OutlineColor"/> is not set.
+    /// </summary>
+    public string EffectiveOutlineColor => OutlineColor ?? DefaultOutlineColor;
+
+    /// <summary>
+    /// The 纯色 background color in dark mode; falls back to
+    /// <see cref="DefaultSolidBackgroundDark"/> when <see cref="SolidBackgroundDark"/>
+    /// is not set.
+    /// </summary>
+    public string EffectiveSolidBackgroundDark => SolidBackgroundDark ?? DefaultSolidBackgroundDark;
+
+    /// <summary>
+    /// The 纯色 background color in light mode; falls back to
+    /// <see cref="DefaultSolidBackgroundLight"/> when <see cref="SolidBackgroundLight"/>
+    /// is not set.
+    /// </summary>
+    public string EffectiveSolidBackgroundLight => SolidBackgroundLight ?? DefaultSolidBackgroundLight;
+
+    /// <summary>
+    /// The monochrome color source; falls back to <see cref="DefaultMonochromeVariant"/>
+    /// when <see cref="MonochromeVariant"/> is not set.
+    /// </summary>
+    public MonochromeStyle EffectiveMonochromeVariant => MonochromeVariant ?? DefaultMonochromeVariant;
 }

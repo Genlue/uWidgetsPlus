@@ -1,10 +1,12 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 毛玻璃 surface: OS-level AcrylicBlur (set per-window in Widget/Settings
-         through the local TransparencyLevelHint). The card color follows the
-         active dark/light variant through the theme dictionaries below and is
-         set by ThemeService (SolidBackgroundDark/Light) — the same custom
-         colors used by the 纯色 surface. -->
+    <!-- 纯色 surface: per-pixel transparency (no OS blur) so the OpacityLevel
+         slider blends the card with the desktop. The card color follows the
+         active theme variant (dark/light) through the theme dictionaries below
+         and is set by ThemeService (SolidBackgroundDark/Light). -->
+    <Style Selector="Window">
+        <Setter Property="TransparencyLevelHint" Value="Transparent" />
+    </Style>
     <Style>
         <Style.Resources>
             <ResourceDictionary>
@@ -16,15 +18,7 @@
                         <SolidColorBrush x:Key="WidgetBackground" Color="{DynamicResource SolidBackgroundDark}" Opacity="{DynamicResource BackgroundOpacity}" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
-                <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.9" />
-                <x:Double x:Key="TextOpacity">0.8</x:Double>
             </ResourceDictionary>
         </Style.Resources>
-    </Style>
-    <Style Selector="Window">
-        <Setter Property="TransparencyLevelHint" Value="AcrylicBlur" />
-    </Style>
-    <Style Selector="TextBlock">
-        <Setter Property="Opacity" Value="0.8" />
     </Style>
 </Styles>

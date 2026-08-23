@@ -165,6 +165,36 @@
     <data name="Settings_Appearance_Monochrome_Subtitle" xml:space="preserve">
         <value>Widgets elements appear in the same color</value>
     </data>
+    <data name="Settings_Appearance_Monochrome_Variant_BlackWhite" xml:space="preserve">
+        <value>Black &amp; white</value>
+    </data>
+    <data name="Settings_Appearance_Monochrome_Variant_Accent" xml:space="preserve">
+        <value>Accent color</value>
+    </data>
+    <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
+        <value>Frosted glass</value>
+    </data>
+    <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
+        <value>Solid</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_Title" xml:space="preserve">
+        <value>Background color</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_Subtitle" xml:space="preserve">
+        <value>Custom background colors for dark and light mode</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_Dark" xml:space="preserve">
+        <value>Dark mode</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_Light" xml:space="preserve">
+        <value>Light mode</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_ApplyToLight" xml:space="preserve">
+        <value>Apply to light</value>
+    </data>
+    <data name="Settings_Appearance_SolidBackground_ApplyToDark" xml:space="preserve">
+        <value>Apply to dark</value>
+    </data>
     <data name="Update_SoftwareUpdate" xml:space="preserve">
         <value>Software Update</value>
     </data>
@@ -267,17 +297,53 @@
     <data name="Settings_Advanced_UseNativeFrame_Title" xml:space="preserve">
         <value>Native frame</value>
     </data>
+    <data name="Settings_Advanced_TitleBarStyle_Title" xml:space="preserve">
+        <value>Title bar style</value>
+    </data>
+    <data name="Settings_Advanced_TitleBarStyle_Subtitle" xml:space="preserve">
+        <value>Title bar of the settings window (system buttons or macOS traffic lights)</value>
+    </data>
+    <data name="Settings_Advanced_TitleBarStyle_Native" xml:space="preserve">
+        <value>Native</value>
+    </data>
+    <data name="Settings_Advanced_TitleBarStyle_TrafficLights" xml:space="preserve">
+        <value>macOS</value>
+    </data>
+    <data name="Settings_Advanced_TitleBarSize_Title" xml:space="preserve">
+        <value>Traffic light size</value>
+    </data>
+    <data name="Settings_Advanced_TitleBarSize_Subtitle" xml:space="preserve">
+        <value>Diameter of the traffic lights (proportional scaling); 12px is the macOS standard</value>
+    </data>
+    <data name="TrafficLight_Close" xml:space="preserve">
+        <value>Close</value>
+    </data>
+    <data name="TrafficLight_Minimize" xml:space="preserve">
+        <value>Minimize</value>
+    </data>
+    <data name="TrafficLight_Maximize" xml:space="preserve">
+        <value>Maximize</value>
+    </data>
+    <data name="TrafficLight_Restore" xml:space="preserve">
+        <value>Restore</value>
+    </data>
     <data name="Settings_Appearance_OpacityLevel_Title" xml:space="preserve">
         <value>Opacity Level</value>
     </data>
     <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
         <value>Opacity level of widget's background</value>
     </data>
-    <data name="Settings_Appearance_BlurLevel_Title" xml:space="preserve">
-        <value>Glass blur</value>
+    <data name="Settings_Appearance_OutlineColor_Title" xml:space="preserve">
+        <value>Outline color</value>
     </data>
-    <data name="Settings_Appearance_BlurLevel_Subtitle" xml:space="preserve">
-        <value>Blur / glass strength of the frosted &amp; liquid glass surfaces</value>
+    <data name="Settings_Appearance_OutlineColor_Subtitle" xml:space="preserve">
+        <value>Highlight ring color when the outline is on (alpha included); strongest at the top-left and bottom-right corners, fading toward the top-right and bottom-left</value>
+    </data>
+    <data name="Settings_Appearance_OutlineWidth_Title" xml:space="preserve">
+        <value>Outline width</value>
+    </data>
+    <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
+        <value>Highlight ring thickness in DIPs; 0 hides the outline (default)</value>
     </data>
     <data name="Settings_Advanced_GridMode" xml:space="preserve">
         <value>Grid</value>

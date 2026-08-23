@@ -48,15 +48,27 @@
             Subtitle="{x:Static locales:Locale.Settings_Appearance_OpacityLevel_Subtitle}">
             <NumericUpDown MinWidth="130" Minimum="0" Maximum="1" Increment="0.05" Value="{Binding OpacityLevel}" />
         </controls:Setting>
+        <StackPanel IsVisible="{Binding ShowGlassSettings}">
+            <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                Title="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Title}" 
+                Subtitle="{x:Static locales:Locale.Settings_Appearance_OutlineColor_Subtitle}">
+                <ColorPicker Height="36" Width="72"
+                             Color="{Binding OutlineColor}" 
+                             IsAlphaVisible="True" />
+            </controls:Setting>
+            <controls:Setting Icon="{DynamicResource WidgetSize}" 
+                Title="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Title}" 
+                Subtitle="{x:Static locales:Locale.Settings_Appearance_OutlineWidth_Subtitle}">
+                <NumericUpDown MinWidth="130" Minimum="0" Maximum="6" Increment="0.5" FormatString="{}{0:0.#}" Value="{Binding OutlineWidth}" />
+            </controls:Setting>
+        </StackPanel>
         <controls:Setting Icon="{DynamicResource Color}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}">
             <StackPanel Orientation="Horizontal" Spacing="16">
                 <ColorPicker Height="36" Width="72"
                              IsVisible="{Binding ShowColorPalette}" 
                              Color="{Binding AccentColor}" 
-                             IsAlphaVisible="False" IsColorComponentsVisible="False" 
-                             IsColorModelVisible="False" IsColorSpectrumSliderVisible="False" IsAccentColorsVisible="False"
-                             IsColorPreviewVisible="False" IsComponentSliderVisible="False" IsHexInputVisible="False" />
+                             IsAlphaVisible="False" />
                 <ComboBox ItemsSource="{Binding AccentComboboxItems}" MinWidth="130" 
                           SelectedItem="{Binding AccentMode}">
                     <ComboBox.ItemTemplate>
@@ -70,7 +82,42 @@
         <controls:Setting Icon="{DynamicResource Monochrome}" 
                           Title="{x:Static locales:Locale.Settings_Appearance_Monochrome_Title}" 
                           Subtitle="{x:Static locales:Locale.Settings_Appearance_Monochrome_Subtitle}">
-            <ToggleSwitch IsChecked="{Binding Monochrome}" />
+            <StackPanel Orientation="Vertical" Spacing="6" HorizontalAlignment="Right">
+                <ToggleSwitch IsChecked="{Binding Monochrome}" HorizontalAlignment="Right" />
+                <ComboBox IsVisible="{Binding ShowMonochromeVariant}" MinWidth="130"
+                          ItemsSource="{Binding MonochromeVariants}"
+                          SelectedItem="{Binding MonochromeVariant}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="viewModels:MonochromeVariantViewModel">
+                            <TextBlock Text="{Binding Name}" Margin="0 4" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Color}" 
+                          Title="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Subtitle}">
+            <StackPanel Orientation="Vertical" Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="70" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Dark}" />
+                    <ColorPicker Height="36" Width="72"
+                                 Color="{Binding SolidBackgroundDark}" 
+                                 IsAlphaVisible="False" />
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToLight}"
+                            Click="ApplySolidToLight" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                    <TextBlock MinWidth="70" VerticalAlignment="Center"
+                               Text="{x:Static locales:Locale.Settings_Appearance_SolidBackground_Light}" />
+                    <ColorPicker Height="36" Width="72"
+                                 Color="{Binding SolidBackgroundLight}" 
+                                 IsAlphaVisible="False" />
+                    <Button Content="{x:Static locales:Locale.Settings_Appearance_SolidBackground_ApplyToDark}"
+                            Click="ApplySolidToDark" />
+                </StackPanel>
+            </StackPanel>
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Appearance}"/>
@@ -93,6 +140,30 @@
                            IsVisible="{Binding NoFontResults}"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
             </StackPanel>
+        </controls:Setting>
+        <controls:Setting Icon="{DynamicResource Windows}" 
+                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarStyle_Subtitle}">
+            <ComboBox MinWidth="130" ItemsSource="{Binding TitleBarStyles}"
+                      SelectedItem="{Binding TitleBarStyle}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:TitleBarStyleViewModel">
+                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </controls:Setting>
+        <controls:Setting IsVisible="{Binding ShowTitleBarSize}" Icon="{DynamicResource WidgetSize}" 
+                          Title="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Title}" 
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_TitleBarSize_Subtitle}">
+            <ComboBox MinWidth="130" ItemsSource="{Binding TitleBarSizes}"
+                      SelectedItem="{Binding TitleBarSize}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="viewModels:TitleBarSizeViewModel">
+                        <TextBlock Text="{Binding Name}" Margin="0 4" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </controls:Setting>
         <controls:Setting Icon="{DynamicResource WidgetRadius}" 
                           Title="{x:Static locales:Locale.Settings_Advanced_UseNativeFrame_Title}" 

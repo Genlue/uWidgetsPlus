@@ -1,6 +1,7 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:viewModels="clr-namespace:uWidgets.ViewModels"
+        xmlns:controls="clr-namespace:uWidgets.Views.Controls"
         Width="1000" Height="650" MinWidth="600" MinHeight="300"
         x:Class="uWidgets.Views.Settings"
         Background="{DynamicResource SettingsBackground}"
@@ -21,6 +22,9 @@
     </Window.Styles>
     
     <Grid RowDefinitions="Auto,*">
+        <!-- macOS traffic lights title bar (native system buttons are hidden
+             via code when this mode is active) -->
+        <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" IsVisible="False" />
         <TextBlock Name="AppTitle" IsHitTestVisible="False" Margin="16 16 0  16" FontWeight="Bold">uWidgets</TextBlock>
         <SplitView Name="SplitView" Grid.Row="1" IsPaneOpen="True" DisplayMode="CompactInline" PaneBackground="Transparent" OpenPaneLength="240" CompactPaneLength="60">
             <SplitView.Pane>

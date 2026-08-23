@@ -312,6 +312,96 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Title bar of the settings window (system buttons or macOS traffic lights).
+        /// </summary>
+        public static string Settings_Advanced_TitleBarStyle_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarStyle_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Native.
+        /// </summary>
+        public static string Settings_Advanced_TitleBarStyle_Native {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarStyle_Native", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Title bar style.
+        /// </summary>
+        public static string Settings_Advanced_TitleBarStyle_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarStyle_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to macOS.
+        /// </summary>
+        public static string Settings_Advanced_TitleBarStyle_TrafficLights {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarStyle_TrafficLights", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Diameter of the traffic lights (proportional scaling); 12px is the macOS standard.
+        /// </summary>
+        public static string Settings_Advanced_TitleBarSize_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarSize_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Traffic light size.
+        /// </summary>
+        public static string Settings_Advanced_TitleBarSize_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TitleBarSize_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Close.
+        /// </summary>
+        public static string TrafficLight_Close {
+            get {
+                return ResourceManager.GetString("TrafficLight_Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Maximize.
+        /// </summary>
+        public static string TrafficLight_Maximize {
+            get {
+                return ResourceManager.GetString("TrafficLight_Maximize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Minimize.
+        /// </summary>
+        public static string TrafficLight_Minimize {
+            get {
+                return ResourceManager.GetString("TrafficLight_Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Restore.
+        /// </summary>
+        public static string TrafficLight_Restore {
+            get {
+                return ResourceManager.GetString("TrafficLight_Restore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Minimal distance between widgets.
         /// </summary>
         public static string Settings_Advanced_WidgetMargin_Subtitle {
@@ -483,6 +573,24 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Accent color.
+        /// </summary>
+        public static string Settings_Appearance_Monochrome_Variant_Accent {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Monochrome_Variant_Accent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Black &amp; white.
+        /// </summary>
+        public static string Settings_Appearance_Monochrome_Variant_BlackWhite {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Monochrome_Variant_BlackWhite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Opacity level of widget&apos;s background.
         /// </summary>
         public static string Settings_Appearance_OpacityLevel_Subtitle {
@@ -492,29 +600,119 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Blur / glass strength of the frosted &amp; liquid glass surfaces.
-        /// </summary>
-        public static string Settings_Appearance_BlurLevel_Subtitle {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_BlurLevel_Subtitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Glass blur.
-        /// </summary>
-        public static string Settings_Appearance_BlurLevel_Title {
-            get {
-                return ResourceManager.GetString("Settings_Appearance_BlurLevel_Title", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Opacity Level.
         /// </summary>
         public static string Settings_Appearance_OpacityLevel_Title {
             get {
                 return ResourceManager.GetString("Settings_Appearance_OpacityLevel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Highlight ring color when the outline is on (alpha included); strongest at the top-left and bottom-right corners, fading toward the top-right and bottom-left.
+        /// </summary>
+        public static string Settings_Appearance_OutlineColor_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_OutlineColor_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Outline color.
+        /// </summary>
+        public static string Settings_Appearance_OutlineColor_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_OutlineColor_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Highlight ring thickness in DIPs; 0 hides the outline (default).
+        /// </summary>
+        public static string Settings_Appearance_OutlineWidth_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_OutlineWidth_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Outline width.
+        /// </summary>
+        public static string Settings_Appearance_OutlineWidth_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_OutlineWidth_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Apply to dark.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_ApplyToDark {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_ApplyToDark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Apply to light.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_ApplyToLight {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_ApplyToLight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dark mode.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_Dark {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_Dark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Light mode.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_Light {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_Light", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Custom background colors for dark and light mode.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Background color.
+        /// </summary>
+        public static string Settings_Appearance_SolidBackground_Title {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_SolidBackground_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Frosted glass.
+        /// </summary>
+        public static string Settings_Appearance_Surface_Frosted {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Surface_Frosted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Solid.
+        /// </summary>
+        public static string Settings_Appearance_Surface_Solid {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Surface_Solid", resourceCulture);
             }
         }
         

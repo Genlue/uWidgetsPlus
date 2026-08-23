@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 using uWidgets.Core.Interfaces;
 using uWidgets.ViewModels;
 
@@ -11,4 +12,10 @@ public partial class Appearance : UserControl
         DataContext = new AppearanceViewModel(appSettingsProvider);
         InitializeComponent();
     }
+
+    private void ApplySolidToLight(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).ApplySolidToLight();
+
+    private void ApplySolidToDark(object? sender, RoutedEventArgs e) =>
+        ((AppearanceViewModel)DataContext!).ApplySolidToDark();
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,6 +45,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         
         InitializeComponent();
         
+        // The native transparency level is a LOCAL value, not a style: a runtime
+        // surface switch then deterministically reconfigures the existing window
+        // (style-based switching could leave the OS blur backdrop behind, making
+        // a translucent solid card look like frosted glass).
+        ApplyTransparencyHint();
+
         Height = widgetLayoutProvider.Get().Height;
         Width = widgetLayoutProvider.Get().Width;
         Title = $"{widgetLayoutProvider.Get().Type} {widgetLayoutProvider.Get().SubType}";
@@ -73,7 +80,8 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnOpened(object? sender, EventArgs e)
     {
-        // The native window exists now — clip the acrylic backdrop to the card.
+        // The native window exists now — size the card and clip the OS acrylic backdrop.
+        ApplyTransparencyHint();
         UpdateContentSize();
         ApplyWidgetRegion();
     }
@@ -103,7 +111,71 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool ShowEditButton => editWidgetWindow != null;
     public string Edit => $"{Locale.Widget_Edit} \"{widgetLayoutProvider.Get().Type}\"";
     public CornerRadius Radius => appSettingsProvider.Get().Theme.UseNativeFrame ? new(0) : new(appSettingsProvider.Get().Dimensions.Radius / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
-    
+
+    /// <summary>
+    /// True when the card should render the outline highlight ring: any glass
+    /// surface with the outline width &gt; 0 (the outline is an option of the
+    /// 毛玻璃 theme itself), no native frame.
+    /// </summary>
+    private bool IsOutlined =>
+        appSettingsProvider.Get().Theme.IsGlass
+        && appSettingsProvider.Get().Theme.OutlineWidth > 0
+        && !appSettingsProvider.Get().Theme.UseNativeFrame;
+
+    /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
+    public Thickness WidgetOutlineThickness
+    {
+        get
+        {
+            if (!IsOutlined) return new Thickness(0);
+            var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
+            return new Thickness(width);
+        }
+    }
+
+    /// <summary>
+    /// Highlight ring brush for outlined glass. The ring is strongest at the
+    /// top-left and bottom-right corners and fades linearly along every edge to
+    /// nothing at the top-right and bottom-left corners (无→最浓 gradient over
+    /// the whole edge, not just a short notch near the corner). Built as a conic
+    /// gradient whose sweep starts at the actual top-left corner, so the fades
+    /// follow the real corners for any aspect ratio.
+    /// </summary>
+    public IBrush? WidgetOutlineBrush => IsOutlined ? BuildOutlineBrush() : null;
+
+    private ConicGradientBrush BuildOutlineBrush()
+    {
+        var width = Math.Max(1, (ClientSize.Width > 0 ? ClientSize.Width : Width) - 2 * WidgetMargin.Left);
+        var height = Math.Max(1, (ClientSize.Height > 0 ? ClientSize.Height : Height) - 2 * WidgetMargin.Top);
+
+        var theme = appSettingsProvider.Get().Theme;
+        var cornerAngle = Math.Atan2(width / 2.0, height / 2.0) * 180.0 / Math.PI;   // top-right corner direction
+        var startAngle = 360.0 - cornerAngle;                                        // top-left corner direction
+        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
+            ? parsed
+            : Color.Parse(uWidgets.Core.Models.Settings.Theme.DefaultOutlineColor);
+        var clear = Colors.Transparent;
+
+        // Conic gradients: 0° = above center (top), clockwise (CSS convention);
+        // the Angle property rotates offset 0 to the given direction (here: top-left).
+        // Offsets are 0..1 fractions of the full 360° sweep. Segment widths in angle:
+        //   TL→TR = 2·cornerAngle (top edge), TR→BR = 180−2·cornerAngle (right edge),
+        //   BR→BL = 2·cornerAngle (bottom edge), BL→TL = 180−2·cornerAngle (left edge).
+        return new ConicGradientBrush
+        {
+            Angle = startAngle,
+            Center = RelativePoint.Center,
+            GradientStops =
+            {
+                new GradientStop(color, 0),
+                new GradientStop(clear, 2 * cornerAngle / 360.0),
+                new GradientStop(color, 0.5),
+                new GradientStop(clear, 0.5 + 2 * cornerAngle / 360.0),
+                new GradientStop(color, 1.0)
+            }
+        };
+    }
+
     /// <summary>
     /// Margin between the widget content and the grid lines (manual grid mode).
     /// </summary>
@@ -181,6 +253,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         var margin = WidgetMargin.Left;
         ContentPresenter.Width = Math.Max(1, width - 2 * margin);
         ContentPresenter.Height = Math.Max(1, height - 2 * margin);
+
+        // Outlined glass: the corner-fade notches follow the card aspect ratio.
+        Notify(nameof(WidgetOutlineThickness));
+        Notify(nameof(WidgetOutlineBrush));
     }
 
     /// <summary>
@@ -252,18 +328,37 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
 
         // Make bound properties reactive so style changes apply immediately
-        // (margin from grid lines, corner radius, context menu, tooltip…).
+        // (margin from grid lines, corner radius, context menu, tooltip and the
+        // outlined-glass highlight ring…).
         if (oldData?.Dimensions != newData.Dimensions || oldData?.Layout.GridMode != newData.Layout.GridMode
-            || oldData?.Layout.LockSize != newData.Layout.LockSize
-            || oldData?.Theme.UseNativeFrame != newData.Theme.UseNativeFrame
-            || oldData?.Theme != newData.Theme)
+            || oldData?.Layout.LockSize != newData.Layout.LockSize || oldData?.Theme != newData.Theme)
         {
+            // Surface switch (毛玻璃↔纯色): reconfigure the native transparency.
+            if (oldData?.Theme?.IsGlass != newData.Theme.IsGlass)
+                ApplyTransparencyHint();
             Notify(nameof(WidgetMargin));
             Notify(nameof(Radius));
             Notify(nameof(SizeMenuTitle));
             Notify(nameof(ToolTipVisible));
+            Notify(nameof(WidgetOutlineThickness));
+            Notify(nameof(WidgetOutlineBrush));
             ApplyWidgetRegion();
         }
+    }
+
+    /// <summary>
+    /// Native window transparency: <see cref="WindowTransparencyLevel.AcrylicBlur"/>
+    /// for glass surfaces (OS-level live blur, per-frame desktop sampling) and
+    /// <see cref="WindowTransparencyLevel.Transparent"/> for solid surfaces
+    /// (per-pixel alpha, no blur — the opacity slider blends the card with the
+    /// desktop without a frosted look). Applied as a local value so runtime
+    /// surface switches always reconfigure the existing native window.
+    /// </summary>
+    private void ApplyTransparencyHint()
+    {
+        TransparencyLevelHint = appSettingsProvider.Get().Theme.IsGlass
+            ? [WindowTransparencyLevel.AcrylicBlur]
+            : [WindowTransparencyLevel.Transparent];
     }
 
     private void SetMinMaxSize(bool lockSize)

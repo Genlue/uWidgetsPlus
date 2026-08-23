@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector=".Widget TextBox">
+        <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+    </Style>
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- 黑白 monochrome: dark mode → white, light mode → black.
+                     Both the text color (BaseHigh) and the accent color
+                     (AccentBrush — titles/accents) are unified to black/white,
+                     so a widget has exactly one color on screen. -->
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="Black" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="Black" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="White" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+</Styles>

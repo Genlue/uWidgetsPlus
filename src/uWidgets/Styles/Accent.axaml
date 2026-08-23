@@ -1,0 +1,22 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 强调色 accent foreground: widget titles and accent icons. Always loaded
+         (ThemeService.SwitchStyle keeps it on). The monochrome styles are added
+         after it, so they can unify this accent with the text color:
+         - 强调色 monochrome (Styles/Monochrome.axaml): text already becomes the
+           accent → identical look, nothing to override here;
+         - 黑白 monochrome (Styles/MonochromeBlackWhite.axaml): overrides this
+           accent with black (light) / white (dark) so BOTH colors are unified. -->
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorDark1}" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+</Styles>

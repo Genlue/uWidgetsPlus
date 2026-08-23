@@ -21,9 +21,29 @@ public class ThemeService : IThemeService
         Source = new Uri("avares://uWidgets/Styles/Transparent.axaml")
     };
     
+    private readonly StyleInclude solidStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/Solid.axaml")
+    };
+    
     private readonly StyleInclude monochromeStyle = new(new Uri("avares://uWidgets/"))
     {
         Source = new Uri("avares://uWidgets/Styles/Monochrome.axaml")
+    };
+
+    private readonly StyleInclude monochromeBlackWhiteStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/MonochromeBlackWhite.axaml")
+    };
+
+    /// <summary>
+    /// 强调色 accent foreground (widget titles / accent icons), always loaded.
+    /// The monochrome styles are appended AFTER it, so they can unify this
+    /// accent with the text color when monochrome is enabled.
+    /// </summary>
+    private readonly StyleInclude accentStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/Accent.axaml")
     };
     
     public void Apply(Theme theme)
@@ -35,10 +55,15 @@ public class ThemeService : IThemeService
             _ => ThemeVariant.Dark,
         };
         
-        Application.Current.Resources["BackgroundOpacity"] = theme.OpacityLevel;
         Application.Current.Resources["FontFamily"] = theme.FontFamily == "Inter"
             ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
             : new FontFamily(theme.FontFamily);
+
+        // OS-level acrylic (the Transparent style sets the AcrylicBlur hint on the
+        // windows): the desktop composer samples the live desktop every frame, so
+        // dynamic wallpapers stay live behind the widgets. OpacityLevel is the
+        // coating alpha, unchanged.
+        Application.Current.Resources["BackgroundOpacity"] = theme.OpacityLevel;
 
         if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var color))
         {
@@ -46,17 +71,32 @@ public class ThemeService : IThemeService
             Application.Current.Resources["SystemAccentColorDark1"] = color;
             Application.Current.Resources["SystemAccentColorLight1"] = color;
         }
+
+        // 纯色 surface: the card color (per dark/light variant) and the coating
+        // opacity — Solid.axaml's WidgetBackground brush picks these up.
+        Application.Current.Resources["SolidBackgroundDark"] =
+            ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
+        Application.Current.Resources["SolidBackgroundLight"] =
+            ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
         
-        // Surface material drives transparency: Solid is opaque (no translucency style);
-        // Acrylic and LiquidGlass both render via Avalonia's own AcrylicBlur, which is
-        // clipped per-card by SetWindowRgn (margin + corner radius). The Windows 11 DWM
-        // system backdrop was tried for LiquidGlass but it ignores the window region and
-        // fills the whole cell — the real gradient/refraction engine is a later native
-        // (D3D/Win2D) phase.
-        var translucent = theme.EffectiveSurface != SurfaceStyle.Solid;
-        SwitchStyle(transparentStyle, translucent);
-        SwitchStyle(monochromeStyle, theme.Monochrome);
+        // Surface material drives both the background style and the transparency
+        // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
+        // transparency so the opacity slider actually blends with the desktop.
+        SwitchStyle(transparentStyle, theme.IsGlass);
+        SwitchStyle(solidStyle, !theme.IsGlass);
+
+        // Monochrome color source: 黑白 = black in light / white in dark mode
+        // (both text AND accent colors), 强调色 = accent-based (the historic
+        // Monochrome.axaml dictionaries — accent stays accent, text becomes accent).
+        var monochrome = theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
+        // Always on, but before the monochrome styles so override precedence is stable.
+        SwitchStyle(accentStyle, true);
+        SwitchStyle(monochromeBlackWhiteStyle, monochrome);
+        SwitchStyle(monochromeStyle, theme.Monochrome && !monochrome);
     }
+
+    private static Color ParseColor(string hex, string fallbackHex) =>
+        Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
 
     private static void SwitchStyle(StyleInclude style, bool enable)
     {

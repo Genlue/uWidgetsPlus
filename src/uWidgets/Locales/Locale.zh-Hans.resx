@@ -264,6 +264,36 @@
   <data name="Settings_Appearance_Monochrome_Subtitle" xml:space="preserve">
     <value>小部件元素以相同的颜色显示</value>
   </data>
+  <data name="Settings_Appearance_Monochrome_Variant_BlackWhite" xml:space="preserve">
+    <value>黑白</value>
+  </data>
+  <data name="Settings_Appearance_Monochrome_Variant_Accent" xml:space="preserve">
+    <value>强调色</value>
+  </data>
+  <data name="Settings_Appearance_Surface_Frosted" xml:space="preserve">
+    <value>毛玻璃</value>
+  </data>
+  <data name="Settings_Appearance_Surface_Solid" xml:space="preserve">
+    <value>纯色</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Title" xml:space="preserve">
+    <value>背景颜色</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Subtitle" xml:space="preserve">
+    <value>分别自定义深色与浅色模式下的背景颜色，不透明度仍由上方滑块控制</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Dark" xml:space="preserve">
+    <value>深色模式</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_Light" xml:space="preserve">
+    <value>浅色模式</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_ApplyToLight" xml:space="preserve">
+    <value>应用到浅色</value>
+  </data>
+  <data name="Settings_Appearance_SolidBackground_ApplyToDark" xml:space="preserve">
+    <value>应用到深色</value>
+  </data>
   <data name="Update_SoftwareUpdate" xml:space="preserve">
     <value>软件更新</value>
   </data>
@@ -366,17 +396,53 @@
   <data name="Settings_Advanced_UseNativeFrame_Title" xml:space="preserve">
     <value>原生框架</value>
   </data>
+  <data name="Settings_Advanced_TitleBarStyle_Title" xml:space="preserve">
+    <value>标题栏样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_Subtitle" xml:space="preserve">
+    <value>设置窗口的标题栏（系统按钮或 MacOS 红绿灯）</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_Native" xml:space="preserve">
+    <value>原生样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarStyle_TrafficLights" xml:space="preserve">
+    <value>MacOS 样式</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarSize_Title" xml:space="preserve">
+    <value>红绿灯尺寸</value>
+  </data>
+  <data name="Settings_Advanced_TitleBarSize_Subtitle" xml:space="preserve">
+    <value>红绿灯圆点直径（整体等比缩放）；12px 为 macOS 标准</value>
+  </data>
+  <data name="TrafficLight_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="TrafficLight_Minimize" xml:space="preserve">
+    <value>最小化</value>
+  </data>
+  <data name="TrafficLight_Maximize" xml:space="preserve">
+    <value>最大化</value>
+  </data>
+  <data name="TrafficLight_Restore" xml:space="preserve">
+    <value>还原</value>
+  </data>
   <data name="Settings_Appearance_OpacityLevel_Title" xml:space="preserve">
     <value>不透明度</value>
   </data>
   <data name="Settings_Appearance_OpacityLevel_Subtitle" xml:space="preserve">
     <value>小部件背景的不透明度</value>
   </data>
-  <data name="Settings_Appearance_BlurLevel_Title" xml:space="preserve">
-    <value>玻璃模糊</value>
+  <data name="Settings_Appearance_OutlineColor_Title" xml:space="preserve">
+    <value>描边颜色</value>
   </data>
-  <data name="Settings_Appearance_BlurLevel_Subtitle" xml:space="preserve">
-    <value>毛玻璃与液态玻璃的模糊 / 玻璃强度</value>
+  <data name="Settings_Appearance_OutlineColor_Subtitle" xml:space="preserve">
+    <value>开启描边时的高光颜色（含透明度）；左上与右下最浓，向右上与左下渐变消失</value>
+  </data>
+  <data name="Settings_Appearance_OutlineWidth_Title" xml:space="preserve">
+    <value>描边粗细</value>
+  </data>
+  <data name="Settings_Appearance_OutlineWidth_Subtitle" xml:space="preserve">
+    <value>高光描边的粗细（DIP），0 = 关闭描边（默认）</value>
   </data>
     <data name="Settings_Advanced_GridMode" xml:space="preserve">
         <value>网格</value>

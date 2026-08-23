@@ -7,8 +7,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Styling;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
+using uWidgets.Locales;
 using uWidgets.Services;
 
 namespace uWidgets.Views.Controls;
@@ -19,14 +21,29 @@ public partial class ThemeButton : UserControl
     public Theme AppTheme { get; }
     public Bitmap Wallpaper => wallpaper;
     public bool DimWallpaper => AppTheme.DarkMode == true;
-    public Brush WidgetBackground => (AppTheme.DarkMode ?? false) switch
+    public Brush WidgetBackground
     {
-        true => new SolidColorBrush(Color.Parse("#2E2E2E"), AppTheme.OpacityLevel),
-        false => new SolidColorBrush(Color.Parse("#FFFFFF"), AppTheme.OpacityLevel),
-    };
+        get
+        {
+            var theme = appSettingsProvider.Get().Theme;
+            var dark = IsDark();
+            // Both surfaces use the user's custom dark/light background colors
+            // (defaults: dark #2E2E2E, light #FFFFFF).
+            var color = dark
+                ? ParseColor(theme.EffectiveSolidBackgroundDark, "#2E2E2E")
+                : ParseColor(theme.EffectiveSolidBackgroundLight, "#FFFFFF");
+            return new SolidColorBrush(color, AppTheme.OpacityLevel);
+        }
+    }
+
+    /// <summary>
+    /// Whether the preset preview represents the dark mode: the template's own
+    /// choice, or — when it follows the system — the currently resolved variant.
+    /// </summary>
+    private bool IsDark() =>
+        AppTheme.DarkMode ?? Application.Current!.ActualThemeVariant == ThemeVariant.Dark;
     public CornerRadius WidgetCornerRadius => new(WidgetRadius);
     public double WidgetRadius => AppTheme.UseNativeFrame ? 2 : 10;
-    public Thickness WidgetBorderThickness => new(AppTheme.UseNativeFrame ? 1 : 0);
     public BoxShadows WidgetShadow => AppTheme.UseNativeFrame 
         ? new(BoxShadow.Parse("0 0 10 0 #40000000"))
         : new();
@@ -34,11 +51,66 @@ public partial class ThemeButton : UserControl
         ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
         : new FontFamily(AppTheme.FontFamily);
 
-    public SolidColorBrush? WidgetForeground => (AppTheme.DarkMode ?? false) switch
+    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色).</summary>
+    public string ThemeName => AppTheme.IsGlass
+        ? Locale.Settings_Appearance_Surface_Frosted
+        : Locale.Settings_Appearance_Surface_Solid;
+
+    private static Color ParseColor(string hex, string fallbackHex) =>
+        Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
+
+    /// <summary>
+    /// Highlight ring of the preset preview: the outline is an option of the glass
+    /// theme (drawn when <see cref="Theme.OutlineWidth"/> &gt; 0), with the live
+    /// color/width so the preview reflects what the user configured. Strongest at
+    /// the top-left and bottom-right corners, fading along every edge to nothing at
+    /// the top-right and bottom-left (conic gradient; square card → 315° start).
+    /// </summary>
+    public IBrush? PreviewBorderBrush =>
+        appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
+            ? BuildPreviewOutline()
+            : AppTheme.UseNativeFrame ? new SolidColorBrush(Color.Parse("#60808080")) : null;
+
+    private ConicGradientBrush BuildPreviewOutline()
     {
-        true => new SolidColorBrush((Color)Application.Current!.FindResource("SystemAccentColorLight2")!),
-        false => new SolidColorBrush((Color)Application.Current!.FindResource("SystemAccentColorDark1")!),
-    };
+        var theme = appSettingsProvider.Get().Theme;
+        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
+            ? parsed
+            : Color.Parse(uWidgets.Core.Models.Settings.Theme.DefaultOutlineColor);
+
+        return new ConicGradientBrush
+        {
+            Angle = 315,
+            Center = RelativePoint.Center,
+            GradientStops =
+            {
+                new GradientStop(color, 0),
+                new GradientStop(Colors.Transparent, 0.25),
+                new GradientStop(color, 0.5),
+                new GradientStop(Colors.Transparent, 0.75),
+                new GradientStop(color, 1.0)
+            }
+        };
+    }
+
+    public Thickness PreviewBorderThickness => AppTheme.UseNativeFrame
+        ? new Thickness(1)
+        : appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
+            ? new Thickness(Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6))
+            : new Thickness(0);
+
+    public SolidColorBrush? WidgetForeground
+    {
+        get
+        {
+            var theme = appSettingsProvider.Get().Theme;
+            var dark = IsDark();
+            // 黑白 monochrome: white in dark mode, black in light mode.
+            if (theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
+                return new SolidColorBrush(dark ? Colors.White : Colors.Black);
+            return new SolidColorBrush((Color)Application.Current!.FindResource(dark ? "SystemAccentColorLight2" : "SystemAccentColorDark1")!);
+        }
+    }
     
     private readonly IAppSettingsProvider appSettingsProvider;
 

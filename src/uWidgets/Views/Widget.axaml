@@ -73,13 +73,20 @@
     </ToolTip.Tip>
     
     <Grid>
-        <!-- Card (frosted glass): fills the grid cell minus the configured margin,
-             with the configured corner radius. The native window region is clipped
-             to the same rectangle (see ApplyWidgetRegion) so the OS-level acrylic
-             blur follows the card instead of covering the whole grid cell. -->
+        <!-- Card (frosted glass, OS-level acrylic): fills the grid cell minus the
+             configured margin, with the configured corner radius. The blur comes
+             from the OS backdrop (AcrylicBlur hint set by Styles/Transparent.axaml),
+             which samples the live desktop every frame — dynamic wallpapers stay
+             live. The native window region is clipped to the same rectangle (see
+             ApplyWidgetRegion) so the OS blur follows the card and the transparent
+             margin stays click-through.
+             The outline option adds a highlight ring that fades from the top-left /
+             bottom-right corners (see WidgetOutlineBrush). -->
         <Border Name="Border"
                 CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Background="{DynamicResource WidgetBackground}"
+                BorderThickness="{Binding WidgetOutlineThickness, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                BorderBrush="{Binding WidgetOutlineBrush, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                 ClipToBounds="True">
             <!-- Content: sized by the card only; the content scale (Scale()) is a

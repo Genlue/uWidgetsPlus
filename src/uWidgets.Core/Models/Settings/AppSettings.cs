@@ -13,6 +13,8 @@ namespace uWidgets.Core.Models.Settings;
 /// <param name="UpdateUrl">Custom update source (releases/latest page or API URL); <c>null</c>/empty disables update checks.</param>
 /// <param name="Grid">Custom manual grid settings (used when <see cref="Layout.GridMode"/> is <see cref="GridMode.Manual"/>).</param>
 /// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty = direct connection (bypass system proxy), <c>"system"</c> = use the system proxy, otherwise a proxy URL.</param>
+/// <param name="TitleBarStyle">Title bar style of the settings window (macOS traffic lights or native system buttons); <c>null</c> uses <see cref="TitleBarStyle.Native"/> so old configurations keep their look.</param>
+/// <param name="TitleBarSize">Traffic light diameter in DIPs; <c>null</c> uses <see cref="DefaultTitleBarSize"/> (14 — a bit larger than the 12px macOS standard for high-DPI screens).</param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -23,4 +25,23 @@ public record AppSettings(
     string? IgnoreUpdate,
     string? UpdateUrl = null,
     Grid? Grid = null,
-    string? HttpProxy = null);
+    string? HttpProxy = null,
+    TitleBarStyle? TitleBarStyle = null,
+    double? TitleBarSize = null)
+{
+    /// <summary>The macOS-standard traffic light diameter (DIPs).</summary>
+    public const double DefaultTitleBarSize = 14;
+
+    /// <summary>
+    /// The effective title bar style; falls back to <see cref="TitleBarStyle.Native"/>
+    /// when <see cref="TitleBarStyle"/> is not set (migrates old configurations).
+    /// </summary>
+    public TitleBarStyle EffectiveTitleBarStyle =>
+        TitleBarStyle ?? Settings.TitleBarStyle.Native;
+
+    /// <summary>
+    /// The traffic light diameter; falls back to <see cref="DefaultTitleBarSize"/>
+    /// when <see cref="TitleBarSize"/> is not set.
+    /// </summary>
+    public double EffectiveTitleBarSize => TitleBarSize ?? DefaultTitleBarSize;
+}

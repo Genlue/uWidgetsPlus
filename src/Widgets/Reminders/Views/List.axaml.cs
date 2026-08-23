@@ -74,9 +74,10 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     public void CompleteReminder(object? sender, RoutedEventArgs e)
     {
         var reminder = (sender as Button)!.DataContext as ReminderModel;
-        var reminders = viewModel.Model.Reminders;
-        var index = reminders.IndexOf(reminder!);
-        reminders[index] = reminders[index] with { Completed = !reminders[index].Completed };
+        var index = viewModel.Reminders.IndexOf(reminder!);
+        if (index < 0) return;
+
+        viewModel.Reminders[index] = viewModel.Reminders[index] with { Completed = !viewModel.Reminders[index].Completed };
         UpdateModel(viewModel.Model);
     }
     
@@ -84,13 +85,13 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         var text = (sender as TextBox)!.Text;
         var reminder = (sender as TextBox)!.DataContext as ReminderModel;
-        var reminders = viewModel.Model.Reminders;
-        var index = reminders.IndexOf(reminder!);
+        var index = viewModel.Reminders.IndexOf(reminder!);
+        if (index < 0) return;
 
         if (string.IsNullOrEmpty(text))
-            reminders.Remove(reminder!);
+            viewModel.Reminders.RemoveAt(index);
         else
-            reminders[index] = reminders[index] with { Title = text };
+            viewModel.Reminders[index] = viewModel.Reminders[index] with { Title = text };
         
         UpdateModel(viewModel.Model);
     }
@@ -101,8 +102,8 @@ public partial class List : UserControl, IWidgetSelfRefreshing
         
         if (string.IsNullOrEmpty(text))
             return;
-        
-        viewModel.Model.Reminders.Add(new ReminderModel(false, text));
+
+        viewModel.Reminders.Add(new ReminderModel(false, text));
 
         (sender as TextBox)!.Clear();
         UpdateModel(viewModel.Model);

@@ -567,4 +567,37 @@
     <data name="Settings_Advanced_GridEditorNudgeDown" xml:space="preserve">
         <value>↓</value>
     </data>
+    <data name="Settings_Advanced_Backup" xml:space="preserve">
+        <value>备份与恢复</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Title" xml:space="preserve">
+        <value>导出备份</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Subtitle" xml:space="preserve">
+        <value>将软件设置、网格配置、卡片布局与卡片内容保存到单个文件</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Title" xml:space="preserve">
+        <value>导入备份</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Subtitle" xml:space="preserve">
+        <value>从备份文件恢复软件设置、网格配置与卡片布局</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Confirm" xml:space="preserve">
+        <value>导入将用备份内容替换当前的软件设置与卡片布局，并重启应用使更改生效。确定继续吗？</value>
+    </data>
+    <data name="Settings_Advanced_Backup_ImportButton" xml:space="preserve">
+        <value>导入并重启</value>
+    </data>
+    <data name="Settings_Advanced_Backup_CancelButton" xml:space="preserve">
+        <value>取消</value>
+    </data>
+    <data name="Settings_Advanced_Backup_OkButton" xml:space="preserve">
+        <value>确定</value>
+    </data>
+    <data name="Settings_Advanced_Backup_InvalidFile" xml:space="preserve">
+        <value>备份文件无效或已损坏，无法导入。</value>
+    </data>
+    <data name="Settings_Advanced_Backup_Error" xml:space="preserve">
+        <value>备份操作失败：{0}</value>
+    </data>
 </root>

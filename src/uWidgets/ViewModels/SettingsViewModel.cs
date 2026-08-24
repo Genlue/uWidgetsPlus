@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -58,7 +58,9 @@ public class SettingsViewModel(IAppSettingsProvider appSettingsProvider, IAssemb
     {
         if (value?.Type == null) return;
         CurrentPage = value.AssemblyInfo == null
-            ? (UserControl?)Activator.CreateInstance(value.Type, appSettingsProvider)
+            ? value.Type == typeof(Advanced)
+                ? new Advanced(appSettingsProvider, layoutProvider)
+                : (UserControl?)Activator.CreateInstance(value.Type, appSettingsProvider)
             : new Gallery(appSettingsProvider, layoutProvider, assemblyProvider, value.AssemblyInfo, widgetFactory);
         CurrentPageTitle = value?.Text;
     }

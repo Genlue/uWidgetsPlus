@@ -1041,6 +1041,94 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Backup &amp; restore.
+        /// </summary>
+        public static string Settings_Advanced_Backup {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Export backup.
+        /// </summary>
+        public static string Settings_Advanced_BackupExport_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_BackupExport_Title", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Save everything to a file: app settings, manual grid, widget layout and widget content.
+        /// </summary>
+        public static string Settings_Advanced_BackupExport_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_BackupExport_Subtitle", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Import backup.
+        /// </summary>
+        public static string Settings_Advanced_BackupImport_Title {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_BackupImport_Title", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Restore the app settings, grid and widget layout from a backup file.
+        /// </summary>
+        public static string Settings_Advanced_BackupImport_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_BackupImport_Subtitle", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Importing replaces the current app settings and widget layout with the backup, then restarts the app to apply it. Continue?.
+        /// </summary>
+        public static string Settings_Advanced_BackupImport_Confirm {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_BackupImport_Confirm", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Import &amp; restart.
+        /// </summary>
+        public static string Settings_Advanced_Backup_ImportButton {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup_ImportButton", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        public static string Settings_Advanced_Backup_CancelButton {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup_CancelButton", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to OK.
+        /// </summary>
+        public static string Settings_Advanced_Backup_OkButton {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup_OkButton", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to The backup file is invalid or corrupted and cannot be imported..
+        /// </summary>
+        public static string Settings_Advanced_Backup_InvalidFile {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup_InvalidFile", resourceCulture);
+            }
+        }        
+        /// <summary>
+        ///   Looks up a localized string similar to Backup operation failed: {0}.
+        /// </summary>
+        public static string Settings_Advanced_Backup_Error {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Backup_Error", resourceCulture);
+            }
+        }        
+        /// <summary>
         ///   Looks up a localized string similar to Grid.
         /// </summary>
         public static string Settings_Advanced_GridMode {

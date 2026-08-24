@@ -468,4 +468,37 @@
     <data name="Settings_Advanced_GridEditorNudgeDown" xml:space="preserve">
         <value>↓</value>
     </data>
+    <data name="Settings_Advanced_Backup" xml:space="preserve">
+        <value>Backup &amp; restore</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Title" xml:space="preserve">
+        <value>Export backup</value>
+    </data>
+    <data name="Settings_Advanced_BackupExport_Subtitle" xml:space="preserve">
+        <value>Save everything to a file: app settings, manual grid, widget layout and widget content</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Title" xml:space="preserve">
+        <value>Import backup</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Subtitle" xml:space="preserve">
+        <value>Restore the app settings, grid and widget layout from a backup file</value>
+    </data>
+    <data name="Settings_Advanced_BackupImport_Confirm" xml:space="preserve">
+        <value>Importing replaces the current app settings and widget layout with the backup, then restarts the app to apply it. Continue?</value>
+    </data>
+    <data name="Settings_Advanced_Backup_ImportButton" xml:space="preserve">
+        <value>Import &amp; restart</value>
+    </data>
+    <data name="Settings_Advanced_Backup_CancelButton" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="Settings_Advanced_Backup_OkButton" xml:space="preserve">
+        <value>OK</value>
+    </data>
+    <data name="Settings_Advanced_Backup_InvalidFile" xml:space="preserve">
+        <value>The backup file is invalid or corrupted and cannot be imported.</value>
+    </data>
+    <data name="Settings_Advanced_Backup_Error" xml:space="preserve">
+        <value>Backup operation failed: {0}</value>
+    </data>
 </root>

@@ -1,6 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -9,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
+using uWidgets.Services;
 using uWidgets.ViewModels;
 
 namespace uWidgets.Views;
@@ -70,24 +69,7 @@ public partial class Settings : Window
         AppTitle.IsVisible = !isTraffic;
     }
     
-    private void Restart(object? sender, RoutedEventArgs e)
-    {
-        var executablePath = Process.GetCurrentProcess().MainModule?.FileName;
-        if (executablePath == null) return;
-        
-        var process = Process.Start(executablePath, "--settings");
-        var tryCount = 0;
-        var maxTryCount = 10;
-        
-        while (process.MainWindowHandle == IntPtr.Zero && !process.HasExited && tryCount++ < maxTryCount)
-        {
-            Thread.Sleep(100);
-            process.Refresh();
-        }
-
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp) 
-            desktopApp.Shutdown();
-    }
+    private void Restart(object? sender, RoutedEventArgs e) => AppRestart.Restart();
 
     private void Exit(object? sender, RoutedEventArgs e)
     {

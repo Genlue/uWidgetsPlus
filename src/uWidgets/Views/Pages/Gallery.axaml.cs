@@ -21,18 +21,20 @@ public partial class Gallery : UserControl
     private readonly IAssemblyProvider assemblyProvider;
     private readonly AssemblyInfo assemblyInfo;
     private readonly IWidgetFactory<Window, UserControl> widgetFactory;
+    private readonly DisplayMonitorService displayMonitor;
     public List<WidgetPreviewViewModel> Widgets => GetWidgets();
     public int WidgetSize => 160;
     public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (VisualRoot?.RenderScaling ?? 1.0));
 
     public Gallery(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, IAssemblyProvider assemblyProvider, 
-        AssemblyInfo assemblyInfo, IWidgetFactory<Window, UserControl> widgetFactory)
+        AssemblyInfo assemblyInfo, IWidgetFactory<Window, UserControl> widgetFactory, DisplayMonitorService displayMonitor)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.assemblyProvider = assemblyProvider;
         this.assemblyInfo = assemblyInfo;
         this.widgetFactory = widgetFactory;
+        this.displayMonitor = displayMonitor;
         DataContext = this;
         Unloaded += OnUnloaded;
         
@@ -62,7 +64,9 @@ public partial class Gallery : UserControl
     
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        if (layoutProvider.Get().All(x => x.Type != assemblyInfo.AssemblyName))
+        // Multi-screen layout: unload the widget assembly only when no screen has
+        // a widget of this type anymore (flattened across all per-screen layouts).
+        if (layoutProvider.Get().AllWidgets.All(x => x.Type != assemblyInfo.AssemblyName))
         {
             assemblyProvider.UnloadAssembly(assemblyInfo.AssemblyName);
         }
@@ -71,32 +75,65 @@ public partial class Gallery : UserControl
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
         var button = sender as Button;
-        var viewModel = button!.DataContext as WidgetPreviewViewModel;
-        var settings = appSettingsProvider.Get();
-        var position = button.PointToScreen(new Point(0, 0));
+        var preview = button!.DataContext as WidgetPreviewViewModel;
+        if (preview == null) return;
 
-        int x = position.X, y = position.Y, size;
+        // Absolute screen position of the clicked cell (physical pixels).
+        var pointer = button.PointToScreen(new Point(0, 0));
+        var settingsWindow = VisualRoot as Window;
+        var attached = settingsWindow != null ? displayMonitor.Find(settingsWindow) : null;
+        if (attached == null)
+        {
+            // Monitor not ready (edge case): legacy primary placement.
+            var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId)
+                         ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
+            var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y, 
+                DefaultSize(settingsWindow), DefaultSize(settingsWindow), null);
+            widgetFactory.Add(legacy, legacyLayout).Show();
+            return;
+        }
+
+        var screenConfig = attached.Config ?? displayMonitor.EnsureConfig(attached);
+        var (x, y, size) = ComputePlacement(screenConfig, attached, new Point(pointer.X, pointer.Y));
+        var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, size, size, null);
+        widgetFactory.Add(screenConfig, widgetLayout).Show();
+    }
+
+    /// <summary>
+    /// Compute the initial placement (position relative to the owning screen's
+    /// working area + size) for a new widget on the target screen.
+    /// </summary>
+    private (int X, int Y, int Size) ComputePlacement(ScreenLayout screenConfig, AttachedScreen attached, Point pointer)
+    {
+        var settings = appSettingsProvider.Get();
+        var screen = attached.Screen;
+        var area = screen.WorkingArea;
+
+        if (settings.Layout.GridMode != GridMode.Manual)
+        {
+            var size = (int) (2 * settings.Dimensions.Size + settings.Dimensions.Margin);
+            return ((int)(pointer.X - area.X), (int)(pointer.Y - area.Y), size);
+        }
+
+        var grid = screenConfig.Grid ?? settings.Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
+        var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
+        var scaling = screen.Scaling;
+        var cellSize = (int) Math.Round(cell / scaling);
+        var x = gridX + (int) Math.Round((pointer.X - gridX) / (double) cell) * cell;
+        var y = gridY + (int) Math.Round((pointer.Y - gridY) / (double) cell) * cell;
+        return (x - area.X, y - area.Y, cellSize);
+    }
+
+    private int DefaultSize(Window? settingsWindow)
+    {
+        var settings = appSettingsProvider.Get();
         if (settings.Layout.GridMode == GridMode.Manual)
         {
-            // Manual grid: 1×1 cell by default, snapped to the nearest cell.
-            // Grid metrics are physical; window size is a DIP → convert.
-            var screen = (VisualRoot as Window)?.Screens.Primary;
+            var screen = settingsWindow?.Screens.Primary;
             var area = screen?.WorkingArea;
-            var (cell, gridX, gridY) = GridMetrics.Resolve(
-                settings.Grid,
-                area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
-            var scaling = screen?.Scaling ?? 1.0;
-            size = (int) Math.Round(cell / scaling);
-            x = gridX + (int) Math.Round((position.X - gridX) / (double) cell) * cell;
-            y = gridY + (int) Math.Round((position.Y - gridY) / (double) cell) * cell;
+            var (cell, _, _) = GridMetrics.Resolve(settings.Grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
+            return (int) Math.Round(cell / (screen?.Scaling ?? 1.0));
         }
-        else
-        {
-            var dimensions = settings.Dimensions;
-            size = 2 * dimensions.Size + dimensions.Margin;
-        }
-
-        var widgetSettings = new WidgetLayout(viewModel!.Type, viewModel.Subtype, x, y, size, size, null);
-        widgetFactory.Add(widgetSettings).Show();
+        return 2 * settings.Dimensions.Size + settings.Dimensions.Margin;
     }
 }

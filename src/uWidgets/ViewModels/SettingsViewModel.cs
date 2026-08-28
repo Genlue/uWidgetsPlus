@@ -7,12 +7,13 @@ using ReactiveUI;
 using uWidgets.Core;
 using uWidgets.Core.Interfaces;
 using uWidgets.Locales;
+using uWidgets.Services;
 using uWidgets.Views.Pages;
 
 namespace uWidgets.ViewModels;
 
 public class SettingsViewModel(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider, 
-    ILayoutProvider layoutProvider, IWidgetFactory<Window, UserControl> widgetFactory) : ReactiveObject
+    ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory) : ReactiveObject
 {
     private UserControl? currentPage;
     public UserControl? CurrentPage
@@ -35,6 +36,7 @@ public class SettingsViewModel(IAppSettingsProvider appSettingsProvider, IAssemb
         new PageViewModel(typeof(General), GetIcon(nameof(General)), Locale.Settings_General),
         new PageViewModel(typeof(Appearance), GetIcon(nameof(Appearance)), Locale.Settings_Appearance),
         new PageViewModel(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
+        new PageViewModel(typeof(MultiScreen), GetIcon(nameof(MultiScreen)), Locale.Settings_MultiScreen),
         new PageViewModel(typeof(About), GetIcon(nameof(About)),  Locale.Settings_About),
         new PageViewModel(null, null, null)
     ];
@@ -58,10 +60,13 @@ public class SettingsViewModel(IAppSettingsProvider appSettingsProvider, IAssemb
     {
         if (value?.Type == null) return;
         CurrentPage = value.AssemblyInfo == null
-            ? value.Type == typeof(Advanced)
-                ? new Advanced(appSettingsProvider, layoutProvider)
-                : (UserControl?)Activator.CreateInstance(value.Type, appSettingsProvider)
-            : new Gallery(appSettingsProvider, layoutProvider, assemblyProvider, value.AssemblyInfo, widgetFactory);
+            ? value.Type switch
+            {
+                var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor),
+                var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),
+                _ => (UserControl?) Activator.CreateInstance(value.Type, appSettingsProvider)
+            }
+            : new Gallery(appSettingsProvider, layoutProvider, assemblyProvider, value.AssemblyInfo, widgetFactory, displayMonitor);
         CurrentPageTitle = value?.Text;
     }
 }

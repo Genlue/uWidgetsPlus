@@ -7,7 +7,7 @@ using uWidgets.Views;
 
 namespace uWidgets.Services;
 
-public class GridService(IAppSettingsProvider appSettingsProvider) : IGridService<Widget>
+public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonitorService displayMonitor) : IGridService<Widget>
 {
     public void SetSize(Widget window, int columns, int rows)
     {
@@ -67,12 +67,24 @@ public class GridService(IAppSettingsProvider appSettingsProvider) : IGridServic
         => window.Screens.ScreenFromWindow(window)?.Scaling ?? 1.0;
 
     /// <summary>
+    /// The manual grid of the screen the widget currently sits on: the per-screen
+    /// configuration grid, falling back to the global <see cref="AppSettings.Grid"/>,
+    /// then <see cref="Grid.Default"/>.
+    /// </summary>
+    private static Grid GetGrid(Widget window, IAppSettingsProvider appSettingsProvider, DisplayMonitorService displayMonitor)
+    {
+        var perScreen = displayMonitor.Find(window)?.Config?.Grid;
+        if (perScreen != null) return perScreen;
+        return appSettingsProvider.Get().Grid ?? Grid.Default;
+    }
+
+    /// <summary>
     /// Resolve the manual grid metrics (cell size in pixels, grid origin in pixels)
-    /// from the percentage settings, relative to the primary screen's working area.
+    /// from the percentage settings of the screen the widget currently sits on.
     /// </summary>
     private (int cell, int gridX, int gridY) GetGridMetrics(Widget window)
     {
-        var grid = appSettingsProvider.Get().Grid;
+        var grid = GetGrid(window, appSettingsProvider, displayMonitor);
         var screen = window.Screens.ScreenFromWindow(window)
                      ?? window.Screens.Primary
                      ?? window.Screens.All.FirstOrDefault();
@@ -110,7 +122,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider) : IGridServic
         var dimensions = appSettingsProvider.Get().Dimensions;
         var size = dimensions.Size;
         var margin = dimensions.Margin;
-        
+
         if (addMargin)
             return (int) (scaling * units * (size + margin) + scaling * margin);
 

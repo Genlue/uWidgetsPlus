@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -13,18 +14,26 @@ public partial class Advanced : UserControl
 {
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly ILayoutProvider layoutProvider;
+    private readonly DisplayMonitorService displayMonitor;
 
-    public Advanced(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider)
+    public Advanced(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
-        DataContext = new AdvancedViewModel(appSettingsProvider);
+        this.displayMonitor = displayMonitor;
+        var viewModel = new AdvancedViewModel(appSettingsProvider, layoutProvider, displayMonitor);
+        DataContext = viewModel;
         InitializeComponent();
+        Unloaded += (_, _) => viewModel.Dispose();
     }
 
     private void OnEditGridClicked(object? sender, RoutedEventArgs e)
     {
-        new GridEditor(appSettingsProvider).Show();
+        // Multi-screen: the advanced → grid editor edits the PRIMARY screen's
+        // per-screen grid (falls back to the legacy global grid when the primary
+        // screen has no per-screen entry yet).
+        var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
+        new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, primary?.Config?.Id).Show();
     }
 
     /// <summary>
@@ -93,7 +102,7 @@ public partial class Advanced : UserControl
             // Restore through the providers so the in-memory cache and the live
             // listeners stay in sync, then restart to rebuild the widgets.
             appSettingsProvider.Save(backup.AppSettings);
-            layoutProvider.Save(backup.Layout);
+            layoutProvider.Save(backup.Screens);
             AppRestart.Restart();
         }
         catch (FormatException)

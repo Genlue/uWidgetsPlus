@@ -1,11 +1,14 @@
-﻿using uWidgets.Core.Interfaces;
+using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 
 namespace uWidgets.Core.Services;
 
-/// <inheritdoc />
-public class WidgetLayoutProvider(ILayoutProvider layoutProvider, WidgetLayout widgetLayout) : IWidgetLayoutProvider
+/// <inheritdoc cref="IWidgetLayoutProvider" />
+public class WidgetLayoutProvider(ILayoutProvider layoutProvider, string screenId, WidgetLayout? widgetLayout) : IWidgetLayoutProvider
 {
+    /// <inheritdoc />
+    public string ScreenId { get; set; } = screenId;
+
     /// <inheritdoc />
     public event DataChangedEvent<WidgetLayout>? DataChanging;
 
@@ -13,19 +16,26 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, WidgetLayout w
     public event DataChangedEvent<WidgetLayout>? DataChanged;
 
     /// <inheritdoc />
-    public WidgetLayout Get() => widgetLayout;
+    public WidgetLayout Get() => widgetLayout!;
 
     /// <inheritdoc />
     public void Save(WidgetLayout data)
     {
         DataChanging?.Invoke(this, widgetLayout, data);
-        var layout = layoutProvider.Get();
-        var index = layout.IndexOf(widgetLayout);
+        var screens = layoutProvider.Get();
+        var screen = screens.FindById(ScreenId);
+        if (screen == null) return;
 
-        if (index == -1) return;
-        
-        layout[index] = data;
-        layoutProvider.Save(layout);
+        var layout = screen.Layout;
+        var index = layout.IndexOf(widgetLayout!);
+
+        layout = index switch
+        {
+            -1 => [.. layout, data], // not present on disk yet (first save of a new widget)
+            _ => layout.Select((item, i) => i == index ? data : item).ToList()
+        };
+
+        layoutProvider.Save(screens.WithScreen(screen with { Layout = layout }));
         var oldData = widgetLayout;
         widgetLayout = data;
         DataChanged?.Invoke(this, oldData, data);
@@ -34,8 +44,13 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, WidgetLayout w
     /// <inheritdoc />
     public void Remove()
     {
-        var layout = layoutProvider.Get();
-        layout.Remove(widgetLayout);
-        layoutProvider.Save(layout);
+        var screens = layoutProvider.Get();
+        var screen = screens.FindById(ScreenId);
+        if (screen == null) return;
+
+        layoutProvider.Save(screens.WithScreen(screen with
+        {
+            Layout = screen.Layout.Where(item => item != widgetLayout).ToList()
+        }));
     }
 }

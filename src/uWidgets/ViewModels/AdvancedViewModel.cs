@@ -1,9 +1,11 @@
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using ReactiveUI;
 using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
+using uWidgets.Services;
 using GridModeEnum = uWidgets.Core.Models.Settings.GridMode;
 
 namespace uWidgets.ViewModels;
@@ -18,8 +20,80 @@ public record GridModeOption(string Label, GridMode Value);
 /// </summary>
 public record ProxyOption(string Label, string Value);
 
-public class AdvancedViewModel(IAppSettingsProvider appSettingsProvider) : ReactiveObject
+/// <summary>
+/// Advanced page view model. The manual-grid numeric fields target the EFFECTIVE
+/// grid of the primary screen — the same store and the same fallback chain the
+/// full-screen grid editor uses: per-screen primary entry Grid →
+/// <see cref="AppSettings.Grid"/> → <see cref="Grid.Default"/>.
+/// <para>
+/// This keeps the two editing surfaces (numeric boxes here, the visual editor)
+/// on ONE configuration, so changing the grid in the editor is immediately
+/// reflected by these fields (and vice versa). The view model re-raises its
+/// grid properties whenever either provider publishes changes.
+/// </para>
+/// </summary>
+public class AdvancedViewModel : ReactiveObject, IDisposable
 {
+    private readonly IAppSettingsProvider appSettingsProvider;
+    private readonly ILayoutProvider layoutProvider;
+    private readonly DisplayMonitorService displayMonitor;
+
+    public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
+    {
+        this.appSettingsProvider = appSettingsProvider;
+        this.layoutProvider = layoutProvider;
+        this.displayMonitor = displayMonitor;
+
+        layoutProvider.DataChanged += OnLayoutDataChanged;
+        appSettingsProvider.DataChanged += OnAppSettingsDataChanged;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        layoutProvider.DataChanged -= OnLayoutDataChanged;
+        appSettingsProvider.DataChanged -= OnAppSettingsDataChanged;
+    }
+
+    private void OnLayoutDataChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => RaiseGridChanged();
+    private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData) => RaiseGridChanged();
+
+    private void RaiseGridChanged()
+    {
+        this.RaisePropertyChanged(nameof(GridColumns));
+        this.RaisePropertyChanged(nameof(GridRows));
+        this.RaisePropertyChanged(nameof(GridCellPercent));
+        this.RaisePropertyChanged(nameof(GridXPercent));
+        this.RaisePropertyChanged(nameof(GridYPercent));
+    }
+
+    /// <summary>
+    /// The grid that actually applies to the primary screen right now
+    /// (per-screen primary entry → global <see cref="AppSettings.Grid"/> → default).
+    /// </summary>
+    private Grid EffectiveGrid =>
+        displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary)?.Config?.Grid
+        ?? appSettingsProvider.Get().Grid
+        ?? Grid.Default;
+
+    /// <summary>
+    /// Persist a grid change to the SAME store the full-screen grid editor uses:
+    /// the primary screen's per-screen entry when one exists, otherwise the
+    /// global <see cref="AppSettings.Grid"/> (editor fallback: screenId = null).
+    /// </summary>
+    private void SaveGrid(Grid grid)
+    {
+        var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
+        if (primary?.Config != null)
+        {
+            layoutProvider.Save(layoutProvider.Get().WithScreen(primary.Config with { Grid = grid }));
+        }
+        else
+        {
+            appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
+        }
+    }
+
     // ---------- Grid mode ----------
 
     public GridModeOption[] GridModes =>
@@ -46,52 +120,32 @@ public class AdvancedViewModel(IAppSettingsProvider appSettingsProvider) : React
 
     public int GridColumns
     {
-        get => appSettingsProvider.Get().Grid?.Columns ?? Grid.Default.Columns;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Grid = (settings.Grid ?? Grid.Default) with { Columns = value } });
-        }
+        get => EffectiveGrid.Columns;
+        set => SaveGrid(EffectiveGrid with { Columns = Math.Clamp(value, 1, 30) });
     }
 
     public int GridRows
     {
-        get => appSettingsProvider.Get().Grid?.Rows ?? Grid.Default.Rows;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Grid = (settings.Grid ?? Grid.Default) with { Rows = value } });
-        }
+        get => EffectiveGrid.Rows;
+        set => SaveGrid(EffectiveGrid with { Rows = Math.Clamp(value, 1, 30) });
     }
 
     public double GridCellPercent
     {
-        get => appSettingsProvider.Get().Grid?.CellPercent ?? Grid.Default.CellPercent;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Grid = (settings.Grid ?? Grid.Default) with { CellPercent = value } });
-        }
+        get => EffectiveGrid.CellPercent;
+        set => SaveGrid(EffectiveGrid with { CellPercent = Math.Clamp(value, 1, 50) });
     }
 
     public double GridXPercent
     {
-        get => appSettingsProvider.Get().Grid?.XPercent ?? Grid.Default.XPercent;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Grid = (settings.Grid ?? Grid.Default) with { XPercent = value } });
-        }
+        get => EffectiveGrid.XPercent;
+        set => SaveGrid(EffectiveGrid with { XPercent = Math.Clamp(value, 0, 100) });
     }
 
     public double GridYPercent
     {
-        get => appSettingsProvider.Get().Grid?.YPercent ?? Grid.Default.YPercent;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Grid = (settings.Grid ?? Grid.Default) with { YPercent = value } });
-        }
+        get => EffectiveGrid.YPercent;
+        set => SaveGrid(EffectiveGrid with { YPercent = Math.Clamp(value, 0, 100) });
     }
 
     // ---------- Sizing ----------
@@ -102,21 +156,17 @@ public class AdvancedViewModel(IAppSettingsProvider appSettingsProvider) : React
         set
         {
             var settings = appSettingsProvider.Get();
-            var dimensions = settings.Dimensions with { Margin = value };
-            var newSettings = settings with { Dimensions = dimensions };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { Margin = value } });
         }
     }
-    
+
     public int Radius
     {
         get => appSettingsProvider.Get().Dimensions.Radius;
         set
         {
             var settings = appSettingsProvider.Get();
-            var dimensions = settings.Dimensions with { Radius = value };
-            var newSettings = settings with { Dimensions = dimensions };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { Radius = value } });
         }
     }
 
@@ -129,59 +179,49 @@ public class AdvancedViewModel(IAppSettingsProvider appSettingsProvider) : React
         set
         {
             var settings = appSettingsProvider.Get();
-            var dimensions = settings.Dimensions with { ContentScale = value };
-            var newSettings = settings with { Dimensions = dimensions };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { ContentScale = value } });
         }
     }
 
     public bool RadiusEnabled => !appSettingsProvider.Get().Theme.UseNativeFrame;
-    
+
     public bool SnapPosition
     {
         get => appSettingsProvider.Get().Layout.SnapPosition;
         set
         {
             var settings = appSettingsProvider.Get();
-            var newLayout = settings.Layout with { SnapPosition = value };
-            var newSettings = settings with { Layout = newLayout };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Layout = settings.Layout with { SnapPosition = value } });
         }
     }
-    
-    public bool SnapSize 
+
+    public bool SnapSize
     {
         get => appSettingsProvider.Get().Layout.SnapSize;
         set
         {
             var settings = appSettingsProvider.Get();
-            var newLayout = settings.Layout with { SnapSize = value };
-            var newSettings = settings with { Layout = newLayout };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Layout = settings.Layout with { SnapSize = value } });
         }
     }
-    
+
     public bool LockPosition
     {
         get => appSettingsProvider.Get().Layout.LockPosition;
         set
         {
             var settings = appSettingsProvider.Get();
-            var newLayout = settings.Layout with { LockPosition = value };
-            var newSettings = settings with { Layout = newLayout };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Layout = settings.Layout with { LockPosition = value } });
         }
     }
-    
+
     public bool LockSize
     {
         get => appSettingsProvider.Get().Layout.LockSize;
         set
         {
             var settings = appSettingsProvider.Get();
-            var newLayout = settings.Layout with { LockSize = value };
-            var newSettings = settings with { Layout = newLayout };
-            appSettingsProvider.Save(newSettings);
+            appSettingsProvider.Save(settings with { Layout = settings.Layout with { LockSize = value } });
         }
     }
 

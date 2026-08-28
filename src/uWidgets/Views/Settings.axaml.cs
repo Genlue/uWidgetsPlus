@@ -18,9 +18,9 @@ public partial class Settings : Window
     private readonly IAppSettingsProvider appSettingsProvider;
 
     public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider, 
-        ILayoutProvider layoutProvider, IWidgetFactory<Window, UserControl> widgetFactory)
+        ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory)
     {
-        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, widgetFactory);
+        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory);
         this.appSettingsProvider = appSettingsProvider;
         DataContext = viewModel;
         Resized += OnResized;

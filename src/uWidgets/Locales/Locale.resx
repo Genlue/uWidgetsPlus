@@ -501,4 +501,52 @@
     <data name="Settings_Advanced_Backup_Error" xml:space="preserve">
         <value>Backup operation failed: {0}</value>
     </data>
+    <data name="Settings_MultiScreen" xml:space="preserve">
+        <value>Screens</value>
+    </data>
+    <data name="Settings_MultiScreen_Description" xml:space="preserve">
+        <value>Each monitor keeps its own widget layout, grid and content scale. Screens are recognized by model and resolution; widgets hide when a screen is unplugged and come back automatically when it is reconnected. Every screen can be exported / imported as its own backup file.</value>
+    </data>
+    <data name="Settings_MultiScreen_Connected" xml:space="preserve">
+        <value>Connected</value>
+    </data>
+    <data name="Settings_MultiScreen_NotConnected" xml:space="preserve">
+        <value>Not connected</value>
+    </data>
+    <data name="Settings_MultiScreen_AttachedHeader" xml:space="preserve">
+        <value>Connected screens</value>
+    </data>
+    <data name="Settings_MultiScreen_DetachedHeader" xml:space="preserve">
+        <value>Configured but not connected</value>
+    </data>
+    <data name="Settings_MultiScreen_EditGrid" xml:space="preserve">
+        <value>Edit grid</value>
+    </data>
+    <data name="Settings_MultiScreen_Export" xml:space="preserve">
+        <value>Export screen</value>
+    </data>
+    <data name="Settings_MultiScreen_Import" xml:space="preserve">
+        <value>Import screen</value>
+    </data>
+    <data name="Settings_MultiScreen_Delete" xml:space="preserve">
+        <value>Delete config</value>
+    </data>
+    <data name="Settings_MultiScreen_AliasPlaceholder" xml:space="preserve">
+        <value>Alias (optional)</value>
+    </data>
+    <data name="Settings_MultiScreen_ContentScale" xml:space="preserve">
+        <value>Content scale</value>
+    </data>
+    <data name="Settings_MultiScreen_Rebind" xml:space="preserve">
+        <value>Bind config</value>
+    </data>
+    <data name="Settings_MultiScreen_RebindHint" xml:space="preserve">
+        <value>Manually assign a saved configuration to this screen</value>
+    </data>
+    <data name="Settings_MultiScreen_ImportConfirm" xml:space="preserve">
+        <value>Import the screen configuration of {0}?</value>
+    </data>
+    <data name="Settings_MultiScreen_WidgetCount" xml:space="preserve">
+        <value>Widgets: {0}</value>
+    </data>
 </root>

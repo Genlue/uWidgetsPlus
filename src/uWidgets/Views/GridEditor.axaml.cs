@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
 using uWidgets.Services;
@@ -18,24 +19,34 @@ namespace uWidgets.Views;
 /// <summary>
 /// Full-screen editor for the manual grid (<see cref="GridMode.Manual"/>).
 /// <para>
-/// · Covers the whole primary screen (DPI-correct); the highlighted grid area shows the
-///   currently saved grid and can be dragged to move the whole grid on the desktop;<br/>
-/// · Right-click the grid area to open the parameters panel: rows / columns / cell size,
-///   X-centering button and fine X/Y nudge buttons;<br/>
-/// · Every change is saved immediately and re-loaded on the next edit session.
+/// Covers the target screen (the screen whose per-screen grid is being edited,
+/// or the primary screen when <paramref name="screenId"/> is null / legacy).
+/// The highlighted grid area shows the saved grid and can be dragged to move the
+/// whole grid on that screen;<br/>
+/// Right-click the grid area opens the parameters panel: rows / columns / cell
+/// size, X-centering and fine X/Y nudge buttons.<br/>
+/// Every change is saved immediately — into the per-screen configuration, or
+/// into the global <see cref="AppSettings.Grid"/> when editing the legacy entry.
 /// </para>
 /// </summary>
 public partial class GridEditor : Window
 {
     private readonly IAppSettingsProvider appSettingsProvider;
+    private readonly ILayoutProvider layoutProvider;
+    private readonly DisplayMonitorService displayMonitor;
+    private readonly string? screenId;
     private bool dragging;
     private Point dragStart;
     private double startLeft;
     private double startTop;
 
-    public GridEditor(IAppSettingsProvider appSettingsProvider)
+    public GridEditor(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider,
+        DisplayMonitorService displayMonitor, string? screenId = null)
     {
         this.appSettingsProvider = appSettingsProvider;
+        this.layoutProvider = layoutProvider;
+        this.displayMonitor = displayMonitor;
+        this.screenId = screenId;
         InitializeComponent();
 
         Opened += OnOpened;
@@ -56,7 +67,8 @@ public partial class GridEditor : Window
         // Full screen, DPI-correct: geometry is set BEFORE the window is shown so
         // the editor opens as a full-screen window every time (position in physical
         // pixels, size in DIPs = physical / scaling).
-        var screen = Screens.Primary ?? Screens.All.FirstOrDefault();
+        var attached = GetTargetScreen();
+        var screen = attached?.Screen ?? Screens.Primary ?? Screens.All.FirstOrDefault();
         if (screen != null)
         {
             Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
@@ -70,15 +82,41 @@ public partial class GridEditor : Window
         }
     }
 
-    /// <summary>
-    /// DPI scale of the primary screen (window and canvas work in DIPs).
-    /// </summary>
-    private double Scaling => Screens.Primary?.Scaling ?? 1.0;
+    /// <summary>DPI scale of the target screen (window and canvas work in DIPs).</summary>
+    private double Scaling => GetTargetScreen()?.Screen.Scaling ?? 1.0;
+
+    /// <summary>The attached screen this editor covers (per-screen config → primary fallback).</summary>
+    private AttachedScreen? GetTargetScreen() =>
+        screenId != null
+            ? displayMonitor.FindByConfigId(screenId)
+            : displayMonitor.Attached.FirstOrDefault(s => s.Screen.Primary);
+
+    /// <summary>The grid being edited: per-screen grid → global grid → default.</summary>
+    private GridSettings CurrentGrid =>
+        screenId != null
+            ? layoutProvider.Get().FindById(screenId)?.Grid ?? appSettingsProvider.Get().Grid ?? GridSettings.Default
+            : appSettingsProvider.Get().Grid ?? GridSettings.Default;
+
+    /// <summary>Persist the grid: into the per-screen entry, or the global settings (legacy).</summary>
+    private void SaveGrid(GridSettings grid)
+    {
+        if (screenId != null)
+        {
+            var screens = layoutProvider.Get();
+            var screen = screens.FindById(screenId);
+            if (screen == null) return;
+            layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
+        }
+        else
+        {
+            appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
+        }
+    }
 
     private void OnOpened(object? sender, EventArgs e)
     {
         // Keep the window pinned to the screen on every activation.
-        if (Screens.Primary is { } screen)
+        if (GetTargetScreen()?.Screen is { } screen)
             Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
 
         ApplyGrid();
@@ -113,7 +151,7 @@ public partial class GridEditor : Window
     {
         if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
         {
-            openParamPanel();
+            OpenParamPanel();
             e.Handled = true;
             return;
         }
@@ -149,9 +187,9 @@ public partial class GridEditor : Window
 
     // ---------- Parameters panel ----------
 
-    private void openParamPanel()
+    private void OpenParamPanel()
     {
-        var grid = appSettingsProvider.Get().Grid ?? GridSettings.Default;
+        var grid = CurrentGrid;
         ParamPanel.IsVisible = true;
         ColumnsInput.Value = grid.Columns;
         RowsInput.Value = grid.Rows;
@@ -165,17 +203,15 @@ public partial class GridEditor : Window
         if (ColumnsInput.Value is not { } columns || RowsInput.Value is not { } rows || CellInput.Value is not { } cell)
             return;
 
-        var settings = appSettingsProvider.Get();
-        var current = settings.Grid ?? GridSettings.Default;
-        var newGrid = current with
+        var newGrid = CurrentGrid with
         {
             Columns = Math.Max(1, (int) columns),
             Rows = Math.Max(1, (int) rows),
             CellPercent = Math.Clamp((double) cell, 1, 50)
         };
 
-        if (newGrid != current)
-            appSettingsProvider.Save(settings with { Grid = newGrid });
+        if (newGrid != CurrentGrid)
+            SaveGrid(newGrid);
 
         ApplyGrid();
     }
@@ -184,14 +220,13 @@ public partial class GridEditor : Window
 
     private void OnCenterClicked(object? sender, RoutedEventArgs e)
     {
-        var settings = appSettingsProvider.Get();
-        var grid = settings.Grid ?? GridSettings.Default;
+        var grid = CurrentGrid;
         var centeredX = Math.Clamp((100 - grid.Columns * grid.CellPercent) / 2.0, 0, 100);
         var newGrid = grid with { XPercent = centeredX };
 
         if (newGrid != grid)
         {
-            appSettingsProvider.Save(settings with { Grid = newGrid });
+            SaveGrid(newGrid);
             ApplyGrid();
         }
     }
@@ -206,8 +241,7 @@ public partial class GridEditor : Window
     /// </summary>
     private void Nudge(int dx, int dy)
     {
-        var settings = appSettingsProvider.Get();
-        var grid = settings.Grid ?? GridSettings.Default;
+        var grid = CurrentGrid;
         var newGrid = grid with
         {
             XPercent = Math.Clamp(grid.XPercent + dx, 0, 100),
@@ -216,7 +250,7 @@ public partial class GridEditor : Window
 
         if (newGrid != grid)
         {
-            appSettingsProvider.Save(settings with { Grid = newGrid });
+            SaveGrid(newGrid);
             ApplyGrid();
         }
     }
@@ -229,8 +263,7 @@ public partial class GridEditor : Window
     /// </summary>
     private void ApplyGrid()
     {
-        var settings = appSettingsProvider.Get();
-        var grid = settings.Grid ?? GridSettings.Default;
+        var grid = CurrentGrid;
         var (cellDip, xDip, yDip) = ResolveInWindow(grid);
 
         Canvas.SetLeft(GridVisual, xDip);
@@ -246,11 +279,12 @@ public partial class GridEditor : Window
     /// </summary>
     private (double Cell, double X, double Y) ResolveInWindow(GridSettings grid)
     {
-        if (Screens.Primary is not { } screen)
+        var screen = GetTargetScreen()?.Screen ?? Screens.Primary;
+        if (screen is not { } target)
             return (96, 100, 100);
 
-        var bounds = screen.Bounds;
-        var area = screen.WorkingArea;
+        var bounds = target.Bounds;
+        var area = target.WorkingArea;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var scaling = Scaling;
 
@@ -263,12 +297,12 @@ public partial class GridEditor : Window
     /// </summary>
     private void SaveGeometry()
     {
-        var settings = appSettingsProvider.Get();
-        var grid = settings.Grid ?? GridSettings.Default;
-        if (Screens.Primary is not { } screen) return;
+        var grid = CurrentGrid;
+        var screen = GetTargetScreen()?.Screen ?? Screens.Primary;
+        if (screen is not { } target) return;
 
-        var bounds = screen.Bounds;
-        var area = screen.WorkingArea;
+        var bounds = target.Bounds;
+        var area = target.WorkingArea;
         if (area.Width <= 0 || area.Height <= 0) return;
 
         var scaling = Scaling;
@@ -284,7 +318,7 @@ public partial class GridEditor : Window
         };
 
         if (newGrid != grid)
-            appSettingsProvider.Save(settings with { Grid = newGrid });
+            SaveGrid(newGrid);
     }
 
     private void RebuildCells(GridSettings grid)
@@ -319,7 +353,7 @@ public partial class GridEditor : Window
 
     private void UpdateInfo()
     {
-        var grid = appSettingsProvider.Get().Grid ?? GridSettings.Default;
+        var grid = CurrentGrid;
         var (cellDip, _, _) = ResolveInWindow(grid);
         InfoText.Text = string.Format(Locale.Settings_Advanced_GridEditorInfo, grid.Columns, grid.Rows, (int) Math.Round(cellDip * Scaling));
     }

@@ -1,10 +1,12 @@
-﻿using uWidgets.Core.Models;
-using uWidgets.Core.Models.Settings;
+using uWidgets.Core.Models;
 
 namespace uWidgets.Core.Interfaces;
 
 /// <summary>
-/// Service for reading and writing layout settings, stored in <c>layout.json</c>.
-/// <para>See <see cref="Layout"/></para>
+/// Service for reading and writing the multi-screen widget layout, stored in <c>layout.json</c>.
+/// <para>
+/// Format v2 groups widgets per screen (<see cref="ScreensLayout"/>); format v1 (a plain
+/// <see cref="WidgetLayout"/> array) is still readable and is wrapped as the legacy primary entry.
+/// </para>
 /// </summary>
-public interface ILayoutProvider : IDataProvider<List<WidgetLayout>>;
+public interface ILayoutProvider : IDataProvider<ScreensLayout>;

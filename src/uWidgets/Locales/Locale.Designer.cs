@@ -1455,5 +1455,150 @@ namespace uWidgets.Locales {
             get {
                 return ResourceManager.GetString("Settings_Advanced_GridEditorNudgeDown", resourceCulture);
             }
-        }    }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Screens.
+        /// </summary>
+        public static string Settings_MultiScreen {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Description of the multi-screen page.
+        /// </summary>
+        public static string Settings_MultiScreen_Description {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connected.
+        /// </summary>
+        public static string Settings_MultiScreen_Connected {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Connected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not connected.
+        /// </summary>
+        public static string Settings_MultiScreen_NotConnected {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_NotConnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connected screens.
+        /// </summary>
+        public static string Settings_MultiScreen_AttachedHeader {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_AttachedHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Configured but not connected.
+        /// </summary>
+        public static string Settings_MultiScreen_DetachedHeader {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_DetachedHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Edit grid.
+        /// </summary>
+        public static string Settings_MultiScreen_EditGrid {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_EditGrid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Export screen.
+        /// </summary>
+        public static string Settings_MultiScreen_Export {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Import screen.
+        /// </summary>
+        public static string Settings_MultiScreen_Import {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Import", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Delete config.
+        /// </summary>
+        public static string Settings_MultiScreen_Delete {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Alias (optional).
+        /// </summary>
+        public static string Settings_MultiScreen_AliasPlaceholder {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_AliasPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Content scale.
+        /// </summary>
+        public static string Settings_MultiScreen_ContentScale {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_ContentScale", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bind config.
+        /// </summary>
+        public static string Settings_MultiScreen_Rebind {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Rebind", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Rebind hint.
+        /// </summary>
+        public static string Settings_MultiScreen_RebindHint {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_RebindHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Import confirm.
+        /// </summary>
+        public static string Settings_MultiScreen_ImportConfirm {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_ImportConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Widgets: {0}.
+        /// </summary>
+        public static string Settings_MultiScreen_WidgetCount {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_WidgetCount", resourceCulture);
+            }
+        }
+    }
 }

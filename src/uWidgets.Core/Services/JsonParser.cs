@@ -6,14 +6,14 @@ namespace uWidgets.Core.Services;
 /// <inheritdoc />
 public class JsonParser<T>(string filePath) : IDataProvider<T>
 {
-    private T? data;
+    protected T? data;
     /// <inheritdoc />
     public event DataChangedEvent<T>? DataChanging;
     /// <inheritdoc />
     public event DataChangedEvent<T>? DataChanged;
 
     /// <inheritdoc />
-    public T Get()
+    public virtual T Get()
     {
         if (data != null) return data;
 

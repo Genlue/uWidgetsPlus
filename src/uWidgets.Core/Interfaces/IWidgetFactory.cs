@@ -1,4 +1,4 @@
-﻿using uWidgets.Core.Models;
+using uWidgets.Core.Models;
 
 namespace uWidgets.Core.Interfaces;
 
@@ -29,4 +29,13 @@ public interface IWidgetFactory<out TWindow, out TControl>
     /// <param name="widgetLayout">Layout for the widget.</param>
     /// <returns>Activated window.</returns>
     public TWindow Add(WidgetLayout widgetLayout);
+
+    /// <summary>
+    /// Creates a widget on a specific screen configuration (multi-screen), and
+    /// adds it to the collection. The screen entry is upserted if new.
+    /// </summary>
+    /// <param name="screen">The target screen configuration.</param>
+    /// <param name="widgetLayout">Layout for the widget (relative to that screen's working area).</param>
+    /// <returns>Activated window.</returns>
+    public TWindow Add(ScreenLayout screen, WidgetLayout widgetLayout);
 }

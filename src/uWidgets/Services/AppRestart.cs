@@ -25,8 +25,12 @@ public static class AppRestart
         var process = Process.Start(executablePath, "--settings");
         if (process == null) return;
 
+        // Wait up to 5 s for the new instance's settings window (longer than the
+        // old 1 s: on a slow start the old instance used to stay alive, leaving
+        // BOTH processes showing widgets = the doubled/stacked cards reported
+        // after an import).
         var tryCount = 0;
-        var maxTryCount = 10;
+        var maxTryCount = 50;
 
         while (process.MainWindowHandle == IntPtr.Zero && !process.HasExited && tryCount++ < maxTryCount)
         {

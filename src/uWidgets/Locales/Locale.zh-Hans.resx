@@ -600,4 +600,52 @@
     <data name="Settings_Advanced_Backup_Error" xml:space="preserve">
         <value>备份操作失败：{0}</value>
     </data>
+    <data name="Settings_MultiScreen" xml:space="preserve">
+        <value>多屏</value>
+    </data>
+    <data name="Settings_MultiScreen_Description" xml:space="preserve">
+        <value>每个显示器独立管理自己的小组件布局、网格与内容缩放。按型号与分辨率识别屏幕；拔掉屏幕时组件自动隐藏，重新连接后自动恢复原位。每块屏幕可分别导出/导入为独立备份文件。</value>
+    </data>
+    <data name="Settings_MultiScreen_Connected" xml:space="preserve">
+        <value>已连接</value>
+    </data>
+    <data name="Settings_MultiScreen_NotConnected" xml:space="preserve">
+        <value>未连接</value>
+    </data>
+    <data name="Settings_MultiScreen_AttachedHeader" xml:space="preserve">
+        <value>已连接的显示器</value>
+    </data>
+    <data name="Settings_MultiScreen_DetachedHeader" xml:space="preserve">
+        <value>已保存配置但未连接</value>
+    </data>
+    <data name="Settings_MultiScreen_EditGrid" xml:space="preserve">
+        <value>编辑网格</value>
+    </data>
+    <data name="Settings_MultiScreen_Export" xml:space="preserve">
+        <value>导出该屏</value>
+    </data>
+    <data name="Settings_MultiScreen_Import" xml:space="preserve">
+        <value>导入该屏</value>
+    </data>
+    <data name="Settings_MultiScreen_Delete" xml:space="preserve">
+        <value>删除配置</value>
+    </data>
+    <data name="Settings_MultiScreen_AliasPlaceholder" xml:space="preserve">
+        <value>别名（可选）</value>
+    </data>
+    <data name="Settings_MultiScreen_ContentScale" xml:space="preserve">
+        <value>内容缩放</value>
+    </data>
+    <data name="Settings_MultiScreen_Rebind" xml:space="preserve">
+        <value>绑定配置</value>
+    </data>
+    <data name="Settings_MultiScreen_RebindHint" xml:space="preserve">
+        <value>把某个已保存的配置手动分配到这块屏幕</value>
+    </data>
+    <data name="Settings_MultiScreen_ImportConfirm" xml:space="preserve">
+        <value>把 {0} 的屏幕配置导入到这里？</value>
+    </data>
+    <data name="Settings_MultiScreen_WidgetCount" xml:space="preserve">
+        <value>组件数：{0}</value>
+    </data>
 </root>

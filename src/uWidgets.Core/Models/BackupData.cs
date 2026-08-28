@@ -3,23 +3,21 @@ using uWidgets.Core.Models.Settings;
 namespace uWidgets.Core.Models;
 
 /// <summary>
-/// A backup file: the application settings plus the full widget layout.
+/// A backup file: the global application settings plus per-screen configurations
+/// (each screen's widget layout and manual grid).
 /// <para>
-/// Covers everything the user asked to back up: the app settings (theme,
-/// dimensions, proxy, title bar …), the manual grid configuration (the
-/// <see cref="AppSettings.Grid"/> section of the app settings), the card
-/// layout (each <see cref="WidgetLayout"/> X/Y/Width/Height) and the per-card
-/// content settings (each <see cref="WidgetLayout.Settings"/>).
+/// A full backup carries every screen (<see cref="Screens.Screens"/>); a single-screen
+/// export carries exactly one screen entry inside the same structure.
 /// </para>
 /// </summary>
 /// <param name="Version">Backup format version (<see cref="CurrentVersion"/>).</param>
-/// <param name="AppSettings">Application settings (incl. the manual grid config).</param>
-/// <param name="Layout">Widget layout: card positions/sizes + per-card content settings.</param>
-public record BackupData(int Version, AppSettings AppSettings, List<WidgetLayout> Layout)
+/// <param name="AppSettings">Global application settings (theme, dimensions, proxy, title bar …).</param>
+/// <param name="Screens">Per-screen configurations: layout + per-screen manual grid + content scale.</param>
+public record BackupData(int Version, AppSettings AppSettings, ScreensLayout Screens)
 {
     /// <summary>
-    /// The current backup format version. Bump it when the structure changes so
-    /// older backups are rejected instead of being misread.
+    /// The current backup format version. v1 backups (a single flat layout list,
+    /// no per-screen structure) are rejected on import.
     /// </summary>
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 }

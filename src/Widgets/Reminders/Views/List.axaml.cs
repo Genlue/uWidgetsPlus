@@ -7,6 +7,7 @@ using Reminders.ViewModels;
 using Reminders.Views.Controls;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
+using uWidgets.Services;
 
 namespace Reminders.Views;
 
@@ -44,10 +45,31 @@ public partial class List : UserControl, IWidgetSelfRefreshing
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
+        // Phone-style tiers (grid-span based): 2×2 = the classic small card,
+        // 4×2 = wide card (counter beside the list), 4×4 = tall card (counter
+        // above the list). 1×1 keeps the header-less compact list. Other custom
+        // spans keep the historic pixel logic.
+        switch (SizeTiers.ResolveTier(this, e.NewSize))
+        {
+            case WidgetTier.Cell:
+                Content = new ListSmall(this, viewModel, compact: true);
+                return;
+            case WidgetTier.Small:
+                Content = new ListSmall(this, viewModel);
+                return;
+            case WidgetTier.Medium:
+                Content = new ListWide(this, viewModel);
+                return;
+            case WidgetTier.Large:
+                Content = new ListLarge(this, viewModel);
+                return;
+        }
+
+        var size = e.NewSize;
         const int smallSize = 200;
-        var small = e.NewSize is { Width: < smallSize, Height: < smallSize };
-        var wide = e.NewSize.AspectRatio >= 1.5;
-        
+        var small = size is { Width: < smallSize, Height: < smallSize };
+        var wide = size.AspectRatio >= 1.5;
+
         Content = (small, wide) switch
         {
             (true, _) => new ListSmall(this, viewModel),
@@ -77,7 +99,11 @@ public partial class List : UserControl, IWidgetSelfRefreshing
         var index = viewModel.Reminders.IndexOf(reminder!);
         if (index < 0) return;
 
-        viewModel.Reminders[index] = viewModel.Reminders[index] with { Completed = !viewModel.Reminders[index].Completed };
+        var completed = !viewModel.Reminders[index].Completed;
+        if (completed && viewModel.Model.DeleteOnCheck)
+            viewModel.Reminders.RemoveAt(index);
+        else
+            viewModel.Reminders[index] = viewModel.Reminders[index] with { Completed = completed };
         UpdateModel(viewModel.Model);
     }
     

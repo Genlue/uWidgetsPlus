@@ -50,6 +50,11 @@ namespace uWidgets.Core.Models.Settings;
 /// <c>null</c> uses <see cref="DefaultMonochromeVariant"/> (强调色, the historic
 /// behavior, so old configurations keep their look).
 /// </param>
+/// <param name="AutoTheme">
+/// Should the light/dark mode be chosen automatically from the desktop wallpaper
+/// (dark wallpaper → dark mode, light wallpaper → light mode). When enabled,
+/// <see cref="DarkMode"/> is ignored.
+/// </param>
 public record Theme(
     bool? DarkMode, 
     string? AccentColor, 
@@ -62,7 +67,8 @@ public record Theme(
     double OutlineWidth = 0,
     string? SolidBackgroundDark = null,
     string? SolidBackgroundLight = null,
-    MonochromeStyle? MonochromeVariant = null)
+    MonochromeStyle? MonochromeVariant = null,
+    bool AutoTheme = false)
 {
     /// <summary>Default highlight-ring color when <see cref="OutlineColor"/> is not set
     /// (soft gray-white, less stark than pure white).</summary>

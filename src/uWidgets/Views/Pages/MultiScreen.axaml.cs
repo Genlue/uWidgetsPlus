@@ -34,16 +34,6 @@ public partial class MultiScreen : UserControl
     private readonly ILayoutProvider layoutProvider;
     private readonly DisplayMonitorService displayMonitor;
 
-    private static readonly (string Label, double Value)[] ContentScaleOptions =
-    [
-        ("0.5×", 0.5),
-        ("0.75×", 0.75),
-        ("1.0×", 1.0),
-        ("1.25×", 1.25),
-        ("1.5×", 1.5),
-        ("2.0×", 2.0)
-    ];
-
     public MultiScreen(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
     {
         this.appSettingsProvider = appSettingsProvider;
@@ -150,22 +140,26 @@ public partial class MultiScreen : UserControl
         buttons.Children.Add(Button(Locale.Settings_MultiScreen_Import, async (_, _) => await ImportScreen(attached)));
         panel.Children.Add(buttons);
 
-        // Content scale
+        // Content scale (free-form input, saved on focus loss so spinning
+        // through values doesn't hammer the layout file)
         var scaleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         scaleRow.Children.Add(new TextBlock { Text = Locale.Settings_MultiScreen_ContentScale, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
-        var scaleCombo = new ComboBox
+        var scaleInput = new NumericUpDown
         {
-            ItemsSource = ContentScaleOptions.Select(o => o.Label).ToList(),
-            SelectedIndex = IndexOfContentScale(config?.ContentScale ?? appSettingsProvider.Get().Dimensions.ContentScale),
-            MinWidth = 90
+            Minimum = 0.1m,
+            Maximum = 5m,
+            Increment = 0.05m,
+            FormatString = "0.00",
+            Value = (decimal)(config?.ContentScale ?? 1.0),
+            MinWidth = 110
         };
-        scaleCombo.SelectionChanged += (_, _) =>
+        scaleInput.LostFocus += (_, _) =>
         {
-            if (scaleCombo.SelectedIndex < 0) return;
-            var value = ContentScaleOptions[scaleCombo.SelectedIndex].Value;
+            var value = (double)Math.Clamp(scaleInput.Value ?? 1.0m, 0.1m, 5m);
+            if (config?.ContentScale is { } current && Math.Abs(current - value) < 0.001) return;
             SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { ContentScale = value });
         };
-        scaleRow.Children.Add(scaleCombo);
+        scaleRow.Children.Add(scaleInput);
         panel.Children.Add(scaleRow);
 
         // Manual rebinding: pick which saved configuration belongs to THIS screen.
@@ -245,11 +239,6 @@ public partial class MultiScreen : UserControl
         layoutProvider.Save(screens.UpsertScreen(update(entry)));
         displayMonitor.Refresh();
     }
-
-    private static int IndexOfContentScale(double value) =>
-        Array.FindIndex(ContentScaleOptions, o => Math.Abs(o.Value - value) < 0.001) is var i && i >= 0
-            ? i
-            : Array.FindIndex(ContentScaleOptions, o => o.Value == 1.0);
 
     private void Rebind(AttachedScreen attached, ComboBox combo, ScreenLayout? current)
     {

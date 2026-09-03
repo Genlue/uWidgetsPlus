@@ -6,7 +6,7 @@ namespace Weather.Views;
 
 public partial class UVIndex : UserControl
 {
-    public UVIndex() : this(new ForecastModel("Cupertino", 37.3230, -122.0322, "celsius")) {}
+    public UVIndex() : this(new ForecastModel("Beijing", 39.9042, 116.4074, "celsius")) {}
 
     public UVIndex(ForecastModel model)
     {

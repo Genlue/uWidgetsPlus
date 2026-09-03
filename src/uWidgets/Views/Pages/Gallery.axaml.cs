@@ -118,7 +118,8 @@ public partial class Gallery : UserControl
         var grid = screenConfig.Grid ?? settings.Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var scaling = screen.Scaling;
-        var cellSize = (int) Math.Round(cell / scaling);
+        // New widgets default to the L preset (2×2 cells).
+        var cellSize = (int) Math.Round(2 * cell / scaling);
         var x = gridX + (int) Math.Round((pointer.X - gridX) / (double) cell) * cell;
         var y = gridY + (int) Math.Round((pointer.Y - gridY) / (double) cell) * cell;
         return (x - area.X, y - area.Y, cellSize);
@@ -132,7 +133,7 @@ public partial class Gallery : UserControl
             var screen = settingsWindow?.Screens.Primary;
             var area = screen?.WorkingArea;
             var (cell, _, _) = GridMetrics.Resolve(settings.Grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
-            return (int) Math.Round(cell / (screen?.Scaling ?? 1.0));
+            return (int) Math.Round(2 * cell / (screen?.Scaling ?? 1.0));
         }
         return 2 * settings.Dimensions.Size + settings.Dimensions.Margin;
     }

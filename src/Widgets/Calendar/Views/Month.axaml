@@ -18,38 +18,105 @@
         </Style>
     </UserControl.Styles>
     
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,13*">
-        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Month}" 
-                   Margin="{Binding MonthMargin, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
-                   Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
-        <ItemsControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding Days}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="viewModels:DayViewModel">
-                    <Grid>
-                        <Viewbox>
-                            <Canvas Width="100" Height="100">
-                                <Ellipse Canvas.Left="0" Canvas.Top="0" Width="100" Height="100"
-                                         IsVisible="{Binding IsToday}"
-                                         Fill="{DynamicResource SystemAccentColor}" />
-                                <TextBlock Width="100" Height="100"
-                                           TextAlignment="Center"
-                                           Margin="0,14,0,0"
-                                           FontSize="60"
-                                           Classes.weekend="{Binding IsWeekend}"
-                                           Classes.today="{Binding IsToday}"
-                                           Text="{Binding Day}"  />
-                            </Canvas>
-                        </Viewbox>
-                        
-                    </Grid>
+    <Panel>
+        <!-- Full month grid: L tier (2×2) and larger custom sizes. -->
+        <Grid Name="FullMonth" RowDefinitions="Auto,*" ColumnDefinitions="*,13*">
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Month}" 
+                       Margin="{Binding MonthMargin, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
+                       Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <ItemsControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding Days}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="viewModels:DayViewModel">
+                        <Grid>
+                            <Viewbox>
+                                <Canvas Width="100" Height="100">
+                                    <Ellipse Canvas.Left="0" Canvas.Top="0" Width="100" Height="100"
+                                             IsVisible="{Binding IsToday}"
+                                             Fill="{DynamicResource SystemAccentColor}" />
+                                    <TextBlock Width="100" Height="100"
+                                               TextAlignment="Center"
+                                               Margin="0,14,0,0"
+                                               FontSize="60"
+                                               Classes.weekend="{Binding IsWeekend}"
+                                               Classes.today="{Binding IsToday}"
+                                               Text="{Binding Day}"  />
+                                </Canvas>
+                            </Viewbox>
+                            
+                        </Grid>
+                        </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Compact week row: M tier (2×1). Weekday header + the seven days of the
+             current week, today filled — the 7×7 grid would be illegible here. -->
+        <Grid Name="WeekRow" IsVisible="False" RowDefinitions="*,1.4*">
+            <ItemsControl Grid.Row="0" ItemsSource="{Binding WeekHeaders}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0.5" TextAlignment="Center"
+                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" />
                     </DataTemplate>
-            </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <UniformGrid Columns="7" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>
-    </Grid>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding CurrentWeek}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="viewModels:DayViewModel">
+                        <Grid>
+                            <Viewbox>
+                                <Canvas Width="100" Height="100">
+                                    <Ellipse Canvas.Left="0" Canvas.Top="0" Width="100" Height="100"
+                                             IsVisible="{Binding IsToday}"
+                                             Fill="{DynamicResource SystemAccentColor}" />
+                                    <TextBlock Width="100" Height="100"
+                                               TextAlignment="Center"
+                                               Margin="0,14,0,0"
+                                               FontSize="60"
+                                               Classes.weekend="{Binding IsWeekend}"
+                                               Classes.today="{Binding IsToday}"
+                                               Text="{Binding Day}" />
+                                </Canvas>
+                            </Viewbox>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Today only: S tier (1×1). Weekday + big number + month, like the Date
+             view — a whole week (let alone a month) cannot fit one cell. -->
+        <Viewbox Name="TodayOnly" Stretch="Uniform" Margin="4" IsVisible="False">
+            <Grid RowDefinitions="*,4*" ColumnDefinitions="*,*">
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,2,0" FontWeight="Bold"
+                           FontSize="12"
+                           Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                           Text="{Binding TodayWeekday}"
+                           VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Opacity="0.5" FontWeight="Bold"
+                           FontSize="12"
+                           Text="{Binding Month}"
+                           VerticalAlignment="Bottom" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" LetterSpacing="-3"
+                           FontSize="44" LineHeight="40" Text="{Binding TodayNumber}" FontWeight="SemiBold"
+                           VerticalAlignment="Top" HorizontalAlignment="Center" />
+            </Grid>
+        </Viewbox>
+    </Panel>
     
 </UserControl>

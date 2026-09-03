@@ -28,15 +28,15 @@
                     <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
                 </Path.Data>
             </Path>
-            <TextBlock FontSize="{Binding FontSize}" FontWeight="SemiBold"
+            <TextBlock Name="ValueText" FontSize="{Binding FontSize}" FontWeight="SemiBold"
                        MinWidth="110" TextAlignment="Center" LineHeight="100"
                        Text="{Binding DisplayValue}" />
-            <TextBlock Canvas.Left="20" Canvas.Top="80" FontSize="20" FontWeight="SemiBold"
+            <TextBlock Name="MinText" Canvas.Left="20" Canvas.Top="80" FontSize="20" FontWeight="SemiBold"
                        Text="{Binding DisplayMin}" />
-            <TextBlock Canvas.Right="20" Canvas.Top="80"
+            <TextBlock Name="MaxText" Canvas.Right="20" Canvas.Top="80"
                        Opacity="0.5" FontSize="20" FontWeight="SemiBold"
                        Text="{Binding DisplayMax}" />
-            <PathIcon Foreground="{DynamicResource SystemControlForegroundAccentBrush}" 
+            <PathIcon Name="MetricIcon" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" 
                       Canvas.Left="45" Canvas.Top="80" Data="{Binding Icon}" />
         </Canvas>
     </Viewbox>

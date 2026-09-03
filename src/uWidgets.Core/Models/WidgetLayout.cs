@@ -12,7 +12,10 @@ namespace uWidgets.Core.Models;
 /// <param name="Width">Width of the widget.</param>
 /// <param name="Height">Height of the widget.</param>
 /// <param name="Settings">Widget's model as <see cref="JsonElement"/></param>
-public record WidgetLayout(string Type, string SubType, int X, int Y, int Width, int Height, JsonElement? Settings)
+/// <param name="ContentScale">This widget's content scale (0.5× – 2×).
+/// <c>null</c> falls back to the screen's scale, then to 1.0.</param>
+public record WidgetLayout(string Type, string SubType, int X, int Y, int Width, int Height, JsonElement? Settings,
+    double? ContentScale = null)
 {
     /// <summary>
     /// Get the widget's model.

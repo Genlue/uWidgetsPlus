@@ -211,11 +211,43 @@ public partial class Widget : Window, INotifyPropertyChanged
         : new Thickness(0);
 
     /// <summary>
-    /// Context-menu size section title: "Grid size" in manual mode.
+    /// Context-menu size section title: "Grid size" in manual mode, with the
+    /// current cell span (S/M/L presets are 1×1 / 2×1 / 2×2; anything else is
+    /// a custom size from the dialog).
     /// </summary>
-    public string SizeMenuTitle => appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
-        ? Locale.Widget_Size_Grid
-        : Locale.Widget_Size;
+    public string SizeMenuTitle
+    {
+        get
+        {
+            var baseTitle = appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
+                ? Locale.Widget_Size_Grid
+                : Locale.Widget_Size;
+            var (columns, rows) = CurrentSpan;
+            return $"{baseTitle} · {columns}×{rows}";
+        }
+    }
+
+    /// <summary>The widget's current cell span for the active grid mode.</summary>
+    public (int Columns, int Rows) CurrentSpan
+    {
+        get
+        {
+            // During a preset resize animation the pixel size carries intermediate
+            // values — report the target span until it settles.
+            if (pendingSpan is { } target) return target;
+
+            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return GetSpan();
+
+            var dimensions = appSettingsProvider.Get().Dimensions;
+            var unit = dimensions.Size + dimensions.Margin;
+            return (
+                Math.Max(1, (int) Math.Round((Width + dimensions.Margin) / unit)),
+                Math.Max(1, (int) Math.Round((Height + dimensions.Margin) / unit)));
+        }
+    }
+
+    /// <summary>Target span of an in-flight preset resize animation (null when idle).</summary>
+    private (int Columns, int Rows)? pendingSpan;
 
     public SystemDecorations WidgetSystemDecorations => appSettingsProvider.Get().Theme.UseNativeFrame
         ? SystemDecorations.BorderOnly
@@ -228,16 +260,37 @@ public partial class Widget : Window, INotifyPropertyChanged
     public void EditWidget() => editWidgetWindow?.Invoke().ShowDialog(this);
 
     /// <summary>
-    /// Resize the widget to an exact cell span ("columns,rows", 1×1 … 4×4).
+    /// Context-menu stepper value: the widget's column span. Setting it resizes
+    /// the widget to the new span (the 300 ms transition and the post-animation
+    /// snap/lock happen inside <see cref="Resize"/>).
     /// </summary>
-    public void ResizeSize(string size)
+    public decimal? SizeColumnsValue
     {
-        var parts = size.Split(',');
-        if (parts.Length != 2) return;
-        if (!int.TryParse(parts[0], out var columns)) return;
-        if (!int.TryParse(parts[1], out var rows)) return;
-        _ = Resize(Math.Clamp(columns, 1, 4), Math.Clamp(rows, 1, 4));
+        get => CurrentSpan.Columns;
+        set
+        {
+            var (columns, rows) = CurrentSpan;
+            if (value is not { } target) return;
+            var next = Math.Clamp((int) Math.Round(target), 1, 8);
+            if (next == columns) return;
+            _ = Resize(next, rows);
+        }
     }
+
+    /// <summary>Context-menu stepper value: the widget's row span (see <see cref="SizeColumnsValue"/>).</summary>
+    public decimal? SizeRowsValue
+    {
+        get => CurrentSpan.Rows;
+        set
+        {
+            var (columns, rows) = CurrentSpan;
+            if (value is not { } target) return;
+            var next = Math.Clamp((int) Math.Round(target), 1, 8);
+            if (next == rows) return;
+            _ = Resize(columns, next);
+        }
+    }
+
     public void OpenSettings() => settingsWindow.Invoke().Show();
 
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e) => AfterMove();
@@ -250,8 +303,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         // 1.0 = the content fills the card, 0.5 = half the card (centered),
         // 2.0 = twice the card (clipped by the card's ClipToBounds).
         UpdateContentSize();
-        var contentScale = displayMonitor.Find(this)?.Config?.ContentScale
-                           ?? appSettingsProvider.Get().Dimensions.ContentScale;
+        var contentScale = EffectiveContentScale;
 
         if (Math.Abs(contentScale - 1.0) < 0.001)
         {
@@ -261,6 +313,32 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         ContentPresenter.RenderTransform = new ScaleTransform(contentScale, contentScale);
         ContentPresenter.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+    }
+
+    /// <summary>
+    /// The widget's effective content scale: its own choice (context menu),
+    /// then the per-screen default, then 1.0.
+    /// </summary>
+    private double EffectiveContentScale =>
+        widgetLayoutProvider.Get().ContentScale
+        ?? displayMonitor.Find(this)?.Config?.ContentScale
+        ?? 1.0;
+
+    /// <summary>Context-menu scale entry, showing the current effective ratio.</summary>
+    public string ScaleMenuTitle => $"{Locale.Widget_Scale} · {EffectiveContentScale:0.##}×";
+
+    /// <summary>Open the free-form scale input dialog for this widget.</summary>
+    public void OpenScaleDialog() =>
+        new ScaleDialog(EffectiveContentScale, ApplyContentScale).ShowDialog(this);
+
+    private void ApplyContentScale(double? value)
+    {
+        var settings = widgetLayoutProvider.Get();
+        if (settings.ContentScale == value) return;
+
+        widgetLayoutProvider.Save(settings with { ContentScale = value });
+        Scale();
+        Notify(nameof(ScaleMenuTitle));
     }
 
     /// <summary>
@@ -442,6 +520,12 @@ public partial class Widget : Window, INotifyPropertyChanged
             else
                 ContentPresenter.Content = userControl();
         }
+
+        if (oldLayout?.ContentScale != newLayout.ContentScale)
+        {
+            Scale();
+            Notify(nameof(ScaleMenuTitle));
+        }
     }
 
     public void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -537,6 +621,12 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private async Task Resize(int columns, int rows)
     {
+        // Remember the target span while the transition runs: the animated Width/
+        // Height carry intermediate values, and both the snap/lock below and the
+        // children's tier resolution (SizeTiers) must see the TARGET, not the
+        // mid-animation size (locking to the animated value previously made the
+        // resize snap back to the old span, e.g. M → stays 2×2).
+        pendingSpan = (columns, rows);
         SetMinMaxSize(false);
         Transitions = new Transitions
         {
@@ -544,10 +634,11 @@ public partial class Widget : Window, INotifyPropertyChanged
             new DoubleTransition { Property = HeightProperty, Duration = TimeSpan.FromMilliseconds(300) }
         };
         gridService.SetSize(this, columns, rows);
+        await Task.Delay(320);
+        Transitions = null;
         AfterResize();
         SetMinMaxSize(true);
-        await Task.Delay(300);
-        Transitions = null;
+        pendingSpan = null;
     }
 
     private void AfterResize()
@@ -560,6 +651,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Scale();
         var settings = widgetLayoutProvider.Get();
         widgetLayoutProvider.Save(settings with { Width = (int)Width, Height = (int)Height });
+        Notify(nameof(SizeMenuTitle));
     }
 
     public void Remove()
@@ -683,6 +775,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
 
         Scale();
+        Notify(nameof(ScaleMenuTitle));
         ApplyWidgetRegion();
     }
 }

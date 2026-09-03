@@ -32,9 +32,32 @@ public class MonthCalendarViewModel : ReactiveObject, IDisposable
 
         currentDate = now;
         Month = format.GetMonthName(now.Month).ToUpper();
-        Days = GetWeekDays(format)
+        TodayWeekday = format.GetAbbreviatedDayName(now.DayOfWeek).ToUpper();
+        TodayNumber = now.Day.ToString();
+        var weekDays = GetWeekDays(format).ToList();
+        Days = weekDays
             .Concat(GetEmptyDays(now))
             .Concat(GetDaysOfMonth(now))
+            .ToList();
+        WeekHeaders = weekDays.Select(day => day.Day).ToList();
+        CurrentWeek = BuildCurrentWeek(now);
+    }
+
+    /// <summary>
+    /// The seven real days of the week containing today (starting at the user's
+    /// first day of week) — the compact month-strip for the S/M tiers.
+    /// </summary>
+    private List<DayViewModel> BuildCurrentWeek(DateTime now)
+    {
+        var diff = ((int)now.DayOfWeek - (int)monthCalendarModel.FirstDayOfWeek + 7) % 7;
+        var weekStart = now.Date.AddDays(-diff);
+        return Enumerable
+            .Range(0, 7)
+            .Select(i => weekStart.AddDays(i))
+            .Select(day => new DayViewModel(
+                day.Day.ToString(),
+                IsWeekend(day.DayOfWeek),
+                day.Date == now.Date))
             .ToList();
     }
     
@@ -43,6 +66,34 @@ public class MonthCalendarViewModel : ReactiveObject, IDisposable
     {
         get => month;
         private set => this.RaiseAndSetIfChanged(ref month, value);
+    }
+
+    private string? todayWeekday;
+    public string? TodayWeekday
+    {
+        get => todayWeekday;
+        private set => this.RaiseAndSetIfChanged(ref todayWeekday, value);
+    }
+
+    private string? todayNumber;
+    public string? TodayNumber
+    {
+        get => todayNumber;
+        private set => this.RaiseAndSetIfChanged(ref todayNumber, value);
+    }
+
+    private List<string?>? weekHeaders;
+    public List<string?>? WeekHeaders
+    {
+        get => weekHeaders;
+        private set => this.RaiseAndSetIfChanged(ref weekHeaders, value);
+    }
+
+    private List<DayViewModel>? currentWeek;
+    public List<DayViewModel>? CurrentWeek
+    {
+        get => currentWeek;
+        private set => this.RaiseAndSetIfChanged(ref currentWeek, value);
     }
 
     private List<DayViewModel>? days;

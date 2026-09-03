@@ -116,11 +116,17 @@ public static class FolderIconService
 
         var icon = GetIconFromIcoLink(path)
             ?? GetIconFromShellItemImageFactory(path)
+            ?? GetIconFromPrivateExtract(path)
             ?? GetIconFromShGetFileInfo(path);
 
         lock (cacheLock)
         {
-            iconCache[path] = (icon, stamp);
+            // A small result means every 256-capable source failed (often the
+            // transient E_PENDING of a not-yet-loaded icon handler): cache it
+            // with a stale stamp so the next rebuild retries instead of
+            // freezing the blurry 32px variant forever.
+            var lowQuality = icon != null && icon.PixelSize.Width < 128;
+            iconCache[path] = (icon, lowQuality ? DateTime.MinValue : stamp);
         }
         return icon;
     }
@@ -507,8 +513,40 @@ public static class FolderIconService
         }
     }
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int PrivateExtractIcons(string lpszFile, int nIconIndex, int cx, int cy,
+        IntPtr[] phicon, int[] piconid, int nIcons, uint uFlags);
+
     /// <summary>
-    /// Fallback: extract the associated icon via SHGetFileInfo(SHGFI_ICON).
+    /// Fallback for when the shell factory fails: PrivateExtractIcons at 256×256
+    /// (the shell picks the largest frame up to that size, PNG-compressed frames
+    /// included) instead of the tiny 32px SHGetFileInfo icon.
+    /// </summary>
+    private static Bitmap? GetIconFromPrivateExtract(string path)
+    {
+        var phicon = new IntPtr[1];
+        var piconid = new int[1];
+        var hIcon = IntPtr.Zero;
+        try
+        {
+            if (PrivateExtractIcons(path, 0, 256, 256, phicon, piconid, 1, 0) == 0 || phicon[0] == IntPtr.Zero)
+                return null;
+            hIcon = phicon[0];
+            return IconToBitmap(hIcon);
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            if (hIcon != IntPtr.Zero) DestroyIcon(hIcon);
+        }
+    }
+
+    /// <summary>
+    /// Last resort: extract the associated icon via SHGetFileInfo(SHGFI_ICON) —
+    /// only 32px, used when every 256-capable source failed (e.g. unresolved .lnk).
     /// Note: the icon handle is returned in <see cref="SHFILEINFO.hIcon"/>, not as the
     /// function's return value. The shell image list is NOT used because its icons are
     /// colorized (bluish) variants that differ from what Explorer shows.

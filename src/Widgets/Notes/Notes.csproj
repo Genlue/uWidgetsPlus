@@ -18,6 +18,11 @@
       <PackageReference Include="Avalonia.ReactiveUI" PrivateAssets="all" ExcludeAssets="runtime">
         <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <!-- ColorPicker types compile against the app's copy (loaded by the app at runtime). -->
+      <PackageReference Include="Avalonia.Controls.ColorPicker" PrivateAssets="all" ExcludeAssets="runtime">
+        <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Markdig" />
     </ItemGroup>
 
     <ItemGroup>

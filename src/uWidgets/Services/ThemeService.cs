@@ -10,10 +10,19 @@ namespace uWidgets.Services;
 
 public class ThemeService : IThemeService
 {
-    public ThemeService(IAppSettingsProvider appSettingsProvider)
+    private readonly WallpaperThemeService wallpaperThemeService;
+
+    public ThemeService(IAppSettingsProvider appSettingsProvider, WallpaperThemeService wallpaperThemeService)
     {
+        this.wallpaperThemeService = wallpaperThemeService;
         appSettingsProvider.DataChanging += (_, _, newSettings) => 
             Apply(newSettings.Theme);
+        // Wallpaper changed while in auto mode: re-resolve the variant.
+        this.wallpaperThemeService.DarkFlagChanged += _ =>
+        {
+            var settings = appSettingsProvider.Get();
+            if (settings.Theme.AutoTheme) Apply(settings.Theme);
+        };
     }
     
     private readonly StyleInclude transparentStyle = new(new Uri("avares://uWidgets/"))
@@ -48,7 +57,10 @@ public class ThemeService : IThemeService
     
     public void Apply(Theme theme)
     {
-        Application.Current!.RequestedThemeVariant = theme.DarkMode switch
+        // Auto mode resolves light/dark from the wallpaper brightness; otherwise
+        // the explicit flag decides (null = follow the system).
+        var darkMode = theme.AutoTheme ? wallpaperThemeService.IsWallpaperDark() : theme.DarkMode;
+        Application.Current!.RequestedThemeVariant = darkMode switch
         {
             null => ThemeVariant.Default,
             false => ThemeVariant.Light,

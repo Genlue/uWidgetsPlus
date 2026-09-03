@@ -56,7 +56,8 @@ public class AppearanceViewModel : ReactiveObject
     [
         new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_False, false),
         new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_True, true),
-        new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_Null, null)
+        new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_Null, null),
+        new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_Auto, null, Auto: true)
     ];
 
     public AccentColorViewModel[] AccentComboboxItems =>
@@ -94,11 +95,20 @@ public class AppearanceViewModel : ReactiveObject
 
     public DarkModeViewModel? DarkMode
     {
-        get => DarkModes.FirstOrDefault(theme => theme.Value == appSettingsProvider.Get().Theme.DarkMode);
+        get
+        {
+            var theme = appSettingsProvider.Get().Theme;
+            return DarkModes.FirstOrDefault(mode => mode.Auto == theme.AutoTheme
+                && (theme.AutoTheme || mode.Value == theme.DarkMode));
+        }
         set
         {
             var settings = appSettingsProvider.Get();
-            var newTheme = settings.Theme with { DarkMode = value?.Value };
+            var newTheme = settings.Theme with
+            {
+                DarkMode = value?.Value,
+                AutoTheme = value?.Auto ?? false
+            };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
         }

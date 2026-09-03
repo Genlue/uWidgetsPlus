@@ -67,4 +67,52 @@
   <data name="Notes_Subtitle" xml:space="preserve">
     <value>快速访问你的笔记</value>
   </data>
+  <data name="Notes_Markdown" xml:space="preserve">
+    <value>Markdown 渲染</value>
+  </data>
+  <data name="Notes_Header_Color" xml:space="preserve">
+    <value>顶栏颜色</value>
+  </data>
+  <data name="Notes_Header_FollowAccent" xml:space="preserve">
+    <value>跟随强调色</value>
+  </data>
+  <data name="Notes_Header_Custom" xml:space="preserve">
+    <value>自定义颜色</value>
+  </data>
+  <data name="Notes_Header_Opacity" xml:space="preserve">
+    <value>顶栏透明度</value>
+  </data>
+  <data name="Notes_Source" xml:space="preserve">
+    <value>内容来源</value>
+  </data>
+  <data name="Notes_Source_Internal" xml:space="preserve">
+    <value>内置笔记</value>
+  </data>
+  <data name="Notes_Source_File" xml:space="preserve">
+    <value>Markdown 文件</value>
+  </data>
+  <data name="Notes_Source_Folder" xml:space="preserve">
+    <value>Markdown 文件夹</value>
+  </data>
+  <data name="Notes_Browse" xml:space="preserve">
+    <value>浏览…</value>
+  </data>
+  <data name="Notes_Documents_Count" xml:space="preserve">
+    <value>显示文档数</value>
+  </data>
+  <data name="Notes_Documents_Order" xml:space="preserve">
+    <value>文档选择</value>
+  </data>
+  <data name="Notes_Order_Recent" xml:space="preserve">
+    <value>最近修改（从新到旧）</value>
+  </data>
+  <data name="Notes_Order_Manual" xml:space="preserve">
+    <value>手动指定</value>
+  </data>
+  <data name="Notes_Selected_Files" xml:space="preserve">
+    <value>显示的文档</value>
+  </data>
+  <data name="Notes_Empty" xml:space="preserve">
+    <value>未找到 Markdown 文件</value>
+  </data>
 </root>

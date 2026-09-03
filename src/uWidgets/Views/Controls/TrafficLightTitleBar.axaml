@@ -82,10 +82,12 @@
         </Styles>
     </UserControl.Styles>
 
-    <!-- 36px title bar, same background as the window: no border, no divider.
+    <!-- 36px title bar, fully transparent so the window's own (acrylic/mica-tinted)
+         background shows through: no border, no divider, no second paint layer that
+         would double the tint opacity and split the bar from the content below.
          Pressing outside the buttons drags the window; double click toggles maximize. -->
     <Border x:Name="Root" Classes="TitleBarRoot"
-            Background="{DynamicResource SettingsBackground}"
+            Background="Transparent"
             PointerPressed="OnPointerPressed">
         <StackPanel x:Name="Lights" Orientation="Horizontal" HorizontalAlignment="Left"
                     VerticalAlignment="Center" Margin="14,0,0,0" Spacing="8">

@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Monitor.Models;
@@ -28,13 +29,13 @@ public partial class SingleMetric : UserControl
     {
         var size = e.NewSize;
 
+        // S tier (1×1): a bare ring carries no number — put the percentage in the
+        // center (replacing the metric icon) instead of hiding all text.
+        var tiny = !IsLandscape(size) && size.Height < 80;
+
         // Landscape (2×1, 3×2, …): gauge left, percentage right, whole canvas
         // scales to the card so the proportions stay right.
-        var landscape = size.Width > size.Height * 1.25;
-
-        // Tiny: a single square grid cell at typical DPI scales has no room for
-        // the percentage text in any arrangement — gauge only, tighter margin.
-        var tiny = !landscape && size.Height < 80;
+        var landscape = IsLandscape(size);
 
         Landscape.IsVisible = landscape && !tiny;
 
@@ -45,11 +46,13 @@ public partial class SingleMetric : UserControl
             Grid.SetRow(Ring, 0);
             Grid.SetRow(Text, 0);
             Text.IsVisible = false;
+            Ring.ShowCenterValue = true;
             Margin = new(6);
         }
         else if (landscape)
         {
             Stacked.IsVisible = false;
+            Ring.ShowCenterValue = false;
             Margin = new(12);
         }
         else
@@ -59,7 +62,10 @@ public partial class SingleMetric : UserControl
             Grid.SetRow(Ring, 0);
             Grid.SetRow(Text, 1);
             Text.IsVisible = true;
+            Ring.ShowCenterValue = false;
             Margin = new(12);
         }
     }
+
+    private static bool IsLandscape(Size size) => size.Width > size.Height * 1.25;
 }

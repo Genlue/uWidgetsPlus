@@ -27,4 +27,52 @@
     <data name="Notes_Subtitle" xml:space="preserve">
         <value>Get quick access to one of your notes</value>
     </data>
+    <data name="Notes_Markdown" xml:space="preserve">
+        <value>Markdown rendering</value>
+    </data>
+    <data name="Notes_Header_Color" xml:space="preserve">
+        <value>Title bar color</value>
+    </data>
+    <data name="Notes_Header_FollowAccent" xml:space="preserve">
+        <value>Follow accent</value>
+    </data>
+    <data name="Notes_Header_Custom" xml:space="preserve">
+        <value>Custom color</value>
+    </data>
+    <data name="Notes_Header_Opacity" xml:space="preserve">
+        <value>Title bar opacity</value>
+    </data>
+    <data name="Notes_Source" xml:space="preserve">
+        <value>Note source</value>
+    </data>
+    <data name="Notes_Source_Internal" xml:space="preserve">
+        <value>Internal note</value>
+    </data>
+    <data name="Notes_Source_File" xml:space="preserve">
+        <value>Markdown file</value>
+    </data>
+    <data name="Notes_Source_Folder" xml:space="preserve">
+        <value>Markdown folder</value>
+    </data>
+    <data name="Notes_Browse" xml:space="preserve">
+        <value>Browse…</value>
+    </data>
+    <data name="Notes_Documents_Count" xml:space="preserve">
+        <value>Documents shown</value>
+    </data>
+    <data name="Notes_Documents_Order" xml:space="preserve">
+        <value>Document selection</value>
+    </data>
+    <data name="Notes_Order_Recent" xml:space="preserve">
+        <value>Most recently edited</value>
+    </data>
+    <data name="Notes_Order_Manual" xml:space="preserve">
+        <value>Manually picked</value>
+    </data>
+    <data name="Notes_Selected_Files" xml:space="preserve">
+        <value>Displayed documents</value>
+    </data>
+    <data name="Notes_Empty" xml:space="preserve">
+        <value>No markdown files found</value>
+    </data>
 </root>

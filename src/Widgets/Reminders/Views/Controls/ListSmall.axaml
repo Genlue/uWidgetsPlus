@@ -7,11 +7,11 @@
              x:DataType="viewModels:RemindersViewModel"
              Margin="12,8,6,0">
       <Grid RowDefinitions="Auto, *, Auto" ColumnDefinitions="*, Auto">
-        <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="0" Padding="0" Margin="0 0 8 0" 
+        <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="0" Name="ListNameBox" Padding="0" Margin="0 0 8 0" 
                                       MinHeight="16" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Top"
                                       Text="{Binding ListName}" LostFocus="ListNameChanged"
                                       Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
-        <TextBlock Grid.Row="0" Grid.Column="1" Margin="0 -3 6 0" FontSize="20" FontWeight="Bold"
+        <TextBlock Grid.Row="0" Grid.Column="1" Name="CountText" Margin="0 -3 6 0" FontSize="20" FontWeight="Bold"
                    VerticalAlignment="Top" HorizontalAlignment="Right" Text="{Binding Count}" />
         <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
             <StackPanel>
@@ -26,8 +26,10 @@
                                         <Ellipse Width="16" Height="16" StrokeThickness="1"
                                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                                         
-                                        <Ellipse Margin="2" Width="12" Height="12" IsVisible="{Binding Completed}"
-                                                 Fill="{DynamicResource SystemControlForegroundAccentBrush}" />
+                                        <Path Canvas.Left="3" Canvas.Top="3" Width="10" Height="9" Stretch="Fill"
+                                              IsVisible="{Binding Completed}" Data="M0,4.5 L3.3,8 L10,0"
+                                              StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                                              Stroke="{DynamicResource SystemControlForegroundAccentBrush}" />
                                     </Canvas>
                                 </Button>
                                 <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="1" Padding="8,6,0,6" 

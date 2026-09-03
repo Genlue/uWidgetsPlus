@@ -204,6 +204,7 @@
                                     </Style>
                                 </Grid.Styles>
                                 <Image Width="18" Height="18" Source="{Binding Icon}" Stretch="Uniform"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality"
                                        HorizontalAlignment="Left" VerticalAlignment="Center" />
                                 <TextBox Grid.Column="1" Classes="rename-box" Margin="8,0" VerticalAlignment="Center"
                                          Text="{Binding Name}" LostFocus="OnRename" KeyDown="OnNameKeyDown" />

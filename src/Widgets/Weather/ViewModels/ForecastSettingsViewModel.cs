@@ -10,7 +10,7 @@ namespace Weather.ViewModels;
 public class ForecastSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvider) : ReactiveObject
 {
     private ForecastModel forecastModel = widgetLayoutProvider.Get().GetModel<ForecastModel>() 
-                                          ?? new ForecastModel("Cupertino", 37.3230, -122.0322, "celsius");
+                                          ?? new ForecastModel("Beijing", 39.9042, 116.4074, "celsius");
     
     public City Location
     {

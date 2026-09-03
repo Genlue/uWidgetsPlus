@@ -85,5 +85,101 @@ namespace Notes.Locales {
                 return ResourceManager.GetString("Notes_Title", resourceCulture);
             }
         }
+        
+        public static string Notes_Markdown {
+            get {
+                return ResourceManager.GetString("Notes_Markdown", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Header_Color {
+            get {
+                return ResourceManager.GetString("Notes_Header_Color", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Header_FollowAccent {
+            get {
+                return ResourceManager.GetString("Notes_Header_FollowAccent", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Header_Custom {
+            get {
+                return ResourceManager.GetString("Notes_Header_Custom", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Header_Opacity {
+            get {
+                return ResourceManager.GetString("Notes_Header_Opacity", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Source {
+            get {
+                return ResourceManager.GetString("Notes_Source", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Source_Internal {
+            get {
+                return ResourceManager.GetString("Notes_Source_Internal", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Source_File {
+            get {
+                return ResourceManager.GetString("Notes_Source_File", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Source_Folder {
+            get {
+                return ResourceManager.GetString("Notes_Source_Folder", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Browse {
+            get {
+                return ResourceManager.GetString("Notes_Browse", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Documents_Count {
+            get {
+                return ResourceManager.GetString("Notes_Documents_Count", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Documents_Order {
+            get {
+                return ResourceManager.GetString("Notes_Documents_Order", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Order_Recent {
+            get {
+                return ResourceManager.GetString("Notes_Order_Recent", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Order_Manual {
+            get {
+                return ResourceManager.GetString("Notes_Order_Manual", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Selected_Files {
+            get {
+                return ResourceManager.GetString("Notes_Selected_Files", resourceCulture);
+            }
+        }
+        
+        public static string Notes_Empty {
+            get {
+                return ResourceManager.GetString("Notes_Empty", resourceCulture);
+            }
+        }
     }
 }

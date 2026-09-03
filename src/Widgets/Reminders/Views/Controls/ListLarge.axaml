@@ -33,8 +33,10 @@
                                         <Ellipse Width="16" Height="16" StrokeThickness="1"
                                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                                         
-                                        <Ellipse Margin="2" Width="12" Height="12" IsVisible="{Binding Completed}"
-                                                 Fill="{DynamicResource SystemControlForegroundAccentBrush}" />
+                                        <Path Canvas.Left="3" Canvas.Top="3" Width="10" Height="9" Stretch="Fill"
+                                              IsVisible="{Binding Completed}" Data="M0,4.5 L3.3,8 L10,0"
+                                              StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                                              Stroke="{DynamicResource SystemControlForegroundAccentBrush}" />
                                     </Canvas>
                                 </Button>
                                 <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="1" Padding="8,6,0,6" 

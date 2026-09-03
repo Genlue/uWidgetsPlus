@@ -27,6 +27,7 @@
 
     <!-- 小组件第三方依赖 -->
     <PackageVersion Include="TimeZoneNames" Version="6.0.0" />
+    <PackageVersion Include="Markdig" Version="0.34.0" />
   </ItemGroup>
 
 </Project>

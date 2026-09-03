@@ -22,6 +22,7 @@ public class App : Application
             .AddSingleton<IAppSettingsProvider, AppSettingsProvider>()
             .AddSingleton<ILayoutProvider, LayoutProvider>()
             .AddSingleton<IAssemblyProvider, AssemblyProvider>()
+            .AddSingleton<WallpaperThemeService>()
             .AddSingleton<IThemeService, ThemeService>()
             .AddSingleton<ILocaleService, LocaleService>()
             .AddSingleton<IGridService<Widget>, GridService>()

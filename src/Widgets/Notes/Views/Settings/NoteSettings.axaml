@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:Notes.Locales"
+             x:Class="Notes.Views.Settings.NoteSettings">
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Spacing="5">
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown}">
+                <ToggleSwitch Name="MarkdownToggle" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ColorPicker Name="HeaderColorPicker" Height="36" Width="72" IsAlphaVisible="False" />
+                    <ComboBox Name="HeaderModeBox" MinWidth="128" />
+                </StackPanel>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Opacity}">
+                <NumericUpDown Name="HeaderOpacityBox" Width="128" Minimum="0" Maximum="1"
+                               Increment="0.05" FormatString="{}{0:0.##}" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Source}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ComboBox Name="SourceBox" MinWidth="128" />
+                    <Button Name="BrowseButton" Content="{x:Static locales:Locale.Notes_Browse}"
+                            IsVisible="False" Click="Browse" />
+                </StackPanel>
+            </controls:Setting>
+            <TextBlock Name="PathText" FontSize="11" Opacity="0.55" Margin="4,0,4,4"
+                       TextTrimming="CharacterEllipsis" IsVisible="False" />
+            <StackPanel Name="FolderSection" Orientation="Vertical" Spacing="5" IsVisible="False">
+                <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Count}">
+                    <NumericUpDown Name="DocumentCountBox" Width="128" Minimum="1" Maximum="8"
+                                   Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Order}">
+                    <ComboBox Name="OrderBox" MinWidth="128" />
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Notes_Selected_Files}"
+                                  IsVisible="False" Name="FilesSetting">
+                    <ScrollViewer MaxHeight="200">
+                        <StackPanel Name="FilesPanel" Orientation="Vertical" Spacing="2" />
+                    </ScrollViewer>
+                </controls:Setting>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

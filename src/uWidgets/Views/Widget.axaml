@@ -20,23 +20,28 @@
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
             <Separator IsVisible="{Binding ShowEditButton}"/>
             <MenuItem Header="{Binding SizeMenuTitle}">
-                <MenuItem Header="1×1"  Command="{Binding ResizeSize}" CommandParameter="1,1"  />
-                <MenuItem Header="1×2"  Command="{Binding ResizeSize}" CommandParameter="1,2"  />
-                <MenuItem Header="1×3"  Command="{Binding ResizeSize}" CommandParameter="1,3"  />
-                <MenuItem Header="1×4"  Command="{Binding ResizeSize}" CommandParameter="1,4"  />
-                <MenuItem Header="2×1"  Command="{Binding ResizeSize}" CommandParameter="2,1"  />
-                <MenuItem Header="2×2"  Command="{Binding ResizeSize}" CommandParameter="2,2"  />
-                <MenuItem Header="2×3"  Command="{Binding ResizeSize}" CommandParameter="2,3"  />
-                <MenuItem Header="2×4"  Command="{Binding ResizeSize}" CommandParameter="2,4"  />
-                <MenuItem Header="3×1"  Command="{Binding ResizeSize}" CommandParameter="3,1"  />
-                <MenuItem Header="3×2"  Command="{Binding ResizeSize}" CommandParameter="3,2"  />
-                <MenuItem Header="3×3"  Command="{Binding ResizeSize}" CommandParameter="3,3"  />
-                <MenuItem Header="3×4"  Command="{Binding ResizeSize}" CommandParameter="3,4"  />
-                <MenuItem Header="4×1"  Command="{Binding ResizeSize}" CommandParameter="4,1"  />
-                <MenuItem Header="4×2"  Command="{Binding ResizeSize}" CommandParameter="4,2"  />
-                <MenuItem Header="4×3"  Command="{Binding ResizeSize}" CommandParameter="4,3"  />
-                <MenuItem Header="4×4"  Command="{Binding ResizeSize}" CommandParameter="4,4"  />
+                <MenuItem StaysOpenOnClick="True">
+                    <MenuItem.Header>
+                        <Grid ColumnDefinitions="*,Auto" Width="200">
+                            <TextBlock Text="{x:Static locales:Locale.Widget_Size_Columns}" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="8" Increment="1"
+                                           FormatString="F0" ParsingNumberStyle="Integer"
+                                           Value="{Binding SizeColumnsValue}" />
+                        </Grid>
+                    </MenuItem.Header>
+                </MenuItem>
+                <MenuItem StaysOpenOnClick="True">
+                    <MenuItem.Header>
+                        <Grid ColumnDefinitions="*,Auto" Width="200">
+                            <TextBlock Text="{x:Static locales:Locale.Widget_Size_Rows}" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="8" Increment="1"
+                                           FormatString="F0" ParsingNumberStyle="Integer"
+                                           Value="{Binding SizeRowsValue}" />
+                        </Grid>
+                    </MenuItem.Header>
+                </MenuItem>
             </MenuItem>
+            <MenuItem Header="{Binding ScaleMenuTitle}" Command="{Binding OpenScaleDialog}" />
             <Separator />
             <MenuItem Header="{x:Static locales:Locale.Widget_Remove}" Command="{Binding Remove}" />
             <Separator />

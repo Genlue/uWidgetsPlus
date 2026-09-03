@@ -144,6 +144,9 @@
   <data name="Settings_Appearance_DarkMode_Null" xml:space="preserve">
     <value>跟随系统</value>
   </data>
+  <data name="Settings_Appearance_DarkMode_Auto" xml:space="preserve">
+    <value>自动</value>
+  </data>
   <data name="Settings_Appearance_Transparency_Title" xml:space="preserve">
     <value>透明效果</value>
   </data>
@@ -168,6 +171,12 @@
   <data name="Widget_Size" xml:space="preserve">
     <value>尺寸</value>
   </data>
+  <data name="Widget_Scale" xml:space="preserve">
+    <value>缩放比例</value>
+  </data>
+  <data name="Widget_Scale_Reset" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
   <data name="Widget_Size_Small" xml:space="preserve">
     <value>小</value>
   </data>
@@ -179,6 +188,18 @@
   </data>
   <data name="Widget_Size_ExtraLarge" xml:space="preserve">
     <value>超大</value>
+  </data>
+  <data name="Widget_Size_Custom" xml:space="preserve">
+    <value>自定义…</value>
+  </data>
+  <data name="Widget_Size_Custom_Title" xml:space="preserve">
+    <value>自定义尺寸</value>
+  </data>
+  <data name="Widget_Size_Columns" xml:space="preserve">
+    <value>列数</value>
+  </data>
+  <data name="Widget_Size_Rows" xml:space="preserve">
+    <value>行数</value>
   </data>
   <data name="Widget_Edit" xml:space="preserve">
     <value>编辑</value>
@@ -497,12 +518,6 @@
     </data>
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · 格子 {2} px</value>
-    </data>
-    <data name="Settings_Advanced_ContentScale_Title" xml:space="preserve">
-        <value>内容缩放</value>
-    </data>
-    <data name="Settings_Advanced_ContentScale_Subtitle" xml:space="preserve">
-        <value>组件内容的缩放比例（0.5× – 2×）</value>
     </data>
     <data name="Settings_Advanced_Network" xml:space="preserve">
         <value>网络</value>

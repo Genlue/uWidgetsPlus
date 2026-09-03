@@ -3,6 +3,7 @@
              xmlns:viewModels="clr-namespace:Weather.ViewModels"
              x:Class="Weather.Views.Controls.ForecastLarge"
              x:DataType="viewModels:ForecastViewModel">
+    <LayoutTransformControl Name="Scaler">
     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*">
         <TextBlock Grid.Row="0" Grid.Column="0"
                    FontSize="16" FontWeight="Bold" 
@@ -99,4 +100,5 @@
             </ItemsControl>
         </ScrollViewer>
     </Grid>
+    </LayoutTransformControl>
 </UserControl>

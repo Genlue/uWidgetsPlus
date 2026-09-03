@@ -6,5 +6,4 @@ namespace uWidgets.Core.Models.Settings;
 /// <param name="Size">Size of a 1x1 virtual grid unit in pixels (Virtual mode)</param>
 /// <param name="Margin">Margin between a widget and the grid lines in pixels</param>
 /// <param name="Radius">Widget's corner radius in pixels</param>
-/// <param name="ContentScale">Custom content scale (1.0 = content matches the design size for the current cell size)</param>
-public record Dimensions(int Size, int Margin, int Radius, double ContentScale = 1.0);
+public record Dimensions(int Size, int Margin, int Radius);

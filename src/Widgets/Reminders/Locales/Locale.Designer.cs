@@ -96,6 +96,15 @@ namespace Reminders.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Delete item on check.
+        /// </summary>
+        public static string Reminders_DeleteOnCheck {
+            get {
+                return ResourceManager.GetString("Reminders_DeleteOnCheck", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Get quick access to one of your reminder lists.
         /// </summary>
         public static string Reminders_List_Subtitle {

@@ -510,6 +510,15 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Auto.
+        /// </summary>
+        public static string Settings_Appearance_DarkMode_Auto {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_DarkMode_Auto", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Light.
         /// </summary>
         public static string Settings_Appearance_DarkMode_False {
@@ -996,6 +1005,24 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Content scale.
+        /// </summary>
+        public static string Widget_Scale {
+            get {
+                return ResourceManager.GetString("Widget_Scale", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Reset.
+        /// </summary>
+        public static string Widget_Scale_Reset {
+            get {
+                return ResourceManager.GetString("Widget_Scale_Reset", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Extra Large.
         /// </summary>
         public static string Widget_Size_ExtraLarge {
@@ -1003,7 +1030,43 @@ namespace uWidgets.Locales {
                 return ResourceManager.GetString("Widget_Size_ExtraLarge", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Custom….
+        /// </summary>
+        public static string Widget_Size_Custom {
+            get {
+                return ResourceManager.GetString("Widget_Size_Custom", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Custom size.
+        /// </summary>
+        public static string Widget_Size_Custom_Title {
+            get {
+                return ResourceManager.GetString("Widget_Size_Custom_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Columns.
+        /// </summary>
+        public static string Widget_Size_Columns {
+            get {
+                return ResourceManager.GetString("Widget_Size_Columns", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Rows.
+        /// </summary>
+        public static string Widget_Size_Rows {
+            get {
+                return ResourceManager.GetString("Widget_Size_Rows", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Large.
         /// </summary>
@@ -1270,22 +1333,6 @@ namespace uWidgets.Locales {
         public static string Settings_Advanced_GridEditorInfo {
             get {
                 return ResourceManager.GetString("Settings_Advanced_GridEditorInfo", resourceCulture);
-            }
-        }        
-        /// <summary>
-        ///   Looks up a localized string similar to Content scale.
-        /// </summary>
-        public static string Settings_Advanced_ContentScale_Title {
-            get {
-                return ResourceManager.GetString("Settings_Advanced_ContentScale_Title", resourceCulture);
-            }
-        }        
-        /// <summary>
-        ///   Looks up a localized string similar to Scale the widget content (0.5× – 2×).
-        /// </summary>
-        public static string Settings_Advanced_ContentScale_Subtitle {
-            get {
-                return ResourceManager.GetString("Settings_Advanced_ContentScale_Subtitle", resourceCulture);
             }
         }        
         /// <summary>

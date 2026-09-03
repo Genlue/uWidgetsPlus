@@ -13,7 +13,8 @@ namespace uWidgets.Core.Models;
 /// <param name="Alias">User alias shown in the UI (e.g. <c>"主屏"</c>, <c>"观影屏"</c>); <c>null</c> falls back to the friendly name.</param>
 /// <param name="DeviceName">Windows device name (e.g. <c>"\\.\DISPLAY1"</c>). Set by a manual screen rebinding; <c>null</c> = auto-match by <see cref="Key"/>.</param>
 /// <param name="Grid">This screen's manual grid (percent-based). <c>null</c> falls back to <see cref="AppSettings.Grid"/>, then <see cref="Grid.Default"/>.</param>
-/// <param name="ContentScale">This screen's content scale. <c>null</c> falls back to <see cref="Dimensions.ContentScale"/>.</param>
+/// <param name="ContentScale">This screen's content scale (per-widget scale wins over it).
+/// <c>null</c> falls back to 1.0.</param>
 /// <param name="Layout">Widgets placed on this screen (positions relative to the screen's working area).</param>
 public record ScreenLayout(
     string Id,

@@ -50,6 +50,13 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
             var (cell, gridX, gridY) = GetGridMetrics(window);
             var x = gridX + SnapToCell(window.Position.X - gridX, cell);
             var y = gridY + SnapToCell(window.Position.Y - gridY, cell);
+            // Keep the whole card inside the grid area: a snapped position beyond
+            // the last column/row used to leave widgets floating off the grid.
+            var (columns, rows) = GetGridExtent(window);
+            var width = (int) Math.Round(window.Width * scaling);
+            var height = (int) Math.Round(window.Height * scaling);
+            x = ClampToGrid(x, gridX, columns * cell, width);
+            y = ClampToGrid(y, gridY, rows * cell, height);
             window.Position = new PixelPoint(x, y);
             return;
         }
@@ -76,6 +83,27 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
         var perScreen = displayMonitor.Find(window)?.Config?.Grid;
         if (perScreen != null) return perScreen;
         return appSettingsProvider.Get().Grid ?? Grid.Default;
+    }
+
+    /// <summary>
+    /// Number of columns and rows of the manual grid of the screen the widget
+    /// currently sits on (the grid's total extent is columns × cell wide).
+    /// </summary>
+    private (int Columns, int Rows) GetGridExtent(Widget window)
+    {
+        var grid = GetGrid(window, appSettingsProvider, displayMonitor);
+        return (grid.Columns, grid.Rows);
+    }
+
+    /// <summary>
+    /// Clamp a snapped position so a window of the given size stays inside the
+    /// grid area [origin, origin + extent]. Windows larger than the whole grid
+    /// are pinned to the grid origin.
+    /// </summary>
+    private static int ClampToGrid(int position, int origin, int extent, int size)
+    {
+        var max = origin + Math.Max(0, extent - size);
+        return Math.Min(Math.Max(position, origin), max);
     }
 
     /// <summary>

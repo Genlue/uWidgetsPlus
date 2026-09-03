@@ -170,19 +170,6 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         }
     }
 
-    /// <summary>
-    /// Custom content scale (0.5× – 2×); 1.0 = content matches the design size for the current cell size.
-    /// </summary>
-    public double ContentScale
-    {
-        get => appSettingsProvider.Get().Dimensions.ContentScale;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { ContentScale = value } });
-        }
-    }
-
     public bool RadiusEnabled => !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     public bool SnapPosition

@@ -45,6 +45,9 @@
     <data name="Settings_Appearance_DarkMode_Null" xml:space="preserve">
         <value>System</value>
     </data>
+    <data name="Settings_Appearance_DarkMode_Auto" xml:space="preserve">
+        <value>Auto</value>
+    </data>
     <data name="Settings_Appearance_Transparency_Title" xml:space="preserve">
         <value>Transparency effects</value>
     </data>
@@ -69,6 +72,12 @@
     <data name="Widget_Size" xml:space="preserve">
         <value>Size</value>
     </data>
+    <data name="Widget_Scale" xml:space="preserve">
+        <value>Content scale</value>
+    </data>
+    <data name="Widget_Scale_Reset" xml:space="preserve">
+        <value>Reset</value>
+    </data>
     <data name="Widget_Size_Small" xml:space="preserve">
         <value>Small</value>
     </data>
@@ -80,6 +89,18 @@
     </data>
     <data name="Widget_Size_ExtraLarge" xml:space="preserve">
         <value>Extra Large</value>
+    </data>
+    <data name="Widget_Size_Custom" xml:space="preserve">
+        <value>Custom…</value>
+    </data>
+    <data name="Widget_Size_Custom_Title" xml:space="preserve">
+        <value>Custom size</value>
+    </data>
+    <data name="Widget_Size_Columns" xml:space="preserve">
+        <value>Columns</value>
+    </data>
+    <data name="Widget_Size_Rows" xml:space="preserve">
+        <value>Rows</value>
     </data>
     <data name="Widget_Edit" xml:space="preserve">
         <value>Edit</value>
@@ -398,12 +419,6 @@
     </data>
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · cell {2} px</value>
-    </data>
-    <data name="Settings_Advanced_ContentScale_Title" xml:space="preserve">
-        <value>Content scale</value>
-    </data>
-    <data name="Settings_Advanced_ContentScale_Subtitle" xml:space="preserve">
-        <value>Scale the widget content (0.5× – 2×)</value>
     </data>
     <data name="Settings_Advanced_Network" xml:space="preserve">
         <value>Network</value>

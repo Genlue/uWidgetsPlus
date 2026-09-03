@@ -6,7 +6,7 @@ namespace uWidgets.Core.Models.Settings;
 /// <param name="Theme">Theme settings.</param>
 /// <param name="Templates">Theme templates shown in the Appearance page.</param>
 /// <param name="Layout">Widget sizing and positioning settings.</param>
-/// <param name="Dimensions">Widget dimensions (grid unit size, margin, radius, content scale).</param>
+/// <param name="Dimensions">Widget dimensions (grid unit size, margin, radius).</param>
 /// <param name="Region">Region settings (language).</param>
 /// <param name="RunOnStartup">Start uWidgets with Windows.</param>
 /// <param name="IgnoreUpdate">Version to ignore for update checks.</param>

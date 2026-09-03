@@ -14,6 +14,18 @@ public partial class ListSettings : UserControl
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
         InitializeComponent();
+        DeleteOnCheckToggle.IsChecked =
+            widgetLayoutProvider.Get().GetModel<RemindersListModel>()?.DeleteOnCheck ?? false;
+    }
+
+    private void DeleteOnCheckChanged(object? sender, RoutedEventArgs e)
+    {
+        var layout = widgetLayoutProvider.Get();
+        var model = layout.GetModel<RemindersListModel>() ?? new RemindersListModel(null, []);
+        model = model with { DeleteOnCheck = DeleteOnCheckToggle.IsChecked == true };
+
+        layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
+        widgetLayoutProvider.Save(layout);
     }
 
     private void DeleteCompleted(object? sender, RoutedEventArgs e)

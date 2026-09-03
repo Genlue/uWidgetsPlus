@@ -13,7 +13,7 @@
     
     <Viewbox Stretch="Uniform">
         <StackPanel>
-            <TextBlock Text="{Binding DateText}" 
+            <TextBlock Name="Date" Text="{Binding DateText}" 
                        IsVisible="{Binding ShowDate}"
                        HorizontalAlignment="Center"
                        Margin="0,4,0,0"

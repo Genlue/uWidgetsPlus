@@ -100,6 +100,11 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         FileScroll.IsVisible = false;
         TitleBox.IsHitTestVisible = true;
 
+        var padding = Math.Clamp(model.BodyPadding, 0, 64);
+        RenderScroll.Padding = new Thickness(padding, 0);
+        FilePanel.Margin = new Thickness(padding, 2);
+        ContentBox.Padding = new Thickness(padding, 0);
+
         switch (model.Source)
         {
             case NoteSource.File:
@@ -232,7 +237,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
             return box;
         }
 
-        var rendered = MarkdownRenderer.Render(this, content, BodyFontSize(compact));
+        var rendered = MarkdownRenderer.Render(this, NoteFiles.StripTitleLine(content), BodyFontSize(compact));
         var host = new Border { Background = Brushes.Transparent, Child = rendered };
         host.AddHandler(PointerPressedEvent, (object? sender, PointerPressedEventArgs e) =>
         {

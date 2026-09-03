@@ -8,6 +8,10 @@
             <controls:Setting Title="{x:Static locales:Locale.Notes_Markdown}">
                 <ToggleSwitch Name="MarkdownToggle" />
             </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Notes_Body_Padding}">
+                <NumericUpDown Name="BodyPaddingBox" Width="128" Minimum="0" Maximum="64"
+                               Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ColorPicker Name="HeaderColorPicker" Height="36" Width="72" IsAlphaVisible="False" />

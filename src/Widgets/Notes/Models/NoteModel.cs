@@ -27,6 +27,7 @@ public enum NoteSource
 /// <param name="RecentFiles">Folder mode: take the most recently modified documents.</param>
 /// <param name="DocumentCount">Folder mode: how many documents to show.</param>
 /// <param name="SelectedFiles">Folder mode: explicit file names (when <see cref="RecentFiles"/> is off).</param>
+/// <param name="BodyPadding">Left/right inner padding of the note body text (DIPs).</param>
 public record NoteModel(
     string? Title = null,
     string? Content = null,
@@ -39,4 +40,5 @@ public record NoteModel(
     string? Path = null,
     bool RecentFiles = true,
     int DocumentCount = 3,
-    List<string>? SelectedFiles = null);
+    List<string>? SelectedFiles = null,
+    int BodyPadding = 4);

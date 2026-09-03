@@ -115,4 +115,7 @@
   <data name="Notes_Empty" xml:space="preserve">
     <value>未找到 Markdown 文件</value>
   </data>
+  <data name="Notes_Body_Padding" xml:space="preserve">
+    <value>文本左右内边距</value>
+  </data>
 </root>

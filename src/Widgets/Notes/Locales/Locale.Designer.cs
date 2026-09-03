@@ -181,5 +181,11 @@ namespace Notes.Locales {
                 return ResourceManager.GetString("Notes_Empty", resourceCulture);
             }
         }
+        
+        public static string Notes_Body_Padding {
+            get {
+                return ResourceManager.GetString("Notes_Body_Padding", resourceCulture);
+            }
+        }
     }
 }

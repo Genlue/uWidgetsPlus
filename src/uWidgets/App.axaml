@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:prim="clr-namespace:Avalonia.Controls.Primitives;assembly=Avalonia.Controls"
              x:Class="uWidgets.App"
              RequestedThemeVariant="Default">
     
@@ -37,6 +38,14 @@
         <Style Selector="MenuItem">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
         </Style>
+        <!-- Real frosted blur behind the menus: context menus live in a PopupRoot
+             (a WindowBase subclass the plain "Window" selectors never match) —
+             the same AcrylicBlur backdrop the widget cards use (Mica is ignored
+             on popup windows by DWM). -->
+        <Style Selector="prim|PopupRoot">
+            <Setter Property="TransparencyLevelHint" Value="AcrylicBlur" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
         <Style>
             <Style.Resources>
                 <!-- Fallback for the widget card background (overridden by the
@@ -53,7 +62,7 @@
             <!-- Menu surfaces (context menus): Mica-like chrome tint; items get an
                  accent-colored hover/pressed background (follows the chosen accent,
                  including the wallpaper/monochrome overrides applied by ThemeService). -->
-            <SolidColorBrush x:Key="MenuSurfaceBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.95" />
+            <SolidColorBrush x:Key="MenuSurfaceBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.7" />
             <SolidColorBrush x:Key="MenuSurfaceBorder" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />
             <SolidColorBrush x:Key="MenuFlyoutItemBackground" Color="Transparent" />
             <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.18" />

@@ -35,6 +35,8 @@ public partial class NoteSettings : UserControl
 
         MarkdownToggle.Click += (_, _) =>
             UpdateModel(m => m with { Markdown = MarkdownToggle.IsChecked == true });
+        BodyPaddingBox.ValueChanged += (_, _) =>
+            UpdateModel(m => m with { BodyPadding = (int)(BodyPaddingBox.Value ?? 4) });
         HeaderModeBox.SelectionChanged += (_, _) =>
         {
             var follow = HeaderModeBox.SelectedIndex == 0;
@@ -70,6 +72,7 @@ public partial class NoteSettings : UserControl
     private void Load(NoteModel model)
     {
         MarkdownToggle.IsChecked = model.Markdown;
+        BodyPaddingBox.Value = Math.Clamp(model.BodyPadding, 0, 64);
         HeaderModeBox.SelectedIndex = model.FollowAccentHeader ? 0 : 1;
         HeaderColorPicker.IsVisible = !model.FollowAccentHeader;
         HeaderColorPicker.Color = Color.TryParse(model.HeaderColor, out var color) ? color : Color.Parse("#3376CD");

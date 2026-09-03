@@ -75,4 +75,7 @@
     <data name="Notes_Empty" xml:space="preserve">
         <value>No markdown files found</value>
     </data>
+    <data name="Notes_Body_Padding" xml:space="preserve">
+        <value>Text side padding</value>
+    </data>
 </root>

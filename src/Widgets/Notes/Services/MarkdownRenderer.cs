@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -21,9 +23,61 @@ namespace Notes.Services;
 public static class MarkdownRenderer
 {
     private static readonly MarkdownPipeline Pipeline =
-        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+        new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseSoftlineBreakAsHardlineBreak()
+            .Build();
 
     private static readonly FontFamily MonoFamily = new("Cascadia Mono, Consolas, Courier New");
+
+    // Chinese-note-taking tolerances: markers without the trailing space, full-width
+    // markers (＃ ＞ ～～ ｜), ''italic'' and U+3000 spaces — all normalized to the
+    // CommonMark forms Markdig understands before parsing.
+    private static readonly Regex HeadingNoSpace = new(@"^(\s{0,3})(#{1,6})(?=[^\s#])", RegexOptions.Compiled);
+    private static readonly Regex BulletNoSpace = new(@"^(\s*)([-+])(?=[^\s\-])", RegexOptions.Compiled);
+    private static readonly Regex StarBulletNoSpace = new(@"^(\s*)\*(?!\*)(?=[^\s*])", RegexOptions.Compiled);
+    private static readonly Regex QuoteNoSpace = new(@"^(\s*)>(?=[^\s>])", RegexOptions.Compiled);
+    private static readonly Regex QuoteFullWidth = new(@"^(\s*)＞", RegexOptions.Compiled);
+    private static readonly Regex QuoteItalic = new(@"''(?=\S)([^'\r\n]*?\S)''", RegexOptions.Compiled);
+    private static readonly Regex FenceStart = new(@"^\s*(```|~~~)", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Normalize common non-standard markdown spellings (see remarks) line-wise,
+    /// leaving fenced code blocks untouched.
+    /// </summary>
+    public static string Preprocess(string? markdown)
+    {
+        if (string.IsNullOrEmpty(markdown)) return markdown ?? "";
+        if (markdown.IndexOfAny(['#', '*', '~', '\'', '＃', '＞', '～', '｜', '　']) < 0) return markdown;
+
+        var lines = markdown.Replace("\r\n", "\n").Split('\n');
+        var inFence = false;
+        var builder = new StringBuilder(markdown.Length + 16);
+
+        foreach (var raw in lines)
+        {
+            var line = raw;
+
+            if (FenceStart.IsMatch(line))
+                inFence = !inFence;
+
+            if (!inFence)
+            {
+                line = line.Replace('＃', '#').Replace('｜', '|').Replace('　', ' ');
+                line = QuoteFullWidth.Replace(line, "$1>");
+                line = line.Replace("～～", "~~");
+                line = HeadingNoSpace.Replace(line, "$1$2 ");
+                line = BulletNoSpace.Replace(line, "$1$2 ");
+                line = StarBulletNoSpace.Replace(line, "$1* ");
+                line = QuoteNoSpace.Replace(line, "$1> ");
+                line = QuoteItalic.Replace(line, "*$1*");
+            }
+
+            builder.Append(line).Append('\n');
+        }
+
+        return builder.ToString();
+    }
 
     /// <summary>
     /// Build the visual tree for a markdown string.
@@ -38,7 +92,7 @@ public static class MarkdownRenderer
         if (string.IsNullOrWhiteSpace(markdown))
             return panel;
 
-        foreach (var block in Markdown.Parse(markdown, Pipeline))
+        foreach (var block in Markdown.Parse(Preprocess(markdown), Pipeline))
             AppendBlock(scope, panel, block, fontSize);
 
         return panel;

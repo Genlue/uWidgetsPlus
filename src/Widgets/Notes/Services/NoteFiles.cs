@@ -105,4 +105,31 @@ public static class NoteFiles
 
         return Path.GetFileNameWithoutExtension(path);
     }
+
+    /// <summary>
+    /// Drop the first non-empty line of a document body — it is already shown as
+    /// the document title (macOS Notes behavior), so rendering it again would
+    /// duplicate it.
+    /// </summary>
+    public static string? StripTitleLine(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return content;
+
+        var lines = content.Replace("\r\n", "\n").Split('\n');
+        var firstIndex = -1;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            firstIndex = i;
+            break;
+        }
+
+        if (firstIndex < 0) return "";
+
+        // Also swallow the blank line(s) right after the title.
+        var start = firstIndex + 1;
+        while (start < lines.Length && string.IsNullOrWhiteSpace(lines[start])) start++;
+
+        return string.Join("\n", lines.Skip(start));
+    }
 }

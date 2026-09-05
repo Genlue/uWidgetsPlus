@@ -3,19 +3,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
-using Clock.Models;
-using Clock.ViewModels;
 
 namespace Clock.Views.Controls;
 
 public partial class AnalogWorldSingle : UserControl
 {
-    public AnalogWorldSingle() : this(new ClockModel()) {}
-
-    public AnalogWorldSingle(ClockModel clockModel)
+    public AnalogWorldSingle()
     {
-        DataContext = new AnalogClockViewModel(clockModel);
-        Unloaded += (_, _) => ((AnalogClockViewModel)DataContext).Dispose();
         InitializeComponent();
         BuildTicks();
     }

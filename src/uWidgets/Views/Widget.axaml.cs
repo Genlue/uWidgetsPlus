@@ -271,7 +271,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         {
             var (columns, rows) = CurrentSpan;
             if (value is not { } target) return;
-            var next = Math.Clamp((int) Math.Round(target), 1, 8);
+            var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == columns) return;
             _ = Resize(next, rows);
         }
@@ -285,7 +285,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         {
             var (columns, rows) = CurrentSpan;
             if (value is not { } target) return;
-            var next = Math.Clamp((int) Math.Round(target), 1, 8);
+            var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == rows) return;
             _ = Resize(columns, next);
         }

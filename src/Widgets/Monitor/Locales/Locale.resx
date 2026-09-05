@@ -45,4 +45,22 @@
     <data name="Monitor_SingleMetric_Subtitle" xml:space="preserve">
         <value>View the status of your PC</value>
     </data>
+    <data name="Monitor_MultiDashboard_Title" xml:space="preserve">
+        <value>Multi Dashboard</value>
+    </data>
+    <data name="Monitor_MultiDashboard_Subtitle" xml:space="preserve">
+        <value>View multiple PC metrics at once</value>
+    </data>
+    <data name="Monitor_MultiDashboard_Item1" xml:space="preserve">
+        <value>Item 1</value>
+    </data>
+    <data name="Monitor_MultiDashboard_Item2" xml:space="preserve">
+        <value>Item 2</value>
+    </data>
+    <data name="Monitor_MultiDashboard_Item3" xml:space="preserve">
+        <value>Item 3</value>
+    </data>
+    <data name="Monitor_MultiDashboard_Item4" xml:space="preserve">
+        <value>Item 4</value>
+    </data>
 </root>

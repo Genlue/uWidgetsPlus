@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Monitor.Views.Controls"
+             xmlns:viewModels="clr-namespace:Monitor.ViewModels"
+             x:Class="Monitor.Views.MultiDashboard"
+             x:DataType="viewModels:MultiDashboardViewModel">
+    <!-- The whole board is designed in fixed units and scaled to the card by the
+         Viewbox, so any span/aspect ratio keeps the same proportions: four gauges
+         stay evenly spaced and every number stays centered under its own ring. -->
+    <Viewbox x:Name="ScaleHost" Stretch="Uniform" StretchDirection="Both">
+        <Grid x:Name="Board">
+
+            <Grid x:Name="Item0" x:DataType="viewModels:MultiDashboardItemViewModel" Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:Metric x:Name="Ring0" Grid.Row="0" DataContext="{Binding Metric}" />
+                <TextBlock x:Name="Value0" Grid.Row="1" IsVisible="False" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                           Text="{Binding Metric.Text}" Margin="0,4,0,0" />
+            </Grid>
+
+            <Grid x:Name="Item1" x:DataType="viewModels:MultiDashboardItemViewModel" Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:Metric x:Name="Ring1" Grid.Row="0" DataContext="{Binding Metric}" />
+                <TextBlock x:Name="Value1" Grid.Row="1" IsVisible="False" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                           Text="{Binding Metric.Text}" Margin="0,4,0,0" />
+            </Grid>
+
+            <Grid x:Name="Item2" x:DataType="viewModels:MultiDashboardItemViewModel" Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:Metric x:Name="Ring2" Grid.Row="0" DataContext="{Binding Metric}" />
+                <TextBlock x:Name="Value2" Grid.Row="1" IsVisible="False" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                           Text="{Binding Metric.Text}" Margin="0,4,0,0" />
+            </Grid>
+
+            <Grid x:Name="Item3" x:DataType="viewModels:MultiDashboardItemViewModel" Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:Metric x:Name="Ring3" Grid.Row="0" DataContext="{Binding Metric}" />
+                <TextBlock x:Name="Value3" Grid.Row="1" IsVisible="False" HorizontalAlignment="Stretch"
+                           TextAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                           Text="{Binding Metric.Text}" Margin="0,4,0,0" />
+            </Grid>
+
+        </Grid>
+    </Viewbox>
+</UserControl>

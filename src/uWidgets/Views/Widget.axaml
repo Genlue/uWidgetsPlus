@@ -24,7 +24,7 @@
                     <MenuItem.Header>
                         <Grid ColumnDefinitions="*,Auto" Width="200">
                             <TextBlock Text="{x:Static locales:Locale.Widget_Size_Columns}" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="8" Increment="1"
+                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="999" Increment="1"
                                            FormatString="F0" ParsingNumberStyle="Integer"
                                            Value="{Binding SizeColumnsValue}" />
                         </Grid>
@@ -34,7 +34,7 @@
                     <MenuItem.Header>
                         <Grid ColumnDefinitions="*,Auto" Width="200">
                             <TextBlock Text="{x:Static locales:Locale.Widget_Size_Rows}" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="8" Increment="1"
+                            <NumericUpDown Grid.Column="1" Width="110" Minimum="1" Maximum="999" Increment="1"
                                            FormatString="F0" ParsingNumberStyle="Integer"
                                            Value="{Binding SizeRowsValue}" />
                         </Grid>

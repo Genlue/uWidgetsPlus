@@ -78,4 +78,79 @@
     <data name="Notes_Body_Padding" xml:space="preserve">
         <value>Text side padding</value>
     </data>
+    <data name="Notes_Markdown_Style" xml:space="preserve">
+        <value>Markdown style</value>
+    </data>
+    <data name="Notes_Markdown_Style_Subtitle" xml:space="preserve">
+        <value>Custom colors &amp; font for headings, bold, italic, links, code and quotes — set separately for light and dark mode</value>
+    </data>
+    <data name="Notes_Style_Font" xml:space="preserve">
+        <value>Markdown font</value>
+    </data>
+    <data name="Notes_Style_Font_Default" xml:space="preserve">
+        <value>Follow app font</value>
+    </data>
+    <data name="Notes_Style_Mode" xml:space="preserve">
+        <value>Color palette</value>
+    </data>
+    <data name="Notes_Style_Mode_Light" xml:space="preserve">
+        <value>Light mode</value>
+    </data>
+    <data name="Notes_Style_Mode_Dark" xml:space="preserve">
+        <value>Dark mode</value>
+    </data>
+    <data name="Notes_Style_Text" xml:space="preserve">
+        <value>Body text</value>
+    </data>
+    <data name="Notes_Style_Heading" xml:space="preserve">
+        <value>Headings</value>
+    </data>
+    <data name="Notes_Style_Bold" xml:space="preserve">
+        <value>Bold text</value>
+    </data>
+    <data name="Notes_Style_Italic" xml:space="preserve">
+        <value>Italic text</value>
+    </data>
+    <data name="Notes_Style_Strike" xml:space="preserve">
+        <value>Strikethrough text</value>
+    </data>
+    <data name="Notes_Style_Link" xml:space="preserve">
+        <value>Links</value>
+    </data>
+    <data name="Notes_Style_Link_Subtitle" xml:space="preserve">
+        <value>Default: app accent color</value>
+    </data>
+    <data name="Notes_Style_Code" xml:space="preserve">
+        <value>Code text</value>
+    </data>
+    <data name="Notes_Style_Code_Subtitle" xml:space="preserve">
+        <value>Inline code and code blocks</value>
+    </data>
+    <data name="Notes_Style_Quote" xml:space="preserve">
+        <value>Quotes</value>
+    </data>
+    <data name="Notes_Style_Reset" xml:space="preserve">
+        <value>Default</value>
+    </data>
+    <data name="Notes_Style_Preset" xml:space="preserve">
+        <value>Font and color preset</value>
+    </data>
+    <data name="Notes_Preset_Import" xml:space="preserve">
+        <value>Import</value>
+    </data>
+    <data name="Notes_Preset_Export" xml:space="preserve">
+        <value>Export</value>
+    </data>
+    <data name="Notes_Preset_Filter" xml:space="preserve">
+        <value>Markdown style preset</value>
+    </data>
+    <data name="Notes_Preset_Imported" xml:space="preserve">
+        <value>Preset imported</value>
+    </data>
+    <data name="Notes_Preset_Exported" xml:space="preserve">
+        <value>Preset exported</value>
+    </data>
+    <data name="Notes_Preset_Failed" xml:space="preserve">
+        <value>Failed: invalid or unreadable preset</value>
+    </data>
 </root>

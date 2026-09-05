@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -117,5 +117,80 @@
   </data>
   <data name="Notes_Body_Padding" xml:space="preserve">
     <value>文本左右内边距</value>
+  </data>
+  <data name="Notes_Markdown_Style" xml:space="preserve">
+    <value>Markdown 样式</value>
+  </data>
+  <data name="Notes_Markdown_Style_Subtitle" xml:space="preserve">
+    <value>为标题、粗体、斜体、链接、代码和引用设置颜色与字体（浅色 / 深色模式分别配置）</value>
+  </data>
+  <data name="Notes_Style_Font" xml:space="preserve">
+    <value>Markdown 字体</value>
+  </data>
+  <data name="Notes_Style_Font_Default" xml:space="preserve">
+    <value>跟随软件字体</value>
+  </data>
+  <data name="Notes_Style_Mode" xml:space="preserve">
+    <value>配色模式</value>
+  </data>
+  <data name="Notes_Style_Mode_Light" xml:space="preserve">
+    <value>浅色模式</value>
+  </data>
+  <data name="Notes_Style_Mode_Dark" xml:space="preserve">
+    <value>深色模式</value>
+  </data>
+  <data name="Notes_Style_Text" xml:space="preserve">
+    <value>正文</value>
+  </data>
+  <data name="Notes_Style_Heading" xml:space="preserve">
+    <value>标题</value>
+  </data>
+  <data name="Notes_Style_Bold" xml:space="preserve">
+    <value>粗体</value>
+  </data>
+  <data name="Notes_Style_Italic" xml:space="preserve">
+    <value>斜体</value>
+  </data>
+  <data name="Notes_Style_Strike" xml:space="preserve">
+    <value>删除线</value>
+  </data>
+  <data name="Notes_Style_Link" xml:space="preserve">
+    <value>链接</value>
+  </data>
+  <data name="Notes_Style_Link_Subtitle" xml:space="preserve">
+    <value>默认使用强调色</value>
+  </data>
+  <data name="Notes_Style_Code" xml:space="preserve">
+    <value>代码文字</value>
+  </data>
+  <data name="Notes_Style_Code_Subtitle" xml:space="preserve">
+    <value>行内代码与代码块</value>
+  </data>
+  <data name="Notes_Style_Quote" xml:space="preserve">
+    <value>引用</value>
+  </data>
+  <data name="Notes_Style_Reset" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="Notes_Style_Preset" xml:space="preserve">
+    <value>字体与颜色预设</value>
+  </data>
+  <data name="Notes_Preset_Import" xml:space="preserve">
+    <value>导入</value>
+  </data>
+  <data name="Notes_Preset_Export" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="Notes_Preset_Filter" xml:space="preserve">
+    <value>Markdown 样式预设</value>
+  </data>
+  <data name="Notes_Preset_Imported" xml:space="preserve">
+    <value>预设已导入</value>
+  </data>
+  <data name="Notes_Preset_Exported" xml:space="preserve">
+    <value>预设已导出</value>
+  </data>
+  <data name="Notes_Preset_Failed" xml:space="preserve">
+    <value>失败：预设文件无效或不可读</value>
   </data>
 </root>

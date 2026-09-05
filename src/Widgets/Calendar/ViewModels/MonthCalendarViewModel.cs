@@ -115,10 +115,16 @@ public class MonthCalendarViewModel : ReactiveObject, IDisposable
 
     private IEnumerable<DayViewModel> GetEmptyDays(DateTime now)
     {
+        // Cells before the 1st of the month: how far the 1st is from the first
+        // day of the week (columns run firstDayOfWeek..). The old
+        // "(startOfMonthDayOfWeek + firstDayOfWeek + 5) % 7" only held when
+        // firstDayOfWeek == Monday, so any other start day shifted every date
+        // one column off (e.g. Sunday-start showed a Friday the 4th under
+        // Wednesday).
         var startOfMonthDayOfWeek = (int) new DateTime(now.Year, now.Month, 1).DayOfWeek;
         var firstDayOfWeek = (int) monthCalendarModel.FirstDayOfWeek;
         
-        var count = (startOfMonthDayOfWeek + firstDayOfWeek + 5) % 7;
+        var count = (startOfMonthDayOfWeek - firstDayOfWeek + 7) % 7;
         
         return Enumerable.Range(0, count).Select(_ => new DayViewModel());
     }

@@ -57,6 +57,11 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         Unloaded += OnUnloaded;
         appSettingsProvider.DataChanged += OnAppSettingsChanged;
 
+        // Light/dark switch: re-render the markdown with the palette of the
+        // now-active theme (colors are chosen at render time).
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged += OnThemeVariantChanged;
+
         // The rendered markdown is a hit-test surface: single clicks pass through
         // to the widget (dragging), double clicks enter edit mode (mirroring the
         // ClickThroughTextBox activation gesture).
@@ -140,7 +145,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
             return;
         }
 
-        RenderedHost.Content = MarkdownRenderer.Render(this, model.Content, BodyFontSize(compact));
+        RenderedHost.Content = MarkdownRenderer.Render(this, model.Content, BodyFontSize(compact), model.MarkdownStyle);
         RenderScroll.IsVisible = true;
     }
 
@@ -237,7 +242,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
             return box;
         }
 
-        var rendered = MarkdownRenderer.Render(this, NoteFiles.StripTitleLine(content), BodyFontSize(compact));
+        var rendered = MarkdownRenderer.Render(this, NoteFiles.StripTitleLine(content), BodyFontSize(compact), model.MarkdownStyle);
         var host = new Border { Background = Brushes.Transparent, Child = rendered };
         host.AddHandler(PointerPressedEvent, (object? sender, PointerPressedEventArgs e) =>
         {
@@ -315,10 +320,18 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
     private static double BodyFontSize(bool compact) => compact ? 12 : 14;
 
-    private IBrush ResolveBaseHighBrush() =>
-    this.TryFindResource("SystemControlForegroundBaseHighBrush", out var brush) && brush is IBrush baseHigh
-        ? baseHigh
-        : new SolidColorBrush(Color.Parse("#808080"));
+    private IBrush ResolveBaseHighBrush()
+    {
+        // Explicit active variant: an ambient lookup can freeze on the light
+        // theme dictionary of the app's style overrides (dark-mode divider
+        // drawn in the light accent shade).
+        var app = Application.Current;
+        if (app is not null &&
+            ((IResourceHost)app).TryGetResource("SystemControlForegroundBaseHighBrush", app.ActualThemeVariant, out var brush) &&
+            brush is IBrush baseHigh)
+            return baseHigh;
+        return new SolidColorBrush(Color.Parse("#808080"));
+    }
 
     private Control BuildDocumentRule() => new Border
     {
@@ -398,11 +411,16 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
     private void OnExternalChange(object sender, FileSystemEventArgs e)
     {
-        reloadTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        reloadTimer.Stop();
-        reloadTimer.Tick -= OnReloadTick;
-        reloadTimer.Tick += OnReloadTick;
-        reloadTimer.Start();
+        // FileSystemWatcher raises on a pool thread; the DispatcherTimer must be
+        // created and started on the UI thread or its tick never fires.
+        Dispatcher.UIThread.Post(() =>
+        {
+            reloadTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+            reloadTimer.Stop();
+            reloadTimer.Tick -= OnReloadTick;
+            reloadTimer.Tick += OnReloadTick;
+            reloadTimer.Start();
+        });
     }
 
     private void OnReloadTick(object? sender, EventArgs e)
@@ -425,7 +443,18 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
     private void OnAppSettingsChanged(object? sender, AppSettings? oldSettings, AppSettings newSettings)
     {
-        if (oldSettings?.Theme != newSettings.Theme) ApplyHeader(Model);
+        // The header color (accent/custom) and the markdown palette choice both
+        // depend on the theme settings — re-apply and re-render.
+        ApplyHeader(Model);
+        OnThemeVariantChanged(sender, EventArgs.Empty);
+    }
+
+    private void OnThemeVariantChanged(object? sender, EventArgs e)
+    {
+        // Rebuild with the palette of the now-active theme. An open editor is
+        // never disturbed (it re-renders on its own when the session ends).
+        if (editingInternal || editingPath != null) return;
+        Rebuild();
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -433,6 +462,8 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
         appSettingsProvider.DataChanged -= OnAppSettingsChanged;
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged -= OnThemeVariantChanged;
         RenderScroll.RemoveHandler(PointerPressedEvent, OnRenderedPressed);
         reloadTimer?.Stop();
         if (reloadTimer != null) reloadTimer.Tick -= OnReloadTick;

@@ -25,7 +25,10 @@ public partial class ForecastWide : UserControl
         SizeChanged += OnSizeChanged;
         Unloaded += (_, _) => SizeChanged -= OnSizeChanged;
         InitializeComponent();
-        AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Tunnel);
+        // Bubble with handledEventsToo: mouse-wheel events are bubble-routed, so a
+        // tunnel handler would never fire; we intercept after the ScrollViewer and
+        // translate the vertical wheel delta into horizontal offset ourselves.
+        AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Bubble, true);
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -44,7 +47,12 @@ public partial class ForecastWide : UserControl
     {
         var maxX = HourlyScroller.Extent.Width - HourlyScroller.Viewport.Width;
         if (maxX <= 0) return;
-        if (!HourlyScroller.Bounds.Contains(e.GetPosition(HourlyScroller))) return;
+
+        // Bounds is in the parent's coordinate space; compare with the pointer
+        // position expressed in the ScrollViewer's own local space.
+        var pointer = e.GetPosition(HourlyScroller);
+        if (pointer.X < 0 || pointer.Y < 0 ||
+            pointer.X > HourlyScroller.Bounds.Width || pointer.Y > HourlyScroller.Bounds.Height) return;
 
         var delta = e.Delta.Y;
         if (delta == 0) return;

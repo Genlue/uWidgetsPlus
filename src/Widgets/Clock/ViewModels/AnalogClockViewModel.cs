@@ -33,7 +33,14 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
         HourHand = new ClockHandViewModel(GetHoursAngle(time), 190, false);
         MinuteHand = new ClockHandViewModel(GetMinutesAngle(time), 365, false);
         SecondHand = new ClockHandViewModel(GetSecondsAngle(time), 460, true, clockModel.ShowSeconds);
+        this.RaisePropertyChanged(nameof(DigitalTimeText));
     }
+
+    /// <summary>
+    /// 24-hour digital readout for this clock's time zone (used inside the dial
+    /// and under the dial on wide layouts).
+    /// </summary>
+    public string DigitalTimeText => Time.ToString("HH:mm");
     
     private TimeZoneInfo TimeZoneInfo => clockModel.TimeZoneId != null
         ? TimeZoneInfo.FindSystemTimeZoneById(clockModel.TimeZoneId)

@@ -29,6 +29,16 @@ public partial class AnalogWorldSingle : UserControl
         set => Numbers.IsVisible = value;
     }
 
+    /// <summary>
+    /// Shows the two-line center readout (custom city name + digital time)
+    /// inside the dial, used by 2x2 and 4x4 layouts.
+    /// </summary>
+    public bool ShowCenterOverlay
+    {
+        get => CenterOverlay.IsVisible;
+        set => CenterOverlay.IsVisible = value;
+    }
+
     private void BuildTicks()
     {
         if (Ticks.Children.Count > 0) return;

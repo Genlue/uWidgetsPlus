@@ -3,4 +3,4 @@ using System.Reflection;
 [assembly: AssemblyTitle("uWidgets")]
 [assembly: AssemblyDescription("A macOS styled widget pack for Windows")]
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.6.4")]
+[assembly: AssemblyVersion("1.6.5")]

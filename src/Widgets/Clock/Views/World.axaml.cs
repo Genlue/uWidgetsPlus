@@ -34,7 +34,7 @@ public partial class World : UserControl
 
     private void ApplyLayout()
     {
-        var (columns, rows, showCity, showCenterDigital, showNumbers) = ResolveLayout();
+        var (columns, rows, showBottom, showCenterOverlay, showNumbers) = ResolveLayout();
 
         Board.ColumnDefinitions = new ColumnDefinitions(columns switch
         {
@@ -49,11 +49,12 @@ public partial class World : UserControl
             _ => "*"
         });
 
-        (Board.Width, Board.Height) = ResolveBoardSize(columns, rows, showCity);
+        (Board.Width, Board.Height) = ResolveBoardSize(columns, rows, showBottom);
 
         var items = new[] { Item0, Item1, Item2, Item3 };
         var clocks = new[] { Clock0, Clock1, Clock2, Clock3 };
         var cities = new[] { City0, City1, City2, City3 };
+        var digitals = new[] { Digital0, Digital1, Digital2, Digital3 };
 
         var index = 0;
         for (var row = 0; row < rows && index < items.Length; row++)
@@ -61,42 +62,35 @@ public partial class World : UserControl
             for (var col = 0; col < columns && index < items.Length; col++)
             {
                 items[index].IsVisible = true;
+                // 4x2: symmetric top/bottom margin so the dial top and the digital
+                // text bottom keep the same distance from the card edges.
+                items[index].Margin = showBottom ? new Thickness(3, 8) : new Thickness(4);
                 Grid.SetColumn(items[index], col);
                 Grid.SetRow(items[index], row);
-                cities[index].IsVisible = showCity;
+                cities[index].IsVisible = showBottom;
+                digitals[index].IsVisible = showBottom;
                 clocks[index].ShowNumbers = showNumbers;
+                clocks[index].ShowCenterOverlay = showCenterOverlay;
                 index++;
             }
         }
         for (; index < items.Length; index++) items[index].IsVisible = false;
-
-        if (showCenterDigital)
-        {
-            Grid.SetColumn(CenterOverlay, 0);
-            Grid.SetRow(CenterOverlay, 0);
-            Grid.SetColumnSpan(CenterOverlay, columns);
-            Grid.SetRowSpan(CenterOverlay, rows);
-            CenterOverlay.IsVisible = true;
-        }
-        else
-        {
-            CenterOverlay.IsVisible = false;
-        }
     }
 
     /// <summary>
     /// Choose the world-clock arrangement from the hosting widget's grid span:
-    /// 2x2 -> 2x2 dials + center digital time; 4x2 -> one row of four bigger dials
-    /// with city labels (like the 4x2 Monitor Multi-Dashboard); 4x4 -> 2x2 dials
-    /// with city labels; everything else adapts by span/aspect ratio.
+    /// 2x2 and 4x4 -> 2x2 dials, each with a centered two-line readout (custom
+    /// city name + that time zone's digital time); 4x2 -> one row of four dials
+    /// with city name + digital time underneath; everything else adapts by
+    /// span/aspect ratio.
     /// </summary>
-    private (int Columns, int Rows, bool ShowCityNames, bool ShowCenterDigital, bool ShowNumbers) ResolveLayout()
+    private (int Columns, int Rows, bool ShowBottom, bool ShowCenterOverlay, bool ShowNumbers) ResolveLayout()
     {
         var span = FindHostSpan();
         if (span is { } s)
         {
             if (s.Columns == 1 && s.Rows == 1) return (1, 1, false, false, false);
-            if (s.Columns >= 3 && s.Rows >= 3) return (2, 2, true, false, true);
+            if (s.Columns >= 3 && s.Rows >= 3) return (2, 2, false, true, true);
             if (s.Columns >= 3 && s.Rows == 2) return (4, 1, true, false, true);
             if (s.Columns >= 3 && s.Rows == 1) return (4, 1, false, false, true);
             if (s.Columns == 1 && s.Rows >= 3) return (1, 4, true, false, true);
@@ -108,18 +102,19 @@ public partial class World : UserControl
         // No widget host (gallery preview): coarse aspect-ratio fallback.
         var size = Bounds.Size;
         if (size.Width > 0 && size.Width > size.Height * 1.8)
-            return (4, 1, size.Height >= 100, false, true);
+            return (4, 1, size.Height >= 120, false, true);
         if (size.Height > 0 && size.Height > size.Width * 1.8)
             return (1, 4, size.Width >= 100, false, true);
         return (2, 2, false, true, false);
     }
 
-    private static (double Width, double Height) ResolveBoardSize(int columns, int rows, bool showCity)
+    private static (double Width, double Height) ResolveBoardSize(int columns, int rows, bool showBottom)
     {
-        if (columns == 4) return showCity ? (320, 160) : (320, 90);
-        if (rows == 4) return showCity ? (120, 360) : (90, 360);
+        if (columns == 4) return showBottom ? (320, 160) : (320, 90);
+        if (rows == 4) return showBottom ? (120, 360) : (90, 360);
         if (columns == 1 && rows == 1) return (200, 200);
-        return showCity ? (220, 220) : (200, 200);
+        // 2x2 and 4x4 share the same board; the Viewbox scales 4x4 up proportionally.
+        return showBottom ? (220, 220) : (200, 200);
     }
 
     private (int Columns, int Rows)? FindHostSpan()

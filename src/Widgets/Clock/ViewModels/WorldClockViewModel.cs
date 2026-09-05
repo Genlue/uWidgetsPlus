@@ -6,7 +6,6 @@ namespace Clock.ViewModels;
 public class WorldClockViewModel : ReactiveObject, IDisposable
 {
     private readonly List<AnalogClockViewModel> viewModels;
-    private readonly DigitalClockViewModel digital;
 
     public WorldClockViewModel(WorldClockModel worldClockModel)
     {
@@ -25,9 +24,6 @@ public class WorldClockViewModel : ReactiveObject, IDisposable
                 return vm;
             })
             .ToList();
-
-        // Center digital time on 2x2: local time, 24-hour, no seconds.
-        digital = new DigitalClockViewModel(new ClockModel(false, false, true, null));
     }
 
     public AnalogClockViewModel First => viewModels[0];
@@ -35,12 +31,9 @@ public class WorldClockViewModel : ReactiveObject, IDisposable
     public AnalogClockViewModel Third => viewModels[2];
     public AnalogClockViewModel Fourth => viewModels[3];
 
-    public DigitalClockViewModel Digital => digital;
-
     public void Dispose()
     {
         viewModels.ForEach(x => x.Dispose());
-        digital.Dispose();
         GC.SuppressFinalize(this);
     }
 }

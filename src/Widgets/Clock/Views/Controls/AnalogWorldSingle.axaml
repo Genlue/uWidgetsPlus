@@ -32,6 +32,13 @@
             <controls:ClockHand DataContext="{Binding HourHand}" />
             <controls:ClockHand DataContext="{Binding MinuteHand}" />
             <controls:ClockHand DataContext="{Binding SecondHand}" />
+            <StackPanel Name="CenterOverlay" IsVisible="False" IsHitTestVisible="False"
+                        Width="1000" Canvas.Left="0" Canvas.Top="340" Spacing="30">
+                <TextBlock Text="{Binding CityName}" FontSize="96" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding DigitalTimeText}" FontSize="140" FontWeight="Bold"
+                           HorizontalAlignment="Center" TextAlignment="Center" LetterSpacing="-2" />
+            </StackPanel>
         </Canvas>
     </Viewbox>
 </UserControl>

@@ -4,51 +4,34 @@
         xmlns:viewModels="clr-namespace:Clock.ViewModels"
         x:Class="Clock.Views.Controls.AnalogWorldSingle"
         x:DataType="viewModels:AnalogClockViewModel"
-        Margin="8">
-    
-    <UserControl.Styles>
-        <Style Selector="TextBlock">
-            <Setter Property="FontSize" Value="110" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="StackPanel > TextBlock">
-            <Setter Property="FontSize" Value="180" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-        </Style>
-    </UserControl.Styles>
-    
+        Margin="0">
+
     <Viewbox Stretch="Uniform">
-        <StackPanel>
-            <Canvas Width="1000" Height="1000" Margin="80">
-                <Ellipse Width="1000" Height="1000" Opacity="0.2"
-                         Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-                <Canvas Name="Numbers" RenderTransformOrigin="500,500">
-                    <Canvas.RenderTransform>
-                        <ScaleTransform ScaleX="1.1" ScaleY="1.1" />
-                    </Canvas.RenderTransform>
-                    <TextBlock Canvas.Left="650" Canvas.Top="115" Text="1" />
-                    <TextBlock Canvas.Left="790" Canvas.Top="255" Text="2" />
-                    <TextBlock Canvas.Left="835" Canvas.Top="440" Text="3" />
-                    <TextBlock Canvas.Left="775" Canvas.Top="615" Text="4" />
-                    <TextBlock Canvas.Left="630" Canvas.Top="745" Text="5" />
-                    <TextBlock Canvas.Left="460" Canvas.Top="800" Text="6" />
-                    <TextBlock Canvas.Left="280" Canvas.Top="740" Text="7" />
-                    <TextBlock Canvas.Left="140" Canvas.Top="610" Text="8" />
-                    <TextBlock Canvas.Left="95" Canvas.Top="435" Text="9" />
-                    <TextBlock Canvas.Left="140" Canvas.Top="255" Text="10" />
-                    <TextBlock Canvas.Left="280" Canvas.Top="120" Text="11" />
-                    <TextBlock Canvas.Left="440" Canvas.Top="70" Text="12" />
-                    <TextBlock Canvas.Top="250" Width="1000" Opacity="0.5" IsVisible="{Binding ShowCityAbbreviation}" TextAlignment="Center" Text="{Binding CityAbbreviation}" />
-                </Canvas>
-                <controls:ClockHand DataContext="{Binding HourHand}" />
-                <controls:ClockHand DataContext="{Binding MinuteHand}" />
-                <controls:ClockHand DataContext="{Binding SecondHand}" />
+        <Canvas Width="1000" Height="1000">
+            <Ellipse Width="1000" Height="1000" Opacity="0.2"
+                     Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Canvas Name="Ticks" IsHitTestVisible="False" />
+            <Canvas Name="Numbers" RenderTransformOrigin="500,500">
+                <Canvas.RenderTransform>
+                    <ScaleTransform ScaleX="1.1" ScaleY="1.1" />
+                </Canvas.RenderTransform>
+                <TextBlock Canvas.Left="650" Canvas.Top="115" Text="1" />
+                <TextBlock Canvas.Left="790" Canvas.Top="255" Text="2" />
+                <TextBlock Canvas.Left="835" Canvas.Top="440" Text="3" />
+                <TextBlock Canvas.Left="775" Canvas.Top="615" Text="4" />
+                <TextBlock Canvas.Left="630" Canvas.Top="745" Text="5" />
+                <TextBlock Canvas.Left="460" Canvas.Top="800" Text="6" />
+                <TextBlock Canvas.Left="280" Canvas.Top="740" Text="7" />
+                <TextBlock Canvas.Left="140" Canvas.Top="610" Text="8" />
+                <TextBlock Canvas.Left="95" Canvas.Top="435" Text="9" />
+                <TextBlock Canvas.Left="140" Canvas.Top="255" Text="10" />
+                <TextBlock Canvas.Left="280" Canvas.Top="120" Text="11" />
+                <TextBlock Canvas.Left="440" Canvas.Top="70" Text="12" />
+                <TextBlock Canvas.Top="250" Width="1000" Opacity="0.5" IsVisible="{Binding ShowCityAbbreviation}" TextAlignment="Center" Text="{Binding CityAbbreviation}" />
             </Canvas>
-            <TextBlock IsVisible="{Binding ShowCityName}" Text="{Binding CityName}" />
-            <TextBlock IsVisible="{Binding ShowCityName}" Opacity="0.5" Text="{Binding Date}" />
-            <TextBlock IsVisible="{Binding ShowCityName}" Opacity="0.5" Text="{Binding TimeZoneDiff}" />
-        </StackPanel>
+            <controls:ClockHand DataContext="{Binding HourHand}" />
+            <controls:ClockHand DataContext="{Binding MinuteHand}" />
+            <controls:ClockHand DataContext="{Binding SecondHand}" />
+        </Canvas>
     </Viewbox>
 </UserControl>
-

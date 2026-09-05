@@ -19,6 +19,9 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </controls:Setting>
+            <controls:Setting Title="{Binding CityName1Title}">
+                <TextBox Text="{Binding CityName1, Mode=TwoWay}" Width="130" VerticalContentAlignment="Center" />
+            </controls:Setting>
             <controls:Setting Title="{Binding TimeZone2Title}">
                 <ComboBox ItemsSource="{Binding TimeZones}" Width="130" SelectedValue="{Binding TimeZone2}">
                     <ComboBox.ItemTemplate>
@@ -27,6 +30,9 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+            </controls:Setting>
+            <controls:Setting Title="{Binding CityName2Title}">
+                <TextBox Text="{Binding CityName2, Mode=TwoWay}" Width="130" VerticalContentAlignment="Center" />
             </controls:Setting>
             <controls:Setting Title="{Binding TimeZone3Title}">
                 <ComboBox ItemsSource="{Binding TimeZones}" Width="130" SelectedValue="{Binding TimeZone3}">
@@ -37,6 +43,9 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </controls:Setting>
+            <controls:Setting Title="{Binding CityName3Title}">
+                <TextBox Text="{Binding CityName3, Mode=TwoWay}" Width="130" VerticalContentAlignment="Center" />
+            </controls:Setting>
             <controls:Setting Title="{Binding TimeZone4Title}">
                 <ComboBox ItemsSource="{Binding TimeZones}" Width="130" SelectedValue="{Binding TimeZone4}">
                     <ComboBox.ItemTemplate>
@@ -45,6 +54,9 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+            </controls:Setting>
+            <controls:Setting Title="{Binding CityName4Title}">
+                <TextBox Text="{Binding CityName4, Mode=TwoWay}" Width="130" VerticalContentAlignment="Center" />
             </controls:Setting>
         </StackPanel>
     </ScrollViewer>

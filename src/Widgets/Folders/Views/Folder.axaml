@@ -77,7 +77,12 @@
                             <StackPanel IsHitTestVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Top" Spacing="2">
                                 <Image Width="{Binding IconSize}" Height="{Binding IconSize}"
                                        RenderOptions.BitmapInterpolationMode="HighQuality"
-                                       Source="{Binding Icon}" Stretch="Uniform" HorizontalAlignment="Center" />
+                                       Source="{Binding Icon}" Stretch="Uniform" HorizontalAlignment="Center"
+                                       RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <ScaleTransform ScaleX="1" ScaleY="1" />
+                                    </Image.RenderTransform>
+                                </Image>
                                 <TextBlock Text="{Binding NameText}" FontSize="{Binding FontSize}"
                                            FontWeight="{Binding BoldName, Converter={StaticResource BoldNamesConverter}}"
                                            TextAlignment="Center" TextWrapping="Wrap"

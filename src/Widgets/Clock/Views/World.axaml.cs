@@ -1,84 +1,138 @@
+using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Clock.Models;
 using Clock.ViewModels;
-using Clock.Views.Controls;
-using uWidgets.Services;
 
 namespace Clock.Views;
 
 public partial class World : UserControl
 {
-    public World() : this(new WorldClockModel([])) {}
-    
+    private readonly WorldClockViewModel viewModel;
+
+    public World() : this(new WorldClockModel(new List<string?>())) {}
+
     public World(WorldClockModel worldClockModel)
     {
-        DataContext = new WorldClockViewModel(worldClockModel);
+        viewModel = new WorldClockViewModel(worldClockModel);
+        DataContext = viewModel;
+        InitializeComponent();
+
+        Item0.DataContext = viewModel.First;
+        Item1.DataContext = viewModel.Second;
+        Item2.DataContext = viewModel.Third;
+        Item3.DataContext = viewModel.Fourth;
+
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
-        InitializeComponent();
+        ApplyLayout();
     }
 
-    private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
-    {
-        var size = e.NewSize;
-        var tier = SizeTiers.ResolveTier(this, size);
+    private void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyLayout();
 
-        // Cell (1×1): four dials are illegible — show only the primary city,
-        // full-face, across the whole card. Every other span uses the aspect
-        // logic below (2×2 → 2×2 quadrants, 4×2 → four in a row, 4×4 → quadrants).
-        if (tier == WidgetTier.Cell)
+    private void ApplyLayout()
+    {
+        var (columns, rows, showCity, showCenterDigital, showNumbers) = ResolveLayout();
+
+        Board.ColumnDefinitions = new ColumnDefinitions(columns switch
         {
-            Grid.ColumnDefinitions = new ColumnDefinitions("*");
-            Grid.RowDefinitions = new RowDefinitions("*");
-            ShowSingle(First);
-            return;
+            4 => "*,*,*,*",
+            2 => "*,*",
+            _ => "*"
+        });
+        Board.RowDefinitions = new RowDefinitions(rows switch
+        {
+            4 => "*,*,*,*",
+            2 => "*,*",
+            _ => "*"
+        });
+
+        (Board.Width, Board.Height) = ResolveBoardSize(columns, rows, showCity);
+
+        var items = new[] { Item0, Item1, Item2, Item3 };
+        var clocks = new[] { Clock0, Clock1, Clock2, Clock3 };
+        var cities = new[] { City0, City1, City2, City3 };
+
+        var index = 0;
+        for (var row = 0; row < rows && index < items.Length; row++)
+        {
+            for (var col = 0; col < columns && index < items.Length; col++)
+            {
+                items[index].IsVisible = true;
+                Grid.SetColumn(items[index], col);
+                Grid.SetRow(items[index], row);
+                cities[index].IsVisible = showCity;
+                clocks[index].ShowNumbers = showNumbers;
+                index++;
+            }
+        }
+        for (; index < items.Length; index++) items[index].IsVisible = false;
+
+        if (showCenterDigital)
+        {
+            Grid.SetColumn(CenterOverlay, 0);
+            Grid.SetRow(CenterOverlay, 0);
+            Grid.SetColumnSpan(CenterOverlay, columns);
+            Grid.SetRowSpan(CenterOverlay, rows);
+            CenterOverlay.IsVisible = true;
+        }
+        else
+        {
+            CenterOverlay.IsVisible = false;
+        }
+    }
+
+    /// <summary>
+    /// Choose the world-clock arrangement from the hosting widget's grid span:
+    /// 2x2 -> 2x2 dials + center digital time; 4x2 -> one row of four bigger dials
+    /// with city labels (like the 4x2 Monitor Multi-Dashboard); 4x4 -> 2x2 dials
+    /// with city labels; everything else adapts by span/aspect ratio.
+    /// </summary>
+    private (int Columns, int Rows, bool ShowCityNames, bool ShowCenterDigital, bool ShowNumbers) ResolveLayout()
+    {
+        var span = FindHostSpan();
+        if (span is { } s)
+        {
+            if (s.Columns == 1 && s.Rows == 1) return (1, 1, false, false, false);
+            if (s.Columns >= 3 && s.Rows >= 3) return (2, 2, true, false, true);
+            if (s.Columns >= 3 && s.Rows == 2) return (4, 1, true, false, true);
+            if (s.Columns >= 3 && s.Rows == 1) return (4, 1, false, false, true);
+            if (s.Columns == 1 && s.Rows >= 3) return (1, 4, true, false, true);
+            if (s.Columns == 1 && s.Rows == 2) return (2, 2, false, true, false);
+            if (s.Columns == 2 && s.Rows == 1) return (4, 1, false, false, false);
+            if (s.Columns == 2 && s.Rows == 2) return (2, 2, false, true, false);
         }
 
-        var wide = size.AspectRatio >= 1.5;
-        
-        Grid.ColumnDefinitions = new ColumnDefinitions(wide ? "*,*,*,*" : "*,*");
-        Grid.RowDefinitions = new RowDefinitions(wide ? "*" : "*,*");
-
-        ShowQuadrant(First, 0, 0, wide);
-        ShowQuadrant(Second, 1, wide ? 0 : 0, wide);
-        ShowQuadrant(Third, wide ? 2 : 0, wide ? 0 : 1, wide);
-        ShowQuadrant(Fourth, wide ? 3 : 1, wide ? 0 : 1, wide);
+        // No widget host (gallery preview): coarse aspect-ratio fallback.
+        var size = Bounds.Size;
+        if (size.Width > 0 && size.Width > size.Height * 1.8)
+            return (4, 1, size.Height >= 100, false, true);
+        if (size.Height > 0 && size.Height > size.Width * 1.8)
+            return (1, 4, size.Width >= 100, false, true);
+        return (2, 2, false, true, false);
     }
 
-    private void ShowSingle(AnalogWorldSingle control)
+    private static (double Width, double Height) ResolveBoardSize(int columns, int rows, bool showCity)
     {
-        SetAllVisible(false);
-        control.IsVisible = true;
-        // All four cells must sit inside the single 1×1 definition — Avalonia's
-        // Grid measures invisible children too and throws on out-of-range indices.
-        foreach (var cell in new[] { First, Second, Third, Fourth })
-        {
-            Grid.SetColumn(cell, 0);
-            Grid.SetRow(cell, 0);
-        }
-        (control.DataContext as AnalogClockViewModel)!.ShowCityName = false;
+        if (columns == 4) return showCity ? (320, 160) : (320, 90);
+        if (rows == 4) return showCity ? (120, 360) : (90, 360);
+        if (columns == 1 && rows == 1) return (200, 200);
+        return showCity ? (220, 220) : (200, 200);
     }
 
-    private void ShowQuadrant(AnalogWorldSingle control, int column, int row, bool showCityName)
+    private (int Columns, int Rows)? FindHostSpan()
     {
-        control.IsVisible = true;
-        Grid.SetColumn(control, column);
-        Grid.SetRow(control, row);
-        (control.DataContext as AnalogClockViewModel)!.ShowCityName = showCityName;
-    }
-
-    private void SetAllVisible(bool visible)
-    {
-        First.IsVisible = visible;
-        Second.IsVisible = visible;
-        Third.IsVisible = visible;
-        Fourth.IsVisible = visible;
+        for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
+            if (node is uWidgets.Views.Widget widget)
+                return widget.CurrentSpan;
+        return null;
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        ((WorldClockViewModel)DataContext!).Dispose();
+        viewModel.Dispose();
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
     }

@@ -22,7 +22,7 @@
                    FontSize="14" FontWeight="Bold" Opacity="0.5"
                    HorizontalAlignment="Right" VerticalAlignment="Top"
                    Text="{Binding CurrentMinMax}" />
-        <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
+        <ScrollViewer x:Name="HourlyScroller" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
             <ItemsControl ItemsSource="{Binding HourlyForecast}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="viewModels:HourlyForecastViewModel">

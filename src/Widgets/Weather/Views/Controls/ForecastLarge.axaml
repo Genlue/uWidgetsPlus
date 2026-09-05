@@ -29,7 +29,7 @@
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
             </Path.Data>
         </Path>
-        <ScrollViewer Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+        <ScrollViewer x:Name="HourlyScroller" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
             <ItemsControl ItemsSource="{Binding HourlyForecast}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="viewModels:HourlyForecastViewModel">

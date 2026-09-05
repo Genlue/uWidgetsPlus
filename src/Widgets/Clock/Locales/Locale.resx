@@ -66,4 +66,7 @@
     <data name="Clock_Tomorrow" xml:space="preserve">
         <value>Tomorrow</value>
     </data>
+    <data name="Clock_CityName" xml:space="preserve">
+        <value>City name</value>
+    </data>
 </root>

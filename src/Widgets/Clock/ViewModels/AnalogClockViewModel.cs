@@ -1,4 +1,4 @@
-﻿using Clock.Models;
+using Clock.Models;
 using ReactiveUI;
 using uWidgets.Services;
 using Locale = Clock.Locales.Locale;
@@ -47,7 +47,25 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
 
     private string CityFullName => TimeZoneInfo.DisplayName.Split(") ").Last().Split(", ").First().Split("(").First();
 
-    public string CityName => CityFullName.Length > 11 ? CityFullName[..9] + "…" : CityFullName;
+    private string? customCityName;
+
+    /// <summary>
+    /// Optional user-provided display name; when set it replaces the city name
+    /// derived from the selected time zone (World Clock settings).
+    /// </summary>
+    public string? CustomCityName
+    {
+        get => customCityName;
+        set
+        {
+            customCityName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            this.RaisePropertyChanged(nameof(CityName));
+        }
+    }
+
+    public string CityName => !string.IsNullOrWhiteSpace(customCityName)
+        ? customCityName!
+        : CityFullName.Length > 11 ? CityFullName[..9] + "…" : CityFullName;
     
     public string Date => (Time.Date - DateTime.Now.Date).Days switch
     {

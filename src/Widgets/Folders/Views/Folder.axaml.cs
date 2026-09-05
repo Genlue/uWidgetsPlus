@@ -187,11 +187,35 @@ public partial class Folder : UserControl
 
     private void OnItemPointerEntered(object? sender, PointerEventArgs e)
     {
+        // Fixed rows use an exact per-row pitch, so scaling the whole row would
+        // push the file name below the cell and get clipped — scale only the icon.
+        if (!IsListMode && IsFixedRows && sender is Border border
+            && border.Child is StackPanel panel)
+        {
+            var icon = panel.Children.OfType<Image>().FirstOrDefault();
+            if (icon != null)
+            {
+                AnimateScale(icon, HoverScale);
+                return;
+            }
+        }
+
         AnimateScale(sender, HoverScale);
     }
 
     private void OnItemPointerExited(object? sender, PointerEventArgs e)
     {
+        if (!IsListMode && IsFixedRows && sender is Border border
+            && border.Child is StackPanel panel)
+        {
+            var icon = panel.Children.OfType<Image>().FirstOrDefault();
+            if (icon != null)
+            {
+                AnimateScale(icon, 1.0);
+                return;
+            }
+        }
+
         AnimateScale(sender, 1.0);
     }
 

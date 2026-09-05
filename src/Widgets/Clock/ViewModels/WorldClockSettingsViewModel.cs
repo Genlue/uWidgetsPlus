@@ -8,13 +8,16 @@ namespace Clock.ViewModels;
 
 public class WorldClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvider) : ReactiveObject
 {
-    private readonly WorldClockModel clockModel = GetInitialModel(widgetLayoutProvider);
+    private WorldClockModel clockModel = GetInitialModel(widgetLayoutProvider);
     private static WorldClockModel GetInitialModel(IWidgetLayoutProvider widgetLayoutProvider)
     {
         var model = widgetLayoutProvider.Get().GetModel<WorldClockModel>();
 
         if (model?.TimeZoneIds == null || model.TimeZoneIds.Count < 4)
-            return new WorldClockModel([null, null, null, null]);
+            return new WorldClockModel([null, null, null, null], [null, null, null, null]);
+
+        if (model.CityNames is null || model.CityNames.Count < 4)
+            return model with { CityNames = [null, null, null, null] };
 
         return model;
     }
@@ -25,6 +28,10 @@ public class WorldClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvi
     public string TimeZone2Title => $"{Locale.Clock_TimeZone} 2";
     public string TimeZone3Title => $"{Locale.Clock_TimeZone} 3";
     public string TimeZone4Title => $"{Locale.Clock_TimeZone} 4";
+    public string CityName1Title => $"{Locale.Clock_CityName} 1";
+    public string CityName2Title => $"{Locale.Clock_CityName} 2";
+    public string CityName3Title => $"{Locale.Clock_CityName} 3";
+    public string CityName4Title => $"{Locale.Clock_CityName} 4";
     
     public TimeZoneInfo TimeZone1
     {
@@ -50,6 +57,30 @@ public class WorldClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvi
         set => Set(3, value);
     }
 
+    public string CityName1
+    {
+        get => GetCityName(0);
+        set => SetCityName(0, value);
+    }
+
+    public string CityName2
+    {
+        get => GetCityName(1);
+        set => SetCityName(1, value);
+    }
+
+    public string CityName3
+    {
+        get => GetCityName(2);
+        set => SetCityName(2, value);
+    }
+
+    public string CityName4
+    {
+        get => GetCityName(3);
+        set => SetCityName(3, value);
+    }
+
     private TimeZoneInfo Get(int index)
     {
         var id = clockModel.TimeZoneIds[index];
@@ -62,6 +93,25 @@ public class WorldClockSettingsViewModel(IWidgetLayoutProvider widgetLayoutProvi
     private void Set(int index, TimeZoneInfo timeZone)
     {
         clockModel.TimeZoneIds[index] = timeZone.Id;
+        UpdateClockModel();
+    }
+
+    private string GetCityName(int index)
+    {
+        var name = clockModel.CityNames?.ElementAtOrDefault(index);
+        return string.IsNullOrWhiteSpace(name) ? string.Empty : name!;
+    }
+
+    private void SetCityName(int index, string? value)
+    {
+        var names = new List<string?>(clockModel.CityNames ?? new List<string?>(new string?[4]));
+        while (names.Count < 4) names.Add(null);
+
+        var trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        if (names[index] == trimmed) return;
+        names[index] = trimmed;
+
+        clockModel = clockModel with { CityNames = names };
         UpdateClockModel();
     }
     

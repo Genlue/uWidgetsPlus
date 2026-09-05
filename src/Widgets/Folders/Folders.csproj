@@ -12,7 +12,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Folders</RootNamespace>
         <AssemblyName>Folders</AssemblyName>
-        <Version>0.2.0</Version>
+        <Version>0.2.1</Version>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Clock.Locales;
 using Clock.Models;
 using Clock.Views;
@@ -6,7 +6,7 @@ using Clock.Views.Settings;
 using uWidgets.Core.Models.Attributes;
 
 [assembly: AssemblyCompany("creewick")]
-[assembly: AssemblyVersion("1.1.1")]
+[assembly: AssemblyVersion("1.2.0")]
 
 [assembly: WidgetInfo(typeof(AnalogI), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogI_Title", "Clock_Analog_Subtitle")]
 [assembly: WidgetInfo(typeof(AnalogII), typeof(ClockModel), typeof(AnalogClockSettings), "Clock_AnalogII_Title", "Clock_Analog_Subtitle")]

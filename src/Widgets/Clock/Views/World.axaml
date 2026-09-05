@@ -1,14 +1,73 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewModels="clr-namespace:Clock.ViewModels"
              xmlns:controls="clr-namespace:Clock.Views.Controls"
-             x:Class="Clock.Views.World" 
+             x:Class="Clock.Views.World"
              x:DataType="viewModels:WorldClockViewModel"
-             Margin="8">
-    <Grid ColumnDefinitions="*,*" RowDefinitions="*,*" Name="Grid" VerticalAlignment="Center">
-        <controls:AnalogWorldSingle Grid.Column="0" Grid.Row="0" Name="First" DataContext="{Binding First}" Margin="0" />
-        <controls:AnalogWorldSingle Grid.Column="1" Grid.Row="0" Name="Second" DataContext="{Binding Second}" Margin="0" />
-        <controls:AnalogWorldSingle Grid.Column="0" Grid.Row="1" Name="Third" DataContext="{Binding Third}" Margin="0" />
-        <controls:AnalogWorldSingle Grid.Column="1" Grid.Row="1" Name="Fourth" DataContext="{Binding Fourth}" Margin="0" />
-    </Grid>
+             Margin="0">
+    <!-- Board is designed in fixed units and scaled with the whole widget so any
+         span keeps the same proportions (same approach as Monitor Multi-Dashboard). -->
+    <Viewbox x:Name="ScaleHost" Stretch="Uniform" StretchDirection="Both">
+        <Grid x:Name="Board">
+
+            <Grid x:Name="Item0" x:DataType="viewModels:AnalogClockViewModel" Margin="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:AnalogWorldSingle x:Name="Clock0" Grid.Row="0" Margin="0" />
+                <TextBlock x:Name="City0" Grid.Row="1" IsVisible="False"
+                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                           FontSize="22" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
+                           Text="{Binding CityName}" />
+            </Grid>
+
+            <Grid x:Name="Item1" x:DataType="viewModels:AnalogClockViewModel" Margin="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:AnalogWorldSingle x:Name="Clock1" Grid.Row="0" Margin="0" />
+                <TextBlock x:Name="City1" Grid.Row="1" IsVisible="False"
+                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                           FontSize="22" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
+                           Text="{Binding CityName}" />
+            </Grid>
+
+            <Grid x:Name="Item2" x:DataType="viewModels:AnalogClockViewModel" Margin="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:AnalogWorldSingle x:Name="Clock2" Grid.Row="0" Margin="0" />
+                <TextBlock x:Name="City2" Grid.Row="1" IsVisible="False"
+                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                           FontSize="22" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
+                           Text="{Binding CityName}" />
+            </Grid>
+
+            <Grid x:Name="Item3" x:DataType="viewModels:AnalogClockViewModel" Margin="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <controls:AnalogWorldSingle x:Name="Clock3" Grid.Row="0" Margin="0" />
+                <TextBlock x:Name="City3" Grid.Row="1" IsVisible="False"
+                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                           FontSize="22" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
+                           Text="{Binding CityName}" />
+            </Grid>
+
+            <Grid x:Name="CenterOverlay" IsVisible="False" IsHitTestVisible="False">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Digital.TimeText}" HorizontalAlignment="Center"
+                               FontSize="34" FontWeight="Bold" LetterSpacing="-1" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Viewbox>
 </UserControl>

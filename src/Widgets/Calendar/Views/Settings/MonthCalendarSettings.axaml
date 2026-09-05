@@ -17,6 +17,20 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor}">
+                <ComboBox Width="130" SelectedIndex="{Binding TodayColorModeIndex}">
+                    <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Accent}" />
+                    <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Custom}" />
+                </ComboBox>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Light}"
+                              IsVisible="{Binding IsCustomTodayColor}">
+                <ColorPicker Color="{Binding TodayColorLight}" Height="36" Width="72" IsAlphaVisible="False" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor_Dark}"
+                              IsVisible="{Binding IsCustomTodayColor}">
+                <ColorPicker Color="{Binding TodayColorDark}" Height="36" Width="72" IsAlphaVisible="False" />
+            </controls:Setting>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

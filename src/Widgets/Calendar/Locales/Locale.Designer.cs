@@ -112,5 +112,50 @@ namespace Calendar.Locales {
                 return ResourceManager.GetString("Calendar_Month_Title", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Today marker.
+        /// </summary>
+        public static string Calendar_TodayColor {
+            get {
+                return ResourceManager.GetString("Calendar_TodayColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Follow accent.
+        /// </summary>
+        public static string Calendar_TodayColor_Accent {
+            get {
+                return ResourceManager.GetString("Calendar_TodayColor_Accent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Custom color.
+        /// </summary>
+        public static string Calendar_TodayColor_Custom {
+            get {
+                return ResourceManager.GetString("Calendar_TodayColor_Custom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Light theme.
+        /// </summary>
+        public static string Calendar_TodayColor_Light {
+            get {
+                return ResourceManager.GetString("Calendar_TodayColor_Light", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dark theme.
+        /// </summary>
+        public static string Calendar_TodayColor_Dark {
+            get {
+                return ResourceManager.GetString("Calendar_TodayColor_Dark", resourceCulture);
+            }
+        }
     }
 }

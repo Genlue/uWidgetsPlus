@@ -23,6 +23,17 @@ public record WidgetLayout(string Type, string SubType, int X, int Y, int Width,
     /// <typeparam name="T">Type of the widget's model.</typeparam>
     /// <returns>Widget's model.</returns>
     public T? GetModel<T>() => (T?) GetModel(typeof(T));
+
+    /// <summary>
+    /// Identity comparison that ignores <see cref="Settings"/>: <see cref="JsonElement"/>
+    /// has no structural equality across documents, so two records parsed separately
+    /// (or re-serialized) never compare equal even with identical content. Used to find
+    /// a widget's stored entry when the original object reference is gone (legacy
+    /// migration, screen hot-plug, ownership transfer) instead of appending a duplicate.
+    /// </summary>
+    public bool SameWidgetAs(WidgetLayout other) =>
+        Type == other.Type && SubType == other.SubType &&
+        X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
     
     /// <summary>
     /// Get the widget's model.

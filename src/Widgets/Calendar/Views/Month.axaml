@@ -16,6 +16,15 @@
         <Style Selector="TextBlock.today">
             <Setter Property="Foreground" Value="White" />
         </Style>
+        <!-- Today marker: accent by default, or the theme-resolved custom color.
+             Both brushes come from styles (not a local value) so the higher-specificity
+             customColor setter wins over the plain todayDot one. -->
+        <Style Selector="Ellipse.todayDot">
+            <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}" />
+        </Style>
+        <Style Selector="Ellipse.todayDot.customColor">
+            <Setter Property="Fill" Value="{Binding TodayCustomBrush, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}" />
+        </Style>
     </UserControl.Styles>
     
     <Panel>
@@ -29,18 +38,20 @@
                     <DataTemplate DataType="viewModels:DayViewModel">
                         <Grid>
                             <Viewbox>
-                                <Canvas Width="100" Height="100">
-                                    <Ellipse Canvas.Left="0" Canvas.Top="0" Width="100" Height="100"
-                                             IsVisible="{Binding IsToday}"
-                                             Fill="{DynamicResource SystemAccentColor}" />
-                                    <TextBlock Width="100" Height="100"
+                                <Panel Width="100" Height="100">
+                                    <Ellipse Width="100" Height="100"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             Classes.todayDot="True"
+                                             Classes.customColor="{Binding IsCustomTodayColor, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
+                                             IsVisible="{Binding IsToday}" />
+                                    <TextBlock Width="100"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
                                                TextAlignment="Center"
-                                               Margin="0,14,0,0"
                                                FontSize="60"
                                                Classes.weekend="{Binding IsWeekend}"
                                                Classes.today="{Binding IsToday}"
                                                Text="{Binding Day}"  />
-                                </Canvas>
+                                </Panel>
                             </Viewbox>
                             
                         </Grid>
@@ -75,18 +86,20 @@
                     <DataTemplate DataType="viewModels:DayViewModel">
                         <Grid>
                             <Viewbox>
-                                <Canvas Width="100" Height="100">
-                                    <Ellipse Canvas.Left="0" Canvas.Top="0" Width="100" Height="100"
-                                             IsVisible="{Binding IsToday}"
-                                             Fill="{DynamicResource SystemAccentColor}" />
-                                    <TextBlock Width="100" Height="100"
+                                <Panel Width="100" Height="100">
+                                    <Ellipse Width="100" Height="100"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             Classes.todayDot="True"
+                                             Classes.customColor="{Binding IsCustomTodayColor, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
+                                             IsVisible="{Binding IsToday}" />
+                                    <TextBlock Width="100"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
                                                TextAlignment="Center"
-                                               Margin="0,14,0,0"
                                                FontSize="60"
                                                Classes.weekend="{Binding IsWeekend}"
                                                Classes.today="{Binding IsToday}"
                                                Text="{Binding Day}" />
-                                </Canvas>
+                                </Panel>
                             </Viewbox>
                         </Grid>
                     </DataTemplate>

@@ -53,8 +53,31 @@ public partial class Folder : UserControl
     public bool BoldTitle => model.BoldTitle;
     public bool BoldNames => model.BoldNames;
     public bool IsListMode => model.LayoutMode == "List";
+    public bool IsFixedRows => model.RowLayout == "Fixed";
     public bool IsWatchFolderMode => !string.IsNullOrWhiteSpace(model.WatchFolder) && Directory.Exists(model.WatchFolder);
     public string? WatchFolderPath => model.WatchFolder;
+
+    /// <summary>
+    /// Explicit grid height for "Fixed" vertical layout: rows × a constant pitch, so an
+    /// icon's vertical position depends only on its row index (taller than the viewport
+    /// → the ScrollViewer scrolls). NaN in "Auto" mode → the UniformGrid stretches its
+    /// rows to divide the available height evenly (the historical behavior).
+    /// </summary>
+    public static readonly StyledProperty<double> GridHeightProperty =
+        AvaloniaProperty.Register<Folder, double>(nameof(GridHeight), double.NaN);
+
+    public double GridHeight
+    {
+        get => GetValue(GridHeightProperty);
+        set => SetValue(GridHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Top when rows are fixed (so the grid takes its content height and the
+    /// ScrollViewer can scroll), Stretch otherwise (rows divide the height evenly).
+    /// </summary>
+    public Avalonia.Layout.VerticalAlignment GridVerticalAlignment =>
+        IsFixedRows ? Avalonia.Layout.VerticalAlignment.Top : Avalonia.Layout.VerticalAlignment.Stretch;
 
     private FileSystemWatcher? watcher;
     private DateTime lastWatcherEvent;
@@ -263,11 +286,37 @@ public partial class Folder : UserControl
             ? Locale.Folders_Empty_Folder
             : Locale.Folders_Empty;
 
+        UpdateGridHeight(items.Count);
+
         // In watched-folder mode the title becomes a clickable link to the folder.
         TitleText.IsHitTestVisible = IsWatchFolderMode && ShowTitle;
         TitleText.Cursor = IsWatchFolderMode && ShowTitle
             ? new Cursor(StandardCursorType.Hand)
             : Cursor.Default;
+    }
+
+    /// <summary>
+    /// Fixed mode: pin the grid to rows × a constant row pitch so an icon's vertical
+    /// position depends only on its row index (never on how many rows there are).
+    /// Auto mode clears the height (NaN) so the UniformGrid stretches and divides the
+    /// available height evenly across however many rows the items make (previous
+    /// behavior).
+    /// </summary>
+    private void UpdateGridHeight(int count)
+    {
+        if (IsListMode || !IsFixedRows || count == 0)
+        {
+            GridHeight = double.NaN;
+            return;
+        }
+
+        var columns = Math.Max(1, model.Columns);
+        var rows = (int)Math.Ceiling(count / (double)columns);
+        // Constant per-row height: icon + name lines + fixed padding + row spacing.
+        var pitch = model.IconSize
+                    + (model.ShowNames ? model.FontSize * Math.Max(1, model.MaxNameLines) + 16 : 12)
+                    + model.RowSpacing;
+        GridHeight = rows * pitch;
     }
 
     private FolderItem CreateFolderItem(string path)

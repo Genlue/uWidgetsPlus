@@ -98,6 +98,12 @@
                           SelectionChanged="OnColumnsChanged" />
             </Grid>
 
+            <Grid x:Name="RowLayoutRow" ColumnDefinitions="Auto,*">
+                <TextBlock x:Name="RowLayoutLabel" Classes="setting-label" Text="{x:Static locales:Locale.Folders_RowLayout}" />
+                <ComboBox x:Name="RowLayoutBox" Classes="setting-combo" Grid.Column="1"
+                          SelectionChanged="OnRowLayoutChanged" />
+            </Grid>
+
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_RowSpacing}" />
                 <ComboBox x:Name="RowSpacingBox" Classes="setting-combo" Grid.Column="1"

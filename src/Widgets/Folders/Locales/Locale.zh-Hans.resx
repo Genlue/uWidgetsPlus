@@ -211,4 +211,13 @@
     <data name="Folders_WatchHideSubfolders" xml:space="preserve">
         <value>不显示子文件夹</value>
     </data>
+    <data name="Folders_RowLayout" xml:space="preserve">
+        <value>纵向排列</value>
+    </data>
+    <data name="Folders_RowLayout_Auto" xml:space="preserve">
+        <value>自适应</value>
+    </data>
+    <data name="Folders_RowLayout_Fixed" xml:space="preserve">
+        <value>固定行高</value>
+    </data>
 </root>

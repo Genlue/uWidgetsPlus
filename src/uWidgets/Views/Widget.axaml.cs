@@ -652,6 +652,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         var settings = widgetLayoutProvider.Get();
         widgetLayoutProvider.Save(settings with { Width = (int)Width, Height = (int)Height });
         Notify(nameof(SizeMenuTitle));
+        // Re-sync the context-menu size steppers with the committed span (the
+        // binding does not refresh itself while the menu is open).
+        Notify(nameof(SizeColumnsValue));
+        Notify(nameof(SizeRowsValue));
     }
 
     public void Remove()
@@ -703,10 +707,15 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// <summary>
     /// Resolve a stored pixel size into a whole number of grid cells.
     /// <para>
-    /// Sizes saved by older builds were physical cell counts (e.g. 230 px on a
-    /// 175% display); sizes saved by the current build are DIPs (230/1.75 ≈ 131).
-    /// Pick the interpretation that lands closer to a whole number of cells, so
-    /// old layouts restore as 1×1 instead of drifting to 2×2 on scaled displays.
+    /// The current build always stores window sizes in DIPs, so the DIP
+    /// interpretation is trusted whenever it lands close to a whole number of
+    /// cells. Sizes saved by older builds were physical pixels (e.g. 575 px on a
+    /// 125% display for a 5-cell span) — those are only used when the DIP reading
+    /// is clearly not a whole span. Comparing both and taking the closer one used
+    /// to report the wrong span whenever both readings were equidistant (5 cells
+    /// on a 125% display: 460 DIP = 4.0 cells physical = 5.0 cells DIP), so the
+    /// size steppers showed 4 and setting 4 was a no-op ("adjusting columns
+    /// 5 to 4 does nothing").
     /// </para>
     /// </summary>
     private static int ResolveSpan(double size, double cellPx, double scaling)
@@ -714,12 +723,15 @@ public partial class Widget : Window, INotifyPropertyChanged
         var cellDip = cellPx / scaling;
         if (cellDip <= 0) return 1;
 
-        var physical = size / cellPx;
         var dip = size / cellDip;
-        var span = Math.Abs(physical - Math.Round(physical)) <= Math.Abs(dip - Math.Round(dip))
-            ? (int) Math.Round(physical)
-            : (int) Math.Round(dip);
-        return Math.Max(1, span);
+        var dipError = Math.Abs(dip - Math.Round(dip));
+        if (dipError <= 0.15) return Math.Max(1, (int) Math.Round(dip));
+
+        var physical = size / cellPx;
+        if (Math.Abs(physical - Math.Round(physical)) <= 0.05)
+            return Math.Max(1, (int) Math.Round(physical));
+
+        return Math.Max(1, (int) Math.Round(dip));
     }
 
     /// <summary>

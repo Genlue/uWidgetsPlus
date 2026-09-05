@@ -37,6 +37,7 @@ public partial class FolderSettings : UserControl
         SetupIconSizes();
         SetupFontSizes();
         SetupLayoutMode();
+        SetupRowLayout();
         SetupNameLimits();
         SetupWatchSort();
         SetupPaddings();
@@ -102,6 +103,7 @@ public partial class FolderSettings : UserControl
         TitleOffsetSlider.Value = model.TitleOffsetX;
         TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         ColumnsBox.SelectedItem = model.Columns;
+        RowLayoutBox.SelectedIndex = RowLayoutIndex(model.RowLayout);
         RowSpacingBox.SelectedItem = model.RowSpacing;
         IconSizeBox.SelectedItem = model.IconSize;
         FontSizeBox.SelectedItem = model.FontSize;
@@ -139,11 +141,37 @@ public partial class FolderSettings : UserControl
         FontSizeBox.SelectedItem = model.FontSize;
     }
 
+    private static readonly string[] RowLayoutKeys = { "Auto", "Fixed" };
+
     private void SetupLayoutMode()
     {
         LayoutModeBox.ItemsSource = new List<string> { "Grid", "List" };
         LayoutModeBox.SelectedItem = model.LayoutMode;
         UpdateColumnState();
+    }
+
+    private static int RowLayoutIndex(string? key)
+    {
+        var index = Array.IndexOf(RowLayoutKeys, key);
+        return index < 0 ? 0 : index;
+    }
+
+    private void SetupRowLayout()
+    {
+        RowLayoutBox.ItemsSource = new List<string>
+        {
+            Locale.Folders_RowLayout_Auto,
+            Locale.Folders_RowLayout_Fixed,
+        };
+        RowLayoutBox.SelectedIndex = RowLayoutIndex(model.RowLayout);
+    }
+
+    private void OnRowLayoutChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (syncing) return;
+        var index = RowLayoutBox.SelectedIndex;
+        if (index >= 0 && index < RowLayoutKeys.Length && RowLayoutKeys[index] != model.RowLayout)
+            Save(model with { RowLayout = RowLayoutKeys[index] });
     }
 
     private void SetupNameLimits()
@@ -181,6 +209,10 @@ public partial class FolderSettings : UserControl
             ColumnsBox.IsEnabled = enabled;
             ColumnsLabel.IsEnabled = enabled;
         }
+
+        // Row layout only affects the grid (list rows already have fixed height).
+        if (RowLayoutRow != null)
+            RowLayoutRow.IsVisible = model.LayoutMode != "List";
     }
 
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)

@@ -51,10 +51,12 @@
                      VerticalScrollBarVisibility="{Binding ShowScrollbar, RelativeSource={RelativeSource AncestorType=local:Folder}, Converter={StaticResource ScrollBarConverter}}">
             <Grid>
 
-            <ItemsControl x:Name="GridItems" DragDrop.AllowDrop="True">
+            <ItemsControl x:Name="GridItems" DragDrop.AllowDrop="True"
+                          VerticalAlignment="{Binding GridVerticalAlignment, RelativeSource={RelativeSource AncestorType=local:Folder}}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <UniformGrid Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=local:Folder}}" />
+                        <UniformGrid Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=local:Folder}}"
+                                     Height="{Binding GridHeight, RelativeSource={RelativeSource AncestorType=local:Folder}}" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
@@ -72,7 +74,7 @@
                                     <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
                                 </Style>
                             </Border.Styles>
-                            <StackPanel IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Top" Spacing="2">
+                            <StackPanel IsHitTestVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Top" Spacing="2">
                                 <Image Width="{Binding IconSize}" Height="{Binding IconSize}"
                                        RenderOptions.BitmapInterpolationMode="HighQuality"
                                        Source="{Binding Icon}" Stretch="Uniform" HorizontalAlignment="Center" />
@@ -80,7 +82,7 @@
                                            FontWeight="{Binding BoldName, Converter={StaticResource BoldNamesConverter}}"
                                            TextAlignment="Center" TextWrapping="Wrap"
                                            MaxLines="{Binding MaxLines}" TextTrimming="CharacterEllipsis"
-                                           HorizontalAlignment="Center"
+                                           HorizontalAlignment="Stretch"
                                            IsVisible="{Binding ShowName}"
                                            Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                             </StackPanel>

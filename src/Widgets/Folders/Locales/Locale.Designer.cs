@@ -359,5 +359,23 @@ namespace Folders.Locales {
                 return ResourceManager.GetString("Folders_WatchHideSubfolders", resourceCulture);
             }
         }
+
+        public static string Folders_RowLayout {
+            get {
+                return ResourceManager.GetString("Folders_RowLayout", resourceCulture);
+            }
+        }
+
+        public static string Folders_RowLayout_Auto {
+            get {
+                return ResourceManager.GetString("Folders_RowLayout_Auto", resourceCulture);
+            }
+        }
+
+        public static string Folders_RowLayout_Fixed {
+            get {
+                return ResourceManager.GetString("Folders_RowLayout_Fixed", resourceCulture);
+            }
+        }
     }
 }

@@ -20,6 +20,9 @@ namespace Folders.Models;
 /// <param name="MaxNameChars">Maximum characters per name line (0 = no limit, natural wrapping).</param>
 /// <param name="CamelCaseWrap">Break names at capital letters for better wrapping.</param>
 /// <param name="LayoutMode">Item layout: "Grid" (uniform grid) or "List" (vertical rows).</param>
+/// <param name="RowLayout">Vertical layout in grid mode: "Auto" (rows stretch to divide the
+/// available height evenly) or "Fixed" (constant row pitch — an icon's vertical position
+/// depends only on its row index, never on how many rows there are in total).</param>
 /// <param name="WatchFolder">When set, the widget lists the contents of this folder (live) instead of <see cref="Items"/>.</param>
 /// <param name="ShowHiddenFiles">Whether hidden/system files are shown in watched-folder mode (default: filtered out).</param>
 /// <param name="WatchSortBy">Sort field for watched-folder contents: "Name", "Created" or "Modified".</param>
@@ -46,6 +49,7 @@ public record FolderModel(
     int MaxNameChars = 0,
     bool CamelCaseWrap = false,
     string LayoutMode = "Grid",
+    string RowLayout = "Auto",
     string? WatchFolder = null,
     bool ShowHiddenFiles = false,
     string WatchSortBy = "Name",

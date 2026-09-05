@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Styling;
 using Calendar.Models;
 using Calendar.ViewModels;
 using uWidgets.Services;
@@ -9,20 +11,78 @@ namespace Calendar.Views;
 
 public partial class Month : UserControl
 {
+    private readonly MonthCalendarModel monthCalendarModel;
+
     public Month() : this(new MonthCalendarModel(DayOfWeek.Monday)) {}
     
     public Month(MonthCalendarModel monthCalendarModel)
     {
+        this.monthCalendarModel = monthCalendarModel;
         DataContext = new MonthCalendarViewModel(monthCalendarModel);
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
         InitializeComponent();
+        UpdateTodayBrush();
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         SizeChanged -= OnSizeChanged;
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
         ((MonthCalendarViewModel)DataContext!).Dispose();
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
+
+    /// <summary>
+    /// True when the today-marker ellipse should use a fixed color instead of the
+    /// (theme-reactive) accent resource. Drives the Ellipse's customColor class.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsCustomTodayColorProperty =
+        AvaloniaProperty.Register<Month, bool>(nameof(IsCustomTodayColor));
+
+    public bool IsCustomTodayColor
+    {
+        get => GetValue(IsCustomTodayColorProperty);
+        set => SetValue(IsCustomTodayColorProperty, value);
+    }
+
+    /// <summary>
+    /// The today-marker color for custom mode, resolved against the current theme.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> TodayCustomBrushProperty =
+        AvaloniaProperty.Register<Month, IBrush?>(nameof(TodayCustomBrush));
+
+    public IBrush? TodayCustomBrush
+    {
+        get => GetValue(TodayCustomBrushProperty);
+        set => SetValue(TodayCustomBrushProperty, value);
+    }
+
+    private void UpdateTodayBrush()
+    {
+        if (monthCalendarModel.TodayColorMode != "Custom")
+        {
+            IsCustomTodayColor = false;
+            TodayCustomBrush = null;
+            return;
+        }
+
+        var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        var hex = dark ? monthCalendarModel.TodayColorDark : monthCalendarModel.TodayColorLight;
+
+        IBrush? brush = null;
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            try { brush = new SolidColorBrush(Color.Parse(hex)); }
+            catch { brush = null; }
+        }
+
+        IsCustomTodayColor = brush != null;
+        TodayCustomBrush = brush;
     }
 
     public static readonly StyledProperty<double> TextSizeProperty = 

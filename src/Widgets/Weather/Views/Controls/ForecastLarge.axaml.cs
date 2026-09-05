@@ -38,8 +38,8 @@ public partial class ForecastLarge : UserControl
     }
 
     /// <summary>
-    /// Mouse wheel over the horizontally scrolling hourly strip: wheel up scrolls
-    /// right, wheel down scrolls left (mirrors the horizontal drag direction).
+    /// Mouse wheel over the horizontally scrolling hourly strip: wheel down (page
+    /// scroll down) scrolls right, wheel up scrolls left.
     /// </summary>
     private void OnHourlyWheel(object? sender, PointerWheelEventArgs e)
     {
@@ -55,8 +55,10 @@ public partial class ForecastLarge : UserControl
         var delta = e.Delta.Y;
         if (delta == 0) return;
 
+        // Wheel down (negative delta) scrolls right; wheel up scrolls left,
+        // matching classic web-page scrolling.
         HourlyScroller.Offset = new Vector(
-            Math.Clamp(HourlyScroller.Offset.X + delta * 60, 0, maxX),
+            Math.Clamp(HourlyScroller.Offset.X - delta * 60, 0, maxX),
             HourlyScroller.Offset.Y);
         e.Handled = true;
     }

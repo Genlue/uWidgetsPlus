@@ -70,9 +70,11 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
         }
     }
 
-    public string CityName => !string.IsNullOrWhiteSpace(customCityName)
-        ? customCityName!
-        : CityFullName.Length > 11 ? CityFullName[..9] + "…" : CityFullName;
+    /// <summary>
+    /// Display city name: only the user-entered custom name — never the
+    /// time-zone-derived city (leave blank in settings to show no name).
+    /// </summary>
+    public string CityName => customCityName ?? string.Empty;
     
     public string Date => (Time.Date - DateTime.Now.Date).Days switch
     {

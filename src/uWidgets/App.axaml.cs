@@ -14,7 +14,11 @@ namespace uWidgets;
 
 public class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        HorizontalScrollHelper.RegisterGlobal();
+        AvaloniaXamlLoader.Load(this);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -23,6 +27,7 @@ public class App : Application
             .AddSingleton<ILayoutProvider, LayoutProvider>()
             .AddSingleton<IAssemblyProvider, AssemblyProvider>()
             .AddSingleton<WallpaperThemeService>()
+            .AddSingleton<WallpaperWatcherService>()
             .AddSingleton<IThemeService, ThemeService>()
             .AddSingleton<ILocaleService, LocaleService>()
             .AddSingleton<IGridService<Widget>, GridService>()
@@ -43,6 +48,7 @@ public class App : Application
         
         localeService.SetCulture(appSettingsProvider.Get().Region.Language);
         themeService.Apply(appSettingsProvider.Get().Theme);
+        services.GetRequiredService<WallpaperWatcherService>();
 
         var displayMonitor = services.GetRequiredService<DisplayMonitorService>();
         var widgetFactory = (WidgetFactory) services.GetRequiredService<IWidgetFactory<Window, UserControl>>();

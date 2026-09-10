@@ -69,4 +69,82 @@
     <data name="Clock_CityName" xml:space="preserve">
         <value>City name</value>
     </data>
+    <data name="Clock_FramelessDigital_Title" xml:space="preserve">
+        <value>Frameless Clock</value>
+    </data>
+    <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
+        <value>Pure digits adaptively stretched to grid with theme-styled numerals</value>
+    </data>
+    <data name="Clock_FontFamily" xml:space="preserve">
+        <value>Font Family</value>
+    </data>
+    <data name="Clock_FontFamily_Default" xml:space="preserve">
+        <value>(Follow Theme)</value>
+    </data>
+    <data name="Clock_StretchFill" xml:space="preserve">
+        <value>Stretch to Fill Grid</value>
+    </data>
+    <data name="Clock_StretchFill_Subtitle" xml:space="preserve">
+        <value>Allow non-uniform stretching to fully fill cell bounds</value>
+    </data>
+    <data name="Clock_EnableOverlay" xml:space="preserve">
+        <value>Enable Color Overlay</value>
+    </data>
+    <data name="Clock_EnableOverlay_Subtitle" xml:space="preserve">
+        <value>Overlay a tinted color sheen on the numerals</value>
+    </data>
+    <data name="Clock_FollowAccentColor" xml:space="preserve">
+        <value>Follow Accent Color</value>
+    </data>
+    <data name="Clock_OverlayColor" xml:space="preserve">
+        <value>Overlay Color</value>
+    </data>
+    <data name="Clock_OverlayOpacity" xml:space="preserve">
+        <value>Overlay Opacity</value>
+    </data>
+    <data name="Clock_FontWeight" xml:space="preserve">
+        <value>Font Weight</value>
+    </data>
+    <data name="Clock_FontWeight_100" xml:space="preserve">
+        <value>Thin (100)</value>
+    </data>
+    <data name="Clock_FontWeight_200" xml:space="preserve">
+        <value>Extra Light (200)</value>
+    </data>
+    <data name="Clock_FontWeight_300" xml:space="preserve">
+        <value>Light (300)</value>
+    </data>
+    <data name="Clock_FontWeight_400" xml:space="preserve">
+        <value>Regular (400)</value>
+    </data>
+    <data name="Clock_FontWeight_500" xml:space="preserve">
+        <value>Medium (500)</value>
+    </data>
+    <data name="Clock_FontWeight_600" xml:space="preserve">
+        <value>SemiBold (600)</value>
+    </data>
+    <data name="Clock_FontWeight_700" xml:space="preserve">
+        <value>Bold (700)</value>
+    </data>
+    <data name="Clock_FontWeight_800" xml:space="preserve">
+        <value>Extra Bold (800)</value>
+    </data>
+    <data name="Clock_FontWeight_900" xml:space="preserve">
+        <value>Black (900)</value>
+    </data>
+    <data name="Clock_ThemeMode" xml:space="preserve">
+        <value>Theme Style</value>
+    </data>
+    <data name="Clock_ThemeMode_FollowGlobal" xml:space="preserve">
+        <value>Follow Global Theme</value>
+    </data>
+    <data name="Clock_ThemeMode_Acrylic" xml:space="preserve">
+        <value>Acrylic Blur</value>
+    </data>
+    <data name="Clock_ThemeMode_LiquidGlass" xml:space="preserve">
+        <value>Liquid Glass</value>
+    </data>
+    <data name="Clock_ThemeMode_Solid" xml:space="preserve">
+        <value>Solid Fill</value>
+    </data>
 </root>

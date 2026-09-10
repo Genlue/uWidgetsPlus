@@ -1,186 +1,108 @@
-## uWidgets
+## uWidgetsPlus (uWidgets+)
 
 <img src=".github/images/icon-light.png#gh-light-mode-only" width="120" alt="Logo" align="right">
 <img src=".github/images/icon-dark.png#gh-dark-mode-only" width="120" alt="Logo" align="right">
 
 <div align="center">
-  具有各种可定制小部件的独立 .NET 应用程序。
+  <h3>🎨 Windows 下一代 macOS 风格多功能桌面小组件增强套件</h3>
+  <p>基于 Avalonia 11 + .NET 8 打造 · 硬件级实时毛玻璃 · 3D 光学液态玻璃 · 手机锁屏艺术大字时钟 · 灵活桌面网格系统</p>
 </div>
+
 <h3 align="center">
-  <b><a href="https://github.com/creewick/uWidgets/releases">下载</a></b> ・
-  <a href="https://github.com/users/creewick/projects/4">路线图</a> ・
-  <a href="https://github.com/creewick/uWidgets/wiki/API">API</a> ・
-  <a href="https://github.com/creewick/uWidgets/discussions">讨论</a> ・
-  <a href="https://github.com/creewick/uWidgets/issues">反馈 bug</a>
+  <b><a href="https://github.com/Genlue/uWidgetsPlus/releases">下载最新版本</a></b> ・
+  <a href="https://github.com/Genlue/uWidgetsPlus/issues">问题反馈</a> ・
+  <a href="项目解构报告.md">项目解构报告</a>
 </h3>
+
 <div align="center">
-  <img src="https://img.shields.io/github/downloads/creewick/uWidgets/total"/>
-  <img src="https://img.shields.io/github/v/tag/creewick/uWidgets?label=version"/>
-  <img src="https://img.shields.io/github/stars/creewick/uWidgets?style=flat"/>
+  <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet"/>
+  <img src="https://img.shields.io/badge/Avalonia-11.1-purple?logo=avaloniaui"/>
+  <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
+  <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
 </div>
+
 <br />
 
-## 此页其他语言版本
-
+### 语言版本 / Language
 <a href="/README.md"><kbd><img src="https://github.com/yammadev/flag-icons/blob/master/png/US.png?raw=true" height="10" /> English</kbd></a>
 <kbd><img src="https://github.com/yammadev/flag-icons/blob/master/png/CN.png?raw=true" height="10" /> 中文 (简体)</kbd>
 
-## 特点
+---
 
-6种完全可自定义的小部件
+## 🌟 核心特色与重大升级
 
-<img src=".github/images/clock-light.png#gh-light-mode-only" width="100" alt="时钟" align="left">
-<img src=".github/images/clock-dark.png#gh-dark-mode-only" width="100" alt="时钟" align="left">
+### 1. 🕒 无边框艺术大字时钟（Frameless Clock）
+- **满格顶天立地**：数字直接占据整个小组件单元格，上下严格贴紧边缘（消除字体自带空隙），支持横向自由拉伸（`StretchFill`）与等比居中；
+- **精选手机锁屏艺术大字集**：
+  - 🔥 **华为锁屏超窄体**（`HarmonyOS Sans Condensed`）：免安装内置打包，专为大字纵向拉伸设计，视觉极其震撼；
+  - 🔥 **iOS 16 经典厚重块体**（`Impact`）：美式重型力量感大字；
+  - 🔥 **德国工业精工 DIN**（`Bahnschrift`）：严谨规整现代几何窄体；
+  - 🔥 **超粗硬核无衬线**（`Arial Black`）：超宽实心黑体，视觉存在感极强；
+  - 🔥 **iOS 高定复古衬线**（`Georgia`）：粗细笔触优雅对比；
+  - 🔥 **包豪斯极简几何**（`Century Gothic`）：纯粹圆融现代线条；
+  - 🔥 **赛博极客终端等宽**（`Cascadia Code`）、**自由随性手写**（`Ink Free`）、**古典罗马体**（`Palatino`）等；
+- **全阶梯字重调节**：从 `100 Thin` 纤细至 `900 Black` 浓黑随心切换；
+- **独立视觉主题覆盖**：可在该小组件设置中单独指定主题（跟随全局 / 毛玻璃 / 液态玻璃 / 纯色）；
+- **自定义遮罩与官方选色器**：支持叠加半透明微光遮罩，配备 Avalonia 官方 `ColorPicker` 选色模块与十六进制文本框双向联动。
 
-### 时钟
-**样式**: 3 种风格的模拟时钟、数字时钟、世界时钟 <br>
-**特点**: 时区选择、12/24 小时模式、显示/隐藏秒
+### 2. 💎 三大深度适配视觉材质
+- 🪟 **毛玻璃（Acrylic Blur）· OS 硬件实时模糊**：
+  - 基于 Win32 原生多边形扫描线 `ExtCreateRegion`（`RGNDATA`），将数字字形与卡片实时绑定为物理 HWND Region；
+  - Windows DWM 硬件级逐帧对桌面采样合成，对**动态壁纸（Wallpaper Engine 等）、视频壁纸及后台窗口移动实现 60fps/144fps 零延迟实时跟手**；
+  - 支持可选高光渐变外描边（颜色与粗细自定义）。
+- 💧 **液态玻璃（Liquid Glass）· 3D 光学物理折射**：
+  - 2D 欧几里得距离场（EDT）精密计算字符轮廓法线，模拟真实的凹凸透镜折射位移（Lens Refraction）、色散光斑（Dispersion）、3D 镜面高光与微细倒角；
+  - **精细化边缘控制**：将折射带宽收窄至 `1.5dp ~ 4.5dp`，数字主体保持水晶般通透平整，杜绝字符过度扭曲；
+  - **后台异步预缓存引擎（Background Pre-Caching）**：当前分钟 $T$ 渲染的同时，后台线程静默预渲染下一分钟 $T+1\text{m}$ 帧；**整点切换时 0ms 瞬间命中缓存**，彻底告别渲染卡顿；
+  - **严密全自动内存清理（Zero-Leak Auto-Cleanup）**：时间推进自动 Dispose 释放旧帧；窗口移动、缩放、字体/主题更改或组件卸载时立即取消任务并销毁缓存位图，杜绝内存泄漏。
+- 🎨 **纯色（Solid Fill）· 纯粹矢量抗锯齿填充**：
+  - 纯净抗锯齿矢量填充，支持透明度滑块与色彩定制，零模糊、极度省电。
 
-<img src=".github/images/calendar-light.png#gh-light-mode-only" width="100" alt="日历" align="left">
-<img src=".github/images/calendar-dark.png#gh-dark-mode-only" width="100" alt="日历" align="left">
+### 3. 📐 灵活专业桌面网格系统（Grid Management）
+- **三大放置模式**：
+  - **自定义网格（Manual Grid）**：将桌面划分为 $m \times n$ 个正方形格子，按百分比响应式存储，自适应多分辨率与缩放；
+  - **虚拟网格（Virtual Grid）**；
+  - **自由拖拽模式（Free Placement）**；
+- 组件自适应格子吸附对齐，支持自定义组件间距与圆角大小。
 
-### 日历
-**样式**: 日历、月历 <br>
-**特点**: 可选择一周的第一天
+### 4. 🧩 丰富完备的小组件家族
+- ⏰ **时钟（Clock）**：指针表盘（3 种风格）、数字时钟、世界时钟（支持多表盘独立自定义城市名称与中心数字时钟联动）、无边框艺术时钟；
+- 📁 **文件夹与文件（Folders）**：桌面文件夹快捷入口、实时内容更新监视、单文件启动快捷入口；
+- 🌤️ **天气（Weather）**：横向平滑滚轮浏览、7 天详细预报、日出日落、紫外线、空气质量（支持自定义代理）；
+- 📊 **系统监视（Monitor）**：单指标轻量仪表、多指标全能看板（CPU / 内存 / 磁盘 / 网络 / 电池）；
+- 📝 **便签备忘（Notes）**：桌面随时快捷记录；
+- ✅ **待办提醒（Reminders）**：交互式清单与任务计数统计；
+- 🎵 **音乐控制（Music）** 与 🔍 **搜索工具（Search）**。
 
-<img src=".github/images/notes-light.png#gh-light-mode-only" width="100" alt="笔记" align="left">
-<img src=".github/images/notes-dark.png#gh-dark-mode-only" width="100" alt="笔记" align="left">
+### 5. 🚀 单文件开箱即用（Single-File Executable）
+- 编译生成单个 `uWidgets.exe`（~58 MB），内置小组件包内容哈希检测与运行时极速解压，无需复杂安装，即开即用。
 
-### 笔记
-**样式**: 笔记 <br>
-**特点**: 交互式文本、自定义标题
+---
 
-<img src=".github/images/reminders-light.png#gh-light-mode-only" width="100" alt="提醒事项" align="left">
-<img src=".github/images/reminders-dark.png#gh-dark-mode-only" width="100" alt="提醒事项" align="left">
+## 🛠️ 从源码构建（Building from Source）
 
-### 提醒事项
-**样式**: 清单 <br>
-**特性**: 交互式待办清单、自定义标题、项目计数器
+### 前置条件
+- Windows 10 / 11 (x64)
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) 或更高版本
+- PowerShell 7 (pwsh) 或 Windows PowerShell
 
-<img src=".github/images/weather-light.png#gh-light-mode-only" width="100" alt="天气" align="left">
-<img src=".github/images/weather-dark.png#gh-dark-mode-only" width="100" alt="天气" align="left">
+### 构建命令
+```powershell
+# 克隆仓库
+git clone https://github.com/Genlue/uWidgetsPlus.git
+cd uWidgetsPlus
 
-### 天气
-**样式**: 预报、温度、紫外线指数 <br>
-**特点**: 多达 7 天的预报、可按名称搜索城市
+# 一键编译并生成单文件 EXE
+powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-<img src=".github/images/monitor-light.png#gh-light-mode-only" width="100" alt="监视器" align="left">
-<img src=".github/images/monitor-dark.png#gh-dark-mode-only" width="100" alt="监视器" align="left">
+# 产物输出路径
+# dist/win-x64/uWidgets.exe
+```
 
-### 监视器
-**样式**: 简单仪表板 <br>
-**特点**: CPU 使用率、RAM 使用率、磁盘使用率、网络使用率、电池电量
+---
 
-### 主题
+## 📄 开源许可与致谢
 
-- ☀️ **亮色** 和 🌑 **暗色** 主题支持
-  
-- 💧 **透明**效果
-
-- 🎨 **强调色**选择
-
-- 🔲 **单色**主题
-
-<img src=".github/images/sizes-light.png#gh-light-mode-only" width="50%" alt="Weather" align="right">
-<img src=".github/images/sizes-dark.png#gh-dark-mode-only" width="50%" alt="Weather" align="right">
-
-### 尺寸
-
-您可以设置每个小部件的大小。
-有 4 个预设：
-
-- 小 (2×2)
-- 中 (4×2)
-- 大 (4×4)
-- 超大 (8×4)
-
-您还可以通过拖动小部件的角落调整其大小，以手动设置所需的大小。
-
-### 网格
-
-小部件可根据虚拟网格调整**位置**和**大小**。
-
-您可以更改小部件之间的网格单元格**大小**和**边距**，或者完全禁用网格。
-
-### 语言
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/RU@2x.png?raw=true" width="48px" />
-  <br/><br/><b>俄语</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/US@2x.png?raw=true" width="48px" />
-  <br/><br/><b>英语</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/CN@2x.png?raw=true" width="48px" />
-  <br/><br/><b>中文</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/DE@2x.png?raw=true" width="48px" />
-  <br/><br/><b>德语</b>
-</kbd>
-
-#### 即将推出
-
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/UA@2x.png?raw=true" width="48px" />
-  <br/><br/><b>乌克兰语</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/PL@2x.png?raw=true" width="48px" />
-  <br/><br/><b>波兰语</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/FR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>法语</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/ES@2x.png?raw=true" width="48px" />
-  <br/><br/><b>西班牙语</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/JP@2x.png?raw=true" width="48px" />
-  <br/><br/><b>日语</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/KR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>韩语</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/GR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>希腊语</b>
-</kbd>
-
-## 系统要求
-
-- Windows 8.1 或更新版本 
-- [.NET 8.0 运行时](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-
-## 安装
-
-1. 下载 [最新版本](https://github.com/creewick/uWidgets/releases)
-2. 解压下载后的文件
-3. 运行 `uWidgets.exe`
-
-## 卸载
-
-1. 删除 `uWidgets` 文件夹
-
-本程序是便携式的，不会在除了程序所在目录外的文件夹内存储数据
-
-## 贡献
-
-uWidgets 在构建时就考虑到了模块化。<br/>
-这意味着您可以使用 C# 创建自己的小部件。
-
-查看 [API 参考](https://github.com/creewick/uWidgets/wiki/API)
-
-### 贡献者
-
-<a href = "https://github.com/creewick/uWidgets/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo=creewick/uWidgets" />
-</a>
-
-## 许可证
-
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://github.com/creewick/uWidgets">uWidgets</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://github.com/creewick">creewick</a> 使用了 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-NC-SA 4.0 <img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a> 许可证</p>
+- 衍生并增强自开源项目 [creewick/uWidgets](https://github.com/creewick/uWidgets)
+- 基于 [MIT License](LICENSE) 开源发布
+- 感谢 [Avalonia UI](https://avaloniaui.net/) 与 [SkiaSharp](https://github.com/mono/SkiaSharp) 社区提供强大的跨平台图形渲染能力。

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Tools" xml:space="preserve">
+        <value>工具</value>
+    </data>
+    <data name="Tools_Clipboard_Title" xml:space="preserve">
+        <value>剪贴板</value>
+    </data>
+    <data name="Tools_Clipboard_Subtitle" xml:space="preserve">
+        <value>自动记录文字、图片与文件历史，一键快速复用</value>
+    </data>
+    <data name="Tools_Clipboard_Empty" xml:space="preserve">
+        <value>剪贴板历史为空</value>
+    </data>
+    <data name="Tools_Clipboard_Clear" xml:space="preserve">
+        <value>清空历史</value>
+    </data>
+    <data name="Tools_Clipboard_Copied" xml:space="preserve">
+        <value>已复制到剪贴板</value>
+    </data>
+    <data name="Tools_Clipboard_All" xml:space="preserve">
+        <value>全部</value>
+    </data>
+    <data name="Tools_Clipboard_Text" xml:space="preserve">
+        <value>文本</value>
+    </data>
+    <data name="Tools_Clipboard_Image" xml:space="preserve">
+        <value>图片</value>
+    </data>
+    <data name="Tools_Clipboard_Files" xml:space="preserve">
+        <value>文件</value>
+    </data>
+    <data name="Tools_Clipboard_MaxHistory" xml:space="preserve">
+        <value>保存最近记录条数</value>
+    </data>
+    <data name="Tools_Clipboard_MaxHistory_Desc" xml:space="preserve">
+        <value>保存历史记录的最大条数（5 ~ 100 条）</value>
+    </data>
+    <data name="Tools_Clipboard_ClearCache" xml:space="preserve">
+        <value>清理图片缓存</value>
+    </data>
+    <data name="Tools_Clipboard_AutoCopy" xml:space="preserve">
+        <value>点击卡片直接复制</value>
+    </data>
+    <data name="Tools_Clipboard_AutoCopy_Desc" xml:space="preserve">
+        <value>单击历史卡片时立即写入 Windows 剪贴板</value>
+    </data>
+    <data name="Tools_Translator_Title" xml:space="preserve">
+        <value>翻译</value>
+    </data>
+    <data name="Tools_Translator_Subtitle" xml:space="preserve">
+        <value>支持双向对译与多翻译源，开箱即用</value>
+    </data>
+    <data name="Tools_Translator_InputHint" xml:space="preserve">
+        <value>输入要翻译的文本...</value>
+    </data>
+    <data name="Tools_Translator_OutputHint" xml:space="preserve">
+        <value>翻译结果将显示在此处</value>
+    </data>
+    <data name="Tools_Translator_Translate" xml:space="preserve">
+        <value>翻译</value>
+    </data>
+    <data name="Tools_Translator_Translating" xml:space="preserve">
+        <value>正在翻译...</value>
+    </data>
+    <data name="Tools_Translator_Copy" xml:space="preserve">
+        <value>复制</value>
+    </data>
+    <data name="Tools_Translator_Clear" xml:space="preserve">
+        <value>清空</value>
+    </data>
+    <data name="Tools_Translator_Swap" xml:space="preserve">
+        <value>切换语言对译方向</value>
+    </data>
+    <data name="Tools_Translator_Engine" xml:space="preserve">
+        <value>翻译源</value>
+    </data>
+    <data name="Tools_Translator_Engine_Desc" xml:space="preserve">
+        <value>选择默认翻译引擎</value>
+    </data>
+    <data name="Tools_Translator_Auto" xml:space="preserve">
+        <value>自动检测</value>
+    </data>
+    <data name="Tools_Translator_Zh" xml:space="preserve">
+        <value>简体中文</value>
+    </data>
+    <data name="Tools_Translator_En" xml:space="preserve">
+        <value>英语</value>
+    </data>
+    <data name="Tools_Translator_Ja" xml:space="preserve">
+        <value>日语</value>
+    </data>
+    <data name="Tools_Translator_Ko" xml:space="preserve">
+        <value>韩语</value>
+    </data>
+    <data name="Tools_Translator_Fr" xml:space="preserve">
+        <value>法语</value>
+    </data>
+    <data name="Tools_Translator_De" xml:space="preserve">
+        <value>德语</value>
+    </data>
+    <data name="Tools_Translator_Es" xml:space="preserve">
+        <value>西班牙语</value>
+    </data>
+    <data name="Tools_Translator_Ru" xml:space="preserve">
+        <value>俄语</value>
+    </data>
+    <data name="Tools_Translator_Engine_Youdao" xml:space="preserve">
+        <value>有道翻译（国内直连免Key）</value>
+    </data>
+    <data name="Tools_Translator_Engine_MyMemory" xml:space="preserve">
+        <value>MyMemory（国际直连免Key）</value>
+    </data>
+    <data name="Tools_Translator_Engine_Baidu" xml:space="preserve">
+        <value>百度翻译（个人AppID）</value>
+    </data>
+    <data name="Tools_Translator_Engine_DeepLX" xml:space="preserve">
+        <value>DeepLX / 自定义接口</value>
+    </data>
+    <data name="Tools_Translator_BaiduAppId" xml:space="preserve">
+        <value>百度翻译 AppID</value>
+    </data>
+    <data name="Tools_Translator_BaiduSecret" xml:space="preserve">
+        <value>百度翻译 密钥</value>
+    </data>
+    <data name="Tools_Translator_CustomUrl" xml:space="preserve">
+        <value>自定义接口 URL</value>
+    </data>
+    <data name="Tools_Translator_AutoTranslate" xml:space="preserve">
+        <value>键入时自动翻译</value>
+    </data>
+    <data name="Tools_Translator_AutoTranslate_Desc" xml:space="preserve">
+        <value>输入停止 600ms 后自动请求翻译</value>
+    </data>
+</root>

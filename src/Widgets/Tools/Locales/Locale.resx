@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Tools" xml:space="preserve">
+        <value>Tools</value>
+    </data>
+    <data name="Tools_Clipboard_Title" xml:space="preserve">
+        <value>Clipboard</value>
+    </data>
+    <data name="Tools_Clipboard_Subtitle" xml:space="preserve">
+        <value>Track clipboard history of text, images, and files</value>
+    </data>
+    <data name="Tools_Clipboard_Empty" xml:space="preserve">
+        <value>Clipboard history is empty</value>
+    </data>
+    <data name="Tools_Clipboard_Clear" xml:space="preserve">
+        <value>Clear History</value>
+    </data>
+    <data name="Tools_Clipboard_Copied" xml:space="preserve">
+        <value>Copied to clipboard</value>
+    </data>
+    <data name="Tools_Clipboard_All" xml:space="preserve">
+        <value>All</value>
+    </data>
+    <data name="Tools_Clipboard_Text" xml:space="preserve">
+        <value>Text</value>
+    </data>
+    <data name="Tools_Clipboard_Image" xml:space="preserve">
+        <value>Image</value>
+    </data>
+    <data name="Tools_Clipboard_Files" xml:space="preserve">
+        <value>Files</value>
+    </data>
+    <data name="Tools_Clipboard_MaxHistory" xml:space="preserve">
+        <value>Max items</value>
+    </data>
+    <data name="Tools_Clipboard_MaxHistory_Desc" xml:space="preserve">
+        <value>Number of recent items to keep in history (5 - 100)</value>
+    </data>
+    <data name="Tools_Clipboard_ClearCache" xml:space="preserve">
+        <value>Clear image cache</value>
+    </data>
+    <data name="Tools_Clipboard_AutoCopy" xml:space="preserve">
+        <value>Click card to copy</value>
+    </data>
+    <data name="Tools_Clipboard_AutoCopy_Desc" xml:space="preserve">
+        <value>Instantly copy to Windows clipboard when clicking a history card</value>
+    </data>
+    <data name="Tools_Translator_Title" xml:space="preserve">
+        <value>Translator</value>
+    </data>
+    <data name="Tools_Translator_Subtitle" xml:space="preserve">
+        <value>Fast bilingual translation with multiple engine sources</value>
+    </data>
+    <data name="Tools_Translator_InputHint" xml:space="preserve">
+        <value>Enter text to translate...</value>
+    </data>
+    <data name="Tools_Translator_OutputHint" xml:space="preserve">
+        <value>Translation result will appear here</value>
+    </data>
+    <data name="Tools_Translator_Translate" xml:space="preserve">
+        <value>Translate</value>
+    </data>
+    <data name="Tools_Translator_Translating" xml:space="preserve">
+        <value>Translating...</value>
+    </data>
+    <data name="Tools_Translator_Copy" xml:space="preserve">
+        <value>Copy</value>
+    </data>
+    <data name="Tools_Translator_Clear" xml:space="preserve">
+        <value>Clear</value>
+    </data>
+    <data name="Tools_Translator_Swap" xml:space="preserve">
+        <value>Swap Languages</value>
+    </data>
+    <data name="Tools_Translator_Engine" xml:space="preserve">
+        <value>Translation Engine</value>
+    </data>
+    <data name="Tools_Translator_Engine_Desc" xml:space="preserve">
+        <value>Choose default translation service</value>
+    </data>
+    <data name="Tools_Translator_Auto" xml:space="preserve">
+        <value>Auto Detect</value>
+    </data>
+    <data name="Tools_Translator_Zh" xml:space="preserve">
+        <value>Chinese</value>
+    </data>
+    <data name="Tools_Translator_En" xml:space="preserve">
+        <value>English</value>
+    </data>
+    <data name="Tools_Translator_Ja" xml:space="preserve">
+        <value>Japanese</value>
+    </data>
+    <data name="Tools_Translator_Ko" xml:space="preserve">
+        <value>Korean</value>
+    </data>
+    <data name="Tools_Translator_Fr" xml:space="preserve">
+        <value>French</value>
+    </data>
+    <data name="Tools_Translator_De" xml:space="preserve">
+        <value>German</value>
+    </data>
+    <data name="Tools_Translator_Es" xml:space="preserve">
+        <value>Spanish</value>
+    </data>
+    <data name="Tools_Translator_Ru" xml:space="preserve">
+        <value>Russian</value>
+    </data>
+    <data name="Tools_Translator_Engine_Youdao" xml:space="preserve">
+        <value>Youdao (Direct, Free)</value>
+    </data>
+    <data name="Tools_Translator_Engine_MyMemory" xml:space="preserve">
+        <value>MyMemory (Direct, Free)</value>
+    </data>
+    <data name="Tools_Translator_Engine_Baidu" xml:space="preserve">
+        <value>Baidu (Personal AppID)</value>
+    </data>
+    <data name="Tools_Translator_Engine_DeepLX" xml:space="preserve">
+        <value>DeepLX (Custom Endpoint)</value>
+    </data>
+    <data name="Tools_Translator_BaiduAppId" xml:space="preserve">
+        <value>Baidu AppID</value>
+    </data>
+    <data name="Tools_Translator_BaiduSecret" xml:space="preserve">
+        <value>Baidu Secret Key</value>
+    </data>
+    <data name="Tools_Translator_CustomUrl" xml:space="preserve">
+        <value>Custom Endpoint URL</value>
+    </data>
+    <data name="Tools_Translator_AutoTranslate" xml:space="preserve">
+        <value>Translate as you type</value>
+    </data>
+    <data name="Tools_Translator_AutoTranslate_Desc" xml:space="preserve">
+        <value>Automatically trigger translation after typing pauses</value>
+    </data>
+</root>

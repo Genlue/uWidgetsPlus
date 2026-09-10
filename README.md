@@ -1,186 +1,108 @@
-## uWidgets
+## uWidgetsPlus (uWidgets+)
 
 <img src=".github/images/icon-light.png#gh-light-mode-only" width="120" alt="Logo" align="right">
 <img src=".github/images/icon-dark.png#gh-dark-mode-only" width="120" alt="Logo" align="right">
 
 <div align="center">
-  Standalone .NET application with a&nbsp;variety of&nbsp;customizable widgets.
+  <h3>🎨 Next-Generation macOS-Style Desktop Widgets Suite for Windows</h3>
+  <p>Built with Avalonia 11 + .NET 8 · Hardware Acrylic Blur · 3D Liquid Glass Optics · Lockscreen Art-Font Clock · Flexible Desktop Grid Engine</p>
 </div>
+
 <h3 align="center">
-  <b><a href="https://github.com/creewick/uWidgets/releases">Download</a></b> ・
-  <a href="https://github.com/users/creewick/projects/4">Roadmap</a> ・
-  <a href="https://github.com/creewick/uWidgets/wiki/API">API</a> ・
-  <a href="https://github.com/creewick/uWidgets/discussions">Discussions</a> ・
-  <a href="https://github.com/creewick/uWidgets/issues">Report a bug</a>
+  <b><a href="https://github.com/Genlue/uWidgetsPlus/releases">Download Latest Release</a></b> ・
+  <a href="https://github.com/Genlue/uWidgetsPlus/issues">Report an Issue</a> ・
+  <a href="项目解构报告.md">Architecture Report (中文)</a>
 </h3>
+
 <div align="center">
-  <img src="https://img.shields.io/github/downloads/creewick/uWidgets/total"/>
-  <img src="https://img.shields.io/github/v/tag/creewick/uWidgets?label=version"/>
-  <img src="https://img.shields.io/github/stars/creewick/uWidgets?style=flat"/>
+  <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet"/>
+  <img src="https://img.shields.io/badge/Avalonia-11.1-purple?logo=avaloniaui"/>
+  <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
+  <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
 </div>
+
 <br />
 
-### This page on other languages
-
+### Languages
 <kbd><img src="https://github.com/yammadev/flag-icons/blob/master/png/US.png?raw=true" height="10" /> English</kbd>
 <a href="/README.ZH-HANS.md"><kbd><img src="https://github.com/yammadev/flag-icons/blob/master/png/CN.png?raw=true" height="10" /> 中文 (简体)</kbd></a>
 
-## Features
+---
 
-6 types of fully customizable widgets
+## 🌟 Key Highlights & Major Enhancements
 
-<img src=".github/images/clock-light.png#gh-light-mode-only" width="100" alt="Clock" align="left">
-<img src=".github/images/clock-dark.png#gh-dark-mode-only" width="100" alt="Clock" align="left">
+### 1. 🕒 Frameless Display Clock
+- **Full Cell Stretched Bounds**: Numerals directly occupy the entire widget grid unit without card margins or extra font leading gaps ($y=0$ to $y=H$). Supports non-uniform stretching (`StretchFill`) or uniform proportional centering;
+- **Curated Mobile Lockscreen Display Fonts**:
+  - 🔥 **HarmonyOS Sans Condensed**: Embedded in assembly, purpose-built for dramatic vertical expansion without clipping;
+  - 🔥 **Impact**: Heavyweight, bold, punchy classic iOS lockscreen numerals;
+  - 🔥 **Bahnschrift (DIN)**: Precision German industrial geometric condensed design;
+  - 🔥 **Arial Black**: Ultra-wide heavyweight grotesque sans-serif;
+  - 🔥 **Georgia**: Sophisticated contrast editorial lockscreen serif;
+  - 🔥 **Century Gothic**: Bauhaus geometric curves;
+  - 🔥 **Cascadia Code**, **Ink Free**, **Palatino Linotype**, and all Windows system installed fonts;
+- **Full Font-Weight Spectrum**: Seamless selection across 100 Thin to 900 Black;
+- **Per-Widget Theme Override**: Select individual theme mode (Follow Global / Acrylic / Liquid Glass / Solid) directly from widget settings;
+- **Color Overlay & Native ColorPicker**: Features standard Avalonia `ColorPicker` for color overlay tinting with live bidirectional hex `#RRGGBB` synchronization.
 
-### Clock
-**Views**: 3 styles of Analog Clock, Digital Clock, World Clock <br>
-**Features**: Timezone selector, 12/24 hour modes, Show/hide seconds
+### 2. 💎 Three Deeply Adapted Visual Materials
+- 🪟 **Acrylic Blur (OS-Level Live Hardware Blur)**:
+  - Utilizes Win32 `ExtCreateRegion` (`RGNDATA`) to dynamically bind numeral glyph scanline spans directly to the HWND region;
+  - Windows DWM hardware samples desktop background underneath at **60fps/144fps zero-latency**, tracking Wallpaper Engine live wallpapers and background video playback seamlessly;
+  - Optional specular gradient outline rim.
+- 💧 **Liquid Glass (3D Optical Refraction Model)**:
+  - Euclidean Distance Transform (EDT) computes accurate surface normals across stroke contours, rendering authentic convex/concave lens displacement, chromatic dispersion, 3D specular glints, and bevel lines;
+  - **Refined Edge Optics**: Refraction width is strictly clamped to a delicate `1.5dp ~ 4.5dp` rim, keeping numeral centers crystal clear and flat;
+  - **Background Pre-Caching Engine**: Asynchronously pre-renders the next minute frame ($T+1\text{m}$) in background threads (`Task.Run` + `CancellationToken`), achieving **instant 0ms cache-hit switching** on the minute tick;
+  - **Zero-Leak Automatic Cleanup**: Evicts and disposes expired Bitmaps on every tick; immediately flushes and disposes cached textures upon window move, resize, font/theme change, or widget unload.
+- 🎨 **Solid Fill (Vector Anti-Aliased Fill)**:
+  - Pure geometric anti-aliased fill with configurable opacity slider and theme accent colors.
 
-<img src=".github/images/calendar-light.png#gh-light-mode-only" width="100" alt="Calendar" align="left">
-<img src=".github/images/calendar-dark.png#gh-dark-mode-only" width="100" alt="Calendar" align="left">
+### 3. 📐 Advanced Desktop Grid Management
+- **Three Placement Modes**:
+  - **Manual Grid**: Divides desktop into $m \times n$ square cells, stored as percentages for responsive multi-resolution and DPI adaptation;
+  - **Virtual Grid**;
+  - **Free Placement**;
+- Widgets snap to cells with customizable margins and corner radiuses.
 
-### Calendar
-**Views**: Day View, Month View <br>
-**Features**: First day of week selector
+### 4. 🧩 Complete Widget Ecosystem
+- ⏰ **Clock**: Analog (3 styles), Digital, World Clock (independent dual/quad face custom city naming + synchronized center digital readout), Frameless Clock;
+- 📁 **Folders & Files**: Desktop folder quick launcher, real-time file change monitoring, single-file desktop launcher;
+- 🌤️ **Weather**: Smooth horizontal wheel scrolling, 7-day forecast, sunrise/sunset, UV index, air quality (with HTTP proxy support);
+- 📊 **System Monitor**: Lightweight single metric dials, multi-dashboard overview (CPU, RAM, Disk, Network, Battery);
+- 📝 **Notes**: Quick desktop notes;
+- ✅ **Reminders**: Interactive checklist with task counters;
+- 🎵 **Music Controls** & 🔍 **Search Utility**.
 
-<img src=".github/images/notes-light.png#gh-light-mode-only" width="100" alt="Notes" align="left">
-<img src=".github/images/notes-dark.png#gh-dark-mode-only" width="100" alt="Notes" align="left">
+### 5. 🚀 Standalone Single-File Distribution
+- Builds to a self-contained `uWidgets.exe` (~58 MB) with content-hash-verified embedded widget bundle extraction on first launch.
 
-### Notes
-**Views**: Note <br>
-**Features**: Interactive text node, custom header
+---
 
-<img src=".github/images/reminders-light.png#gh-light-mode-only" width="100" alt="Reminders" align="left">
-<img src=".github/images/reminders-dark.png#gh-dark-mode-only" width="100" alt="Reminders" align="left">
+## 🛠️ Building from Source
 
-### Reminders
-**Views**: List <br>
-**Features**: Interactive to-do list, custom header, automatic items counter
+### Prerequisites
+- Windows 10 / 11 (x64)
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or higher
+- PowerShell 7 (pwsh) or Windows PowerShell
 
-<img src=".github/images/weather-light.png#gh-light-mode-only" width="100" alt="Weather" align="left">
-<img src=".github/images/weather-dark.png#gh-dark-mode-only" width="100" alt="Weather" align="left">
+### Build Command
+```powershell
+# Clone the repository
+git clone https://github.com/Genlue/uWidgetsPlus.git
+cd uWidgetsPlus
 
-### Weather
-**Views**: Forecast, Temperature, UV Index, Sunset & Sunrise, Pressure, Air Quality <br>
-**Features**: Forecast up to 7 days, Search city by name
+# Compile and package single-file EXE
+powershell -ExecutionPolicy Bypass -File .\build.ps1
 
-<img src=".github/images/monitor-light.png#gh-light-mode-only" width="100" alt="Monitor" align="left">
-<img src=".github/images/monitor-dark.png#gh-dark-mode-only" width="100" alt="Monitor" align="left">
+# Output binary location:
+# dist/win-x64/uWidgets.exe
+```
 
-### Monitor
-**Views**: Single Metric <br>
-**Features**: CPU usage, RAM usage, Disk usage, Network usage, Battery level
+---
 
-### Themes
+## 📄 License & Credits
 
-- ☀️ **Light** and 🌑 **Dark** theme support
-  
-- 💧 **Transparency** effects
-
-- 🎨 **Accent** color picker
-
-- 🔲 **Monochrome** theme
-
-<img src=".github/images/sizes-light.png#gh-light-mode-only" width="50%" alt="Weather" align="right">
-<img src=".github/images/sizes-dark.png#gh-dark-mode-only" width="50%" alt="Weather" align="right">
-
-### Sizes
-
-You can set size of each individual widget.
-There are 4 presets:
-
-- Small (2×2)
-- Medium (4×2)
-- Large (4×4)
-- Extra Large (8×4)
-
-You can also resize the widget by it's corner to set the desired size manually.
-
-### Grid
-
-Widgets are designed to snap their **position** and **size** to the virtual grid.
-
-You can change the grid cell **size** and **margin** between widgets, or disable the grid completely.
-
-### Languages
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/RU@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Russian</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/US@2x.png?raw=true" width="48px" />
-  <br/><br/><b>English</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/CN@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Chinese</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/DE@2x.png?raw=true" width="48px" />
-  <br/><br/><b>German</b>
-</kbd>
-
-#### Coming soon
-
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/UA@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Ukrainian</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/PL@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Polish</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/FR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>French</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/ES@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Spanish</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/JP@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Japanese</b>
-</kbd> 
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/KR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Korean</b>
-</kbd>
-<kbd align="center">
-  <img src="https://github.com/yammadev/flag-icons/blob/master/png/GR@2x.png?raw=true" width="48px" />
-  <br/><br/><b>Greek</b>
-</kbd>
-
-## System requirements
-
-- Windows 8.1 or later 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-
-## Installation
-
-1. Download the [latest release](https://github.com/creewick/uWidgets/releases)
-2. Extract the archive
-3. Launch `uWidgets.exe`
-
-## Uninstallation
-
-1. Delete `uWidgets` folder
-
-The app's portable and doesn't store any data outside that folder
-
-## Contributing
-
-uWidgets is built with modularity in mind.<br/>
-That means you can create your own widgets using C#.
-
-Check the [API Reference](https://github.com/creewick/uWidgets/wiki/API)
-
-### Contributors
-
-<a href = "https://github.com/creewick/uWidgets/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo=creewick/uWidgets" />
-</a>
-
-## License
-
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://github.com/creewick/uWidgets">uWidgets</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://github.com/creewick">creewick</a> is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-NC-SA 4.0 <img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a></p>
+- Derived and enhanced from [creewick/uWidgets](https://github.com/creewick/uWidgets)
+- Licensed under the [MIT License](LICENSE)
+- Special thanks to the [Avalonia UI](https://avaloniaui.net/) and [SkiaSharp](https://github.com/mono/SkiaSharp) communities.

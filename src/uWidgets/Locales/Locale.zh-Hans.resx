@@ -663,4 +663,82 @@
     <data name="Settings_MultiScreen_WidgetCount" xml:space="preserve">
         <value>组件数：{0}</value>
     </data>
+    <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
+        <value>液态玻璃</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
+        <value>液态玻璃 · 静态</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Description" xml:space="preserve">
+        <value>基于 Windows 静态壁纸模拟折射与定向高光，调整即时生效，文字保持清晰。动态壁纸或多屏不同壁纸时，以系统壁纸图像为准。</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Blur" xml:space="preserve">
+        <value>模糊度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BlurHint" xml:space="preserve">
+        <value>0–100 · 0 为清晰底图</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refraction" xml:space="preserve">
+        <value>折射强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_RefractionHint" xml:space="preserve">
+        <value>0–100% · 控制边缘图像弯折</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidth" xml:space="preserve">
+        <value>玻璃边缘宽度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidthHint" xml:space="preserve">
+        <value>4–80 · 控制折射区域宽度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Highlight" xml:space="preserve">
+        <value>高光强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
+        <value>0–100% · 边缘亮线与内侧反光</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
+        <value>色散强度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_DispersionHint" xml:space="preserve">
+        <value>0–100% · 折射边缘的彩色分离</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngle" xml:space="preserve">
+        <value>光照方向</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngleHint" xml:space="preserve">
+        <value>0–360° · 225° 为左上方光源</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTint" xml:space="preserve">
+        <value>边缘染色</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTintHint" xml:space="preserve">
+        <value>0–100% · 自动按边缘内外的实际颜色柔和染色,0 为关闭</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align" xml:space="preserve">
+        <value>壁纸对准校正…</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Title" xml:space="preserve">
+        <value>壁纸对准校正</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Hint" xml:space="preserve">
+        <value>调整水平/垂直偏移，直到小组件玻璃中的背景与真实壁纸重合。每次调整即时生效（对所有小组件）。</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Horizontal" xml:space="preserve">
+        <value>水平偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Vertical" xml:space="preserve">
+        <value>垂直偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Reset" xml:space="preserve">
+        <value>重置偏移</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Close" xml:space="preserve">
+        <value>关闭</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Reset" xml:space="preserve">
+        <value>重置玻璃参数</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
+        <value>刷新壁纸</value>
+    </data>
 </root>

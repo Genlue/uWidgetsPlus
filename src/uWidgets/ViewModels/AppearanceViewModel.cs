@@ -25,23 +25,31 @@ public class AppearanceViewModel : ReactiveObject
         appSettingsProvider.DataChanged += (_, _, _) =>
         {
             this.RaisePropertyChanged(nameof(ShowGlassSettings));
+            this.RaisePropertyChanged(nameof(ShowLiquidGlassSettings));
+            this.RaisePropertyChanged(nameof(OpacityLevel));
+            this.RaisePropertyChanged(nameof(GlassBlur));
+            this.RaisePropertyChanged(nameof(GlassRefraction));
+            this.RaisePropertyChanged(nameof(GlassEdgeWidth));
+            this.RaisePropertyChanged(nameof(GlassHighlight));
+            this.RaisePropertyChanged(nameof(GlassDispersion));
+            this.RaisePropertyChanged(nameof(GlassLightAngle));
+            this.RaisePropertyChanged(nameof(GlassEdgeTint));
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowTitleBarSize));
             this.RaisePropertyChanged(nameof(TitleBarSize));
         };
-        // Built once; keyed off the fixed presets, so every install shows exactly two.
+        // Fixed material presets; other appearance preferences are preserved.
         Themes = SurfaceTemplates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray();
     }
 
     /// <summary>
-    /// The surface presets — exactly two (毛玻璃 / 纯色). The outline (描边) is an
-    /// option of the frost theme itself, not a separate surface. A liquid-glass
-    /// preset may be added here later — it is already reserved via <see cref="SurfaceStyle"/>.
+    /// The three surface presets: frosted glass, solid and static liquid glass.
     /// </summary>
     private static readonly Theme[] SurfaceTemplates =
     [
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid)
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass)
     ];
 
     public ThemeButton[] Themes { get; }
@@ -51,6 +59,63 @@ public class AppearanceViewModel : ReactiveObject
     /// settings are hidden (and ignored) for the solid preset.
     /// </summary>
     public bool ShowGlassSettings => appSettingsProvider.Get().Theme.IsGlass;
+
+    public bool ShowLiquidGlassSettings => appSettingsProvider.Get().Theme.IsLiquidGlass;
+
+    public double GlassBlur
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Blur;
+        set => UpdateGlass(glass => glass with { Blur = value });
+    }
+    public double GlassRefraction
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Refraction;
+        set => UpdateGlass(glass => glass with { Refraction = value });
+    }
+    public double GlassEdgeWidth
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.EdgeWidth;
+        set => UpdateGlass(glass => glass with { EdgeWidth = value });
+    }
+    public double GlassHighlight
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Highlight;
+        set => UpdateGlass(glass => glass with { Highlight = value });
+    }
+    public double GlassDispersion
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.Dispersion;
+        set => UpdateGlass(glass => glass with { Dispersion = value });
+    }
+    public double GlassLightAngle
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LightAngle;
+        set => UpdateGlass(glass => glass with { LightAngle = value });
+    }
+
+    /// <summary>边缘染色 strength (0-100%): the soft colored rim at the glass border.</summary>
+    public double GlassEdgeTint
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.EdgeTint;
+        set => UpdateGlass(glass => glass with { EdgeTint = value });
+    }
+
+    private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update)
+    {
+        var settings = appSettingsProvider.Get();
+        var glass = update(settings.Theme.EffectiveLiquidGlass).Normalize();
+        if (glass == settings.Theme.EffectiveLiquidGlass) return;
+        appSettingsProvider.Save(settings with { Theme = settings.Theme with { LiquidGlass = glass } });
+    }
+
+    public void ResetLiquidGlass() => UpdateGlass(_ => new LiquidGlassSettings());
+
+    public void RefreshLiquidGlassWallpaper()
+    {
+        // Force a fresh desktop capture (the normal path reuses a short-lived cache).
+        LiquidGlassWallpaper.Invalidate();
+        LiquidGlassSurface.RefreshAll();
+    }
     
     public DarkModeViewModel[] DarkModes =>
     [

@@ -22,6 +22,32 @@ namespace uWidgets.Locales {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Locale {
+        public static string Settings_Appearance_Surface_LiquidGlass => ResourceManager.GetString("Settings_Appearance_Surface_LiquidGlass", resourceCulture);
+        public static string Settings_Appearance_Glass_Title => ResourceManager.GetString("Settings_Appearance_Glass_Title", resourceCulture);
+        public static string Settings_Appearance_Glass_Description => ResourceManager.GetString("Settings_Appearance_Glass_Description", resourceCulture);
+        public static string Settings_Appearance_Glass_Blur => ResourceManager.GetString("Settings_Appearance_Glass_Blur", resourceCulture);
+        public static string Settings_Appearance_Glass_BlurHint => ResourceManager.GetString("Settings_Appearance_Glass_BlurHint", resourceCulture);
+        public static string Settings_Appearance_Glass_Refraction => ResourceManager.GetString("Settings_Appearance_Glass_Refraction", resourceCulture);
+        public static string Settings_Appearance_Glass_RefractionHint => ResourceManager.GetString("Settings_Appearance_Glass_RefractionHint", resourceCulture);
+        public static string Settings_Appearance_Glass_EdgeWidth => ResourceManager.GetString("Settings_Appearance_Glass_EdgeWidth", resourceCulture);
+        public static string Settings_Appearance_Glass_EdgeWidthHint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeWidthHint", resourceCulture);
+        public static string Settings_Appearance_Glass_Highlight => ResourceManager.GetString("Settings_Appearance_Glass_Highlight", resourceCulture);
+        public static string Settings_Appearance_Glass_HighlightHint => ResourceManager.GetString("Settings_Appearance_Glass_HighlightHint", resourceCulture);
+        public static string Settings_Appearance_Glass_Dispersion => ResourceManager.GetString("Settings_Appearance_Glass_Dispersion", resourceCulture);
+        public static string Settings_Appearance_Glass_DispersionHint => ResourceManager.GetString("Settings_Appearance_Glass_DispersionHint", resourceCulture);
+        public static string Settings_Appearance_Glass_LightAngle => ResourceManager.GetString("Settings_Appearance_Glass_LightAngle", resourceCulture);
+        public static string Settings_Appearance_Glass_LightAngleHint => ResourceManager.GetString("Settings_Appearance_Glass_LightAngleHint", resourceCulture);
+        public static string Settings_Appearance_Glass_EdgeTint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeTint", resourceCulture);
+        public static string Settings_Appearance_Glass_EdgeTintHint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeTintHint", resourceCulture);
+        public static string Settings_Appearance_Glass_Align => ResourceManager.GetString("Settings_Appearance_Glass_Align", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Title => ResourceManager.GetString("Settings_Appearance_Glass_Align_Title", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Hint => ResourceManager.GetString("Settings_Appearance_Glass_Align_Hint", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Horizontal => ResourceManager.GetString("Settings_Appearance_Glass_Align_Horizontal", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Vertical => ResourceManager.GetString("Settings_Appearance_Glass_Align_Vertical", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Reset => ResourceManager.GetString("Settings_Appearance_Glass_Align_Reset", resourceCulture);
+        public static string Settings_Appearance_Glass_Align_Close => ResourceManager.GetString("Settings_Appearance_Glass_Align_Close", resourceCulture);
+        public static string Settings_Appearance_Glass_Reset => ResourceManager.GetString("Settings_Appearance_Glass_Reset", resourceCulture);
+        public static string Settings_Appearance_Glass_Refresh => ResourceManager.GetString("Settings_Appearance_Glass_Refresh", resourceCulture);
         
         private static global::System.Resources.ResourceManager resourceMan;
         

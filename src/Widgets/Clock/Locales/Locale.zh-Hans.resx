@@ -168,4 +168,82 @@
   <data name="Clock_CityName" xml:space="preserve">
     <value>城市名称</value>
   </data>
+  <data name="Clock_FramelessDigital_Title" xml:space="preserve">
+    <value>无边框时钟</value>
+  </data>
+  <data name="Clock_FramelessDigital_Subtitle" xml:space="preserve">
+    <value>纯净数字自适应网格拉伸，主题效果直达数字轮廓</value>
+  </data>
+  <data name="Clock_FontFamily" xml:space="preserve">
+    <value>字体</value>
+  </data>
+  <data name="Clock_FontFamily_Default" xml:space="preserve">
+    <value>（跟随主题）</value>
+  </data>
+  <data name="Clock_StretchFill" xml:space="preserve">
+    <value>拉伸填满网格</value>
+  </data>
+  <data name="Clock_StretchFill_Subtitle" xml:space="preserve">
+    <value>允许非等比拉伸数字，上下顶到头</value>
+  </data>
+  <data name="Clock_EnableOverlay" xml:space="preserve">
+    <value>覆盖上层颜色遮罩</value>
+  </data>
+  <data name="Clock_EnableOverlay_Subtitle" xml:space="preserve">
+    <value>在数字材质上层覆盖一层自定义光泽</value>
+  </data>
+  <data name="Clock_FollowAccentColor" xml:space="preserve">
+    <value>跟随强调色</value>
+  </data>
+  <data name="Clock_OverlayColor" xml:space="preserve">
+    <value>遮罩颜色</value>
+  </data>
+  <data name="Clock_OverlayOpacity" xml:space="preserve">
+    <value>遮罩浓度</value>
+  </data>
+  <data name="Clock_FontWeight" xml:space="preserve">
+    <value>字体粗细</value>
+  </data>
+  <data name="Clock_FontWeight_100" xml:space="preserve">
+    <value>极细 Thin (100)</value>
+  </data>
+  <data name="Clock_FontWeight_200" xml:space="preserve">
+    <value>特细 Extra Light (200)</value>
+  </data>
+  <data name="Clock_FontWeight_300" xml:space="preserve">
+    <value>细体 Light (300)</value>
+  </data>
+  <data name="Clock_FontWeight_400" xml:space="preserve">
+    <value>常规 Regular (400)</value>
+  </data>
+  <data name="Clock_FontWeight_500" xml:space="preserve">
+    <value>中等 Medium (500)</value>
+  </data>
+  <data name="Clock_FontWeight_600" xml:space="preserve">
+    <value>半粗 SemiBold (600)</value>
+  </data>
+  <data name="Clock_FontWeight_700" xml:space="preserve">
+    <value>粗体 Bold (700)</value>
+  </data>
+  <data name="Clock_FontWeight_800" xml:space="preserve">
+    <value>特粗 Extra Bold (800)</value>
+  </data>
+  <data name="Clock_FontWeight_900" xml:space="preserve">
+    <value>黑体 Black (900)</value>
+  </data>
+  <data name="Clock_ThemeMode" xml:space="preserve">
+    <value>视觉主题</value>
+  </data>
+  <data name="Clock_ThemeMode_FollowGlobal" xml:space="preserve">
+    <value>跟随全局主题</value>
+  </data>
+  <data name="Clock_ThemeMode_Acrylic" xml:space="preserve">
+    <value>毛玻璃</value>
+  </data>
+  <data name="Clock_ThemeMode_LiquidGlass" xml:space="preserve">
+    <value>液态玻璃</value>
+  </data>
+  <data name="Clock_ThemeMode_Solid" xml:space="preserve">
+    <value>纯色</value>
+  </data>
 </root>

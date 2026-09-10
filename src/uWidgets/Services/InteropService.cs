@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -35,7 +36,7 @@ public class InteropService
     }
 
     /// <summary>
-    /// Clip the window (including its acrylic backdrop) to a rounded rectangle.
+    /// Clip the native window to the widget card's rounded rectangle.
     /// <para>
     /// The widget window spans the whole grid cell, but the frosted-glass card
     /// only occupies the cell minus the margin, with rounded corners. Clipping
@@ -59,14 +60,71 @@ public class InteropService
         height = Math.Max(1, height);
         radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
 
+        // Win32 GDI CreateRoundRectRgn treats right/bottom as exclusive.
+        // x + width + 1 ensures the right and bottom border pixel columns (cardWidth - 1)
+        // are included rather than truncated.
         var region = radius > 0
-            ? CreateRoundRectRgn(x, y, x + width, y + height, radius * 2, radius * 2)
-            : CreateRectRgn(x, y, x + width, y + height);
+            ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
+            : CreateRectRgn(x, y, x + width + 1, y + height + 1);
         if (region == IntPtr.Zero) return;
 
         // On success the system owns the region; only delete it on failure.
         if (SetWindowRgn(handle.Value, region, true) == 0)
             DeleteObject(region);
+    }
+
+    /// <summary>
+    /// Set a custom non-rectangular window region (e.g. text glyphs) from horizontal scanline spans.
+    /// Used by frameless widgets in OS-level AcrylicBlur mode so DWM applies real-time blur strictly
+    /// inside the glyph shapes, while keeping the surrounding desktop visible and click-through.
+    /// </summary>
+    public static void SetWindowRegionFromSpans(Window window, IReadOnlyList<(int Left, int Top, int Right, int Bottom)> rects)
+    {
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null || rects == null || rects.Count == 0)
+        {
+            ClearWidgetRegion(window);
+            return;
+        }
+
+        const int rectSize = 16;
+        const int headerSize = 32;
+        int count = rects.Count;
+        int totalSize = headerSize + count * rectSize;
+        byte[] buffer = new byte[totalSize];
+
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        int offset = headerSize;
+        for (int i = 0; i < count; i++)
+        {
+            var (l, t, r, b) = rects[i];
+            if (l < minX) minX = l;
+            if (t < minY) minY = t;
+            if (r > maxX) maxX = r;
+            if (b > maxY) maxY = b;
+
+            BitConverter.GetBytes(l).CopyTo(buffer, offset + 0);
+            BitConverter.GetBytes(t).CopyTo(buffer, offset + 4);
+            BitConverter.GetBytes(r).CopyTo(buffer, offset + 8);
+            BitConverter.GetBytes(b).CopyTo(buffer, offset + 12);
+            offset += rectSize;
+        }
+
+        BitConverter.GetBytes(32).CopyTo(buffer, 0);       // dwSize
+        BitConverter.GetBytes(1).CopyTo(buffer, 4);        // iType = RDH_RECTANGLES
+        BitConverter.GetBytes((uint)count).CopyTo(buffer, 8); // nCount
+        BitConverter.GetBytes((uint)(count * rectSize)).CopyTo(buffer, 12); // nRgnSize
+        BitConverter.GetBytes(minX).CopyTo(buffer, 16);
+        BitConverter.GetBytes(minY).CopyTo(buffer, 20);
+        BitConverter.GetBytes(maxX).CopyTo(buffer, 24);
+        BitConverter.GetBytes(maxY).CopyTo(buffer, 28);
+
+        IntPtr rgn = ExtCreateRegion(IntPtr.Zero, (uint)totalSize, buffer);
+        if (rgn != IntPtr.Zero)
+        {
+            if (SetWindowRgn(handle.Value, rgn, true) == 0)
+                DeleteObject(rgn);
+        }
     }
 
     /// <summary>
@@ -78,6 +136,9 @@ public class InteropService
         if (handle == null) return;
         SetWindowRgn(handle.Value, IntPtr.Zero, true);
     }
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr ExtCreateRegion(IntPtr lpXform, uint nCount, byte[] lpRgnData);
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);

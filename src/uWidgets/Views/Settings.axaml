@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:uWidgets.Views.Controls"
         Width="1000" Height="650" MinWidth="600" MinHeight="300"
         x:Class="uWidgets.Views.Settings"
-        Background="{DynamicResource SettingsBackground}"
+        Background="{DynamicResource SettingsWindowBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="50"
         WindowStartupLocation="CenterScreen"
@@ -22,6 +22,7 @@
     </Window.Styles>
     
     <Grid RowDefinitions="Auto,*">
+        <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.RowSpan="2" SettingsSurface="True" />
         <!-- macOS traffic lights title bar (native system buttons are hidden
              via code when this mode is active) -->
         <controls:TrafficLightTitleBar x:Name="TrafficBar" Grid.Row="0" IsVisible="False" />

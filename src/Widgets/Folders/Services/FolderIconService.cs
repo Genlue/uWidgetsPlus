@@ -100,6 +100,18 @@ public static class FolderIconService
     [DllImport("gdi32.dll")]
     private static extern int GetDIBits(IntPtr hdc, IntPtr hbm, uint start, uint cLines, IntPtr lpvBits, ref BITMAPINFO lpbmi, uint usage);
 
+    [DllImport("shell32.dll", EntryPoint = "SHGetImageList", CharSet = CharSet.Unicode)]
+    private static extern int SHGetImageList(int iImageList, ref Guid riid, out IntPtr ppv);
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    private static extern IntPtr ImageList_GetIcon(IntPtr himl, int i, uint flags);
+
+    private const int SHIL_LARGE = 0;       // 32x32
+    private const int SHIL_SMALL = 1;       // 16x16
+    private const int SHIL_EXTRALARGE = 2;  // 48x48
+    private const int SHIL_JUMBO = 4;       // 256x256
+    private const uint ILD_TRANSPARENT = 0x00000001;
+
     /// <summary>
     /// Get the icon of <paramref name="path"/> as a 32-bit BGRA bitmap.
     /// Uses IShellItemImageFactory first (same source as Explorer), then falls back to SHGetFileInfo.
@@ -114,9 +126,28 @@ public static class FolderIconService
                 return cached.Icon;
         }
 
-        var icon = GetIconFromIcoLink(path)
-            ?? GetIconFromShellItemImageFactory(path)
+        Bitmap? icon = null;
+        if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+        {
+            icon = GetIconFromShortcut(path);
+        }
+        else if (path.EndsWith(".url", StringComparison.OrdinalIgnoreCase))
+        {
+            icon = GetIconFromUrlFile(path);
+        }
+        else if (path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase) && File.Exists(path))
+        {
+            icon = GetIconFromIcoFile(path);
+        }
+        else if (Directory.Exists(path))
+        {
+            icon = GetIconFromDesktopIni(path);
+        }
+
+        icon ??= GetIconFromShellItemImageFactory(path)
             ?? GetIconFromPrivateExtract(path)
+            ?? GetIconFromSystemImageList(path, SHIL_JUMBO)
+            ?? GetIconFromSystemImageList(path, SHIL_EXTRALARGE)
             ?? GetIconFromShGetFileInfo(path);
 
         lock (cacheLock)
@@ -129,33 +160,6 @@ public static class FolderIconService
             iconCache[path] = (icon, lowQuality ? DateTime.MinValue : stamp);
         }
         return icon;
-    }
-
-    /// <summary>
-    /// Decode the icon directly from an .ico file, or from the .ico file a .lnk points to.
-    /// This keeps the icon the user has set on the shortcut itself, at full resolution.
-    /// </summary>
-    private static Bitmap? GetIconFromIcoLink(string path)
-    {
-        try
-        {
-            if (path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
-                return GetIconFromIcoFile(path);
-
-            if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
-            {
-                var iconPath = ResolveLnkIconLocation(path);
-                if (!string.IsNullOrEmpty(iconPath)
-                    && iconPath.EndsWith(".ico", StringComparison.OrdinalIgnoreCase)
-                    && File.Exists(iconPath))
-                    return GetIconFromIcoFile(iconPath);
-            }
-        }
-        catch
-        {
-            return null;
-        }
-        return null;
     }
 
     [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -195,20 +199,159 @@ public static class FolderIconService
     [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
     private class ShellLinkCoClass { }
 
-    private static string? ResolveLnkIconLocation(string lnkPath)
+    /// <summary>
+    /// Extract the custom icon assigned to a shortcut (.lnk), rather than tracing back (dereferencing)
+    /// to the target file's default icon. Only falls back to the target file's icon if the shortcut has no custom icon.
+    /// </summary>
+    private static Bitmap? GetIconFromShortcut(string lnkPath)
     {
         try
         {
             var link = (IShellLinkW)new ShellLinkCoClass();
             ((IPersistFile)link).Load(lnkPath, 0);
+
+            // 1. Check if the shortcut has a custom icon location explicitly specified
             var sb = new System.Text.StringBuilder(1024);
-            link.GetIconLocation(sb, 1024, out _);
-            return sb.Length == 0 ? null : sb.ToString();
+            link.GetIconLocation(sb, 1024, out int iconIndex);
+            var rawIcon = sb.ToString().Trim('"', ' ');
+            var iconPath = Environment.ExpandEnvironmentVariables(rawIcon);
+
+            if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
+            {
+                if (iconPath.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                {
+                    var icoBmp = GetIconFromIcoFile(iconPath);
+                    if (icoBmp != null) return icoBmp;
+                }
+
+                var peBmp = GetIconFromPrivateExtract(iconPath, iconIndex);
+                if (peBmp != null) return peBmp;
+
+                var shBmp = GetIconFromShellItemImageFactory(iconPath);
+                if (shBmp != null) return shBmp;
+            }
+
+            // 2. If no custom icon was set on the shortcut, resolve target and get its icon
+            var sbTarget = new System.Text.StringBuilder(1024);
+            link.GetPath(sbTarget, 1024, IntPtr.Zero, 0);
+            var target = Environment.ExpandEnvironmentVariables(sbTarget.ToString().Trim('"', ' '));
+            if (!string.IsNullOrEmpty(target) && (File.Exists(target) || Directory.Exists(target)))
+            {
+                var targetIcon = GetIcon(target);
+                if (targetIcon != null) return targetIcon;
+            }
+
+            // 3. Fallback: try IShellItemImageFactory directly on the shortcut (.lnk) itself
+            var lnkIcon = GetIconFromShellItemImageFactory(lnkPath);
+            if (lnkIcon != null) return lnkIcon;
+
+            // 4. Fallback: System Image List on the shortcut
+            var sysIcon = GetIconFromSystemImageList(lnkPath, SHIL_JUMBO);
+            if (sysIcon != null) return sysIcon;
         }
         catch
         {
-            return null;
+            // fallback
         }
+        return null;
+    }
+
+    /// <summary>
+    /// Decode custom icon for an Internet Shortcut (.url).
+    /// </summary>
+    private static Bitmap? GetIconFromUrlFile(string urlPath)
+    {
+        try
+        {
+            if (!File.Exists(urlPath)) return null;
+            var lines = File.ReadAllLines(urlPath);
+            string? iconFile = null;
+            int iconIndex = 0;
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("IconFile=", StringComparison.OrdinalIgnoreCase))
+                    iconFile = trimmed.Substring("IconFile=".Length).Trim('"', ' ');
+                else if (trimmed.StartsWith("IconIndex=", StringComparison.OrdinalIgnoreCase))
+                    int.TryParse(trimmed.Substring("IconIndex=".Length).Trim(), out iconIndex);
+            }
+
+            if (!string.IsNullOrEmpty(iconFile))
+            {
+                iconFile = Environment.ExpandEnvironmentVariables(iconFile);
+                if (File.Exists(iconFile))
+                {
+                    if (iconFile.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var ico = GetIconFromIcoFile(iconFile);
+                        if (ico != null) return ico;
+                    }
+                    var pe = GetIconFromPrivateExtract(iconFile, iconIndex);
+                    if (pe != null) return pe;
+                    var sh = GetIconFromShellItemImageFactory(iconFile);
+                    if (sh != null) return sh;
+                }
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    /// <summary>
+    /// Decode custom folder icon from desktop.ini (e.g. customized folder icons in Windows Explorer).
+    /// </summary>
+    private static Bitmap? GetIconFromDesktopIni(string folderPath)
+    {
+        try
+        {
+            var iniPath = Path.Combine(folderPath, "desktop.ini");
+            if (!File.Exists(iniPath)) return null;
+
+            var lines = File.ReadAllLines(iniPath);
+            string? iconFile = null;
+            int iconIndex = 0;
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("IconResource=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var val = trimmed.Substring("IconResource=".Length).Trim('"', ' ');
+                    var parts = val.Split(',');
+                    iconFile = parts[0].Trim('"', ' ');
+                    if (parts.Length > 1 && int.TryParse(parts[1].Trim(), out int idx))
+                        iconIndex = idx;
+                    break;
+                }
+                if (trimmed.StartsWith("IconFile=", StringComparison.OrdinalIgnoreCase))
+                {
+                    iconFile = trimmed.Substring("IconFile=".Length).Trim('"', ' ');
+                }
+                if (trimmed.StartsWith("IconIndex=", StringComparison.OrdinalIgnoreCase))
+                {
+                    int.TryParse(trimmed.Substring("IconIndex=".Length).Trim(), out iconIndex);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(iconFile))
+            {
+                iconFile = Environment.ExpandEnvironmentVariables(iconFile);
+                if (File.Exists(iconFile))
+                {
+                    if (iconFile.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var ico = GetIconFromIcoFile(iconFile);
+                        if (ico != null) return ico;
+                    }
+                    var pe = GetIconFromPrivateExtract(iconFile, iconIndex);
+                    if (pe != null) return pe;
+                    var sh = GetIconFromShellItemImageFactory(iconFile);
+                    if (sh != null) return sh;
+                }
+            }
+        }
+        catch { }
+        return null;
     }
 
     /// <summary>
@@ -230,7 +373,8 @@ public static class FolderIconService
             if (off + 16 > bytes.Length) break;
             var w = bytes[off] == 0 ? 256 : bytes[off];
             var h = bytes[off + 1] == 0 ? 256 : bytes[off + 1];
-            var score = Math.Min(w, h);
+            var bpp = BitConverter.ToUInt16(bytes, off + 6);
+            var score = Math.Min(w, h) * 1000 + bpp;
             if (score > bestScore) { bestScore = score; best = i; }
         }
         if (best < 0) return null;
@@ -402,13 +546,19 @@ public static class FolderIconService
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SHCreateItemFromParsingName(string pszPath, IntPtr pbc, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out IShellItemImageFactory ppv);
 
-    private const uint SIIGBF_ICONONLY = 0x100;
-    private const uint SIIGBF_BIGGERSIZEOK = 0x1;
-    private const uint SIIGBF_SCALEUP = 0x2;
+    private const uint SIIGBF_RESIZETOFIT = 0x00000000;
+    private const uint SIIGBF_BIGGERSIZEOK = 0x00000001;
+    private const uint SIIGBF_MEMORYONLY = 0x00000002;
+    private const uint SIIGBF_ICONONLY = 0x00000004;
+    private const uint SIIGBF_THUMBNAILONLY = 0x00000008;
+    private const uint SIIGBF_INCACHEONLY = 0x00000010;
+    private const uint SIIGBF_CROPTOSQUARE = 0x00000020;
+    private const uint SIIGBF_WIDESTEP = 0x00000040;
+    private const uint SIIGBF_ICONBACKGROUND = 0x00000080;
+    private const uint SIIGBF_SCALEUP = 0x00000100;
 
     private static Bitmap? GetIconFromShellItemImageFactory(string path)
     {
-        var hbm = IntPtr.Zero;
         try
         {
             var iid = new Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b");
@@ -416,21 +566,39 @@ public static class FolderIconService
                 return null;
 
             var size = new SIZE { cx = 256, cy = 256 };
-            var hr = factory.GetImage(size, SIIGBF_ICONONLY | SIIGBF_BIGGERSIZEOK | SIIGBF_SCALEUP, out hbm);
-            if (hr == unchecked((int)0x8000000A)) // E_PENDING: icon not ready, use the fast SHGetFileInfo fallback
-                return null;
-            if (hr != 0 || hbm == IntPtr.Zero) return null;
+            uint[] flagAttempts = [
+                SIIGBF_ICONONLY | SIIGBF_BIGGERSIZEOK | SIIGBF_SCALEUP,
+                SIIGBF_ICONONLY | SIIGBF_BIGGERSIZEOK,
+                SIIGBF_ICONONLY,
+                SIIGBF_BIGGERSIZEOK | SIIGBF_SCALEUP,
+                SIIGBF_RESIZETOFIT
+            ];
 
-            return HBitmapToBitmap(hbm, path);
+            foreach (var flags in flagAttempts)
+            {
+                var hbm = IntPtr.Zero;
+                try
+                {
+                    var hr = factory.GetImage(size, flags, out hbm);
+                    if (hr == unchecked((int)0x8000000A)) // E_PENDING: icon not ready
+                        return null;
+                    if (hr == 0 && hbm != IntPtr.Zero)
+                    {
+                        var bmp = HBitmapToBitmap(hbm, path);
+                        if (bmp != null) return bmp;
+                    }
+                }
+                finally
+                {
+                    if (hbm != IntPtr.Zero) DeleteObject(hbm);
+                }
+            }
         }
         catch
         {
             return null;
         }
-        finally
-        {
-            if (hbm != IntPtr.Zero) DeleteObject(hbm);
-        }
+        return null;
     }
 
     private static Bitmap? HBitmapToBitmap(IntPtr hbm, string path)
@@ -467,6 +635,25 @@ public static class FolderIconService
                 Marshal.FreeHGlobal(ptr);
             }
 
+            var hasAlpha = false;
+            var needsPremul = false;
+            for (var i = 0; i < pixels.Length; i += 4)
+            {
+                var a = pixels[i + 3];
+                if (a != 0) hasAlpha = true;
+                if (pixels[i] > a || pixels[i + 1] > a || pixels[i + 2] > a)
+                {
+                    needsPremul = true;
+                }
+            }
+
+            if (!hasAlpha)
+            {
+                for (var i = 3; i < pixels.Length; i += 4)
+                    pixels[i] = 255;
+                needsPremul = false;
+            }
+
             var writeable = new WriteableBitmap(
                 new PixelSize(width, height),
                 new Vector(96, 96),
@@ -478,25 +665,39 @@ public static class FolderIconService
                 unsafe
                 {
                     var dst = new Span<byte>((void*)framebuffer.Address, pixels.Length);
-                    for (var i = 0; i < pixels.Length; i += 4)
+                    if (!needsPremul)
                     {
-                        var b = pixels[i];
-                        var g = pixels[i + 1];
-                        var r = pixels[i + 2];
-                        var a = pixels[i + 3];
-                        if (a == 255)
+                        pixels.CopyTo(dst);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < pixels.Length; i += 4)
                         {
-                            dst[i] = b;
-                            dst[i + 1] = g;
-                            dst[i + 2] = r;
-                            dst[i + 3] = 255;
-                        }
-                        else if (a != 0)
-                        {
-                            dst[i] = (byte)(b * a / 255);
-                            dst[i + 1] = (byte)(g * a / 255);
-                            dst[i + 2] = (byte)(r * a / 255);
-                            dst[i + 3] = a;
+                            var b = pixels[i];
+                            var g = pixels[i + 1];
+                            var r = pixels[i + 2];
+                            var a = pixels[i + 3];
+                            if (a == 255)
+                            {
+                                dst[i] = b;
+                                dst[i + 1] = g;
+                                dst[i + 2] = r;
+                                dst[i + 3] = 255;
+                            }
+                            else if (a == 0)
+                            {
+                                dst[i] = 0;
+                                dst[i + 1] = 0;
+                                dst[i + 2] = 0;
+                                dst[i + 3] = 0;
+                            }
+                            else
+                            {
+                                dst[i] = (byte)(b * a / 255);
+                                dst[i + 1] = (byte)(g * a / 255);
+                                dst[i + 2] = (byte)(r * a / 255);
+                                dst[i + 3] = a;
+                            }
                         }
                     }
                 }
@@ -518,20 +719,41 @@ public static class FolderIconService
         IntPtr[] phicon, int[] piconid, int nIcons, uint uFlags);
 
     /// <summary>
-    /// Fallback for when the shell factory fails: PrivateExtractIcons at 256×256
-    /// (the shell picks the largest frame up to that size, PNG-compressed frames
-    /// included) instead of the tiny 32px SHGetFileInfo icon.
+    /// Fallback for when the shell factory fails: PrivateExtractIcons trying largest available
+    /// sizes (256, 128, 96, 64, 48, 32) instead of jumping down to a tiny icon.
     /// </summary>
-    private static Bitmap? GetIconFromPrivateExtract(string path)
+    private static Bitmap? GetIconFromPrivateExtract(string path, int iconIndex = 0)
     {
         var phicon = new IntPtr[1];
         var piconid = new int[1];
         var hIcon = IntPtr.Zero;
         try
         {
-            if (PrivateExtractIcons(path, 0, 256, 256, phicon, piconid, 1, 0) == 0 || phicon[0] == IntPtr.Zero)
-                return null;
-            hIcon = phicon[0];
+            int[] preferredSizes = [256, 128, 96, 64, 48, 32];
+            foreach (var size in preferredSizes)
+            {
+                phicon[0] = IntPtr.Zero;
+                if (PrivateExtractIcons(path, iconIndex, size, size, phicon, piconid, 1, 0) > 0 && phicon[0] != IntPtr.Zero)
+                {
+                    hIcon = phicon[0];
+                    break;
+                }
+            }
+
+            if (hIcon == IntPtr.Zero && iconIndex != 0)
+            {
+                foreach (var size in preferredSizes)
+                {
+                    phicon[0] = IntPtr.Zero;
+                    if (PrivateExtractIcons(path, 0, size, size, phicon, piconid, 1, 0) > 0 && phicon[0] != IntPtr.Zero)
+                    {
+                        hIcon = phicon[0];
+                        break;
+                    }
+                }
+            }
+
+            if (hIcon == IntPtr.Zero) return null;
             return IconToBitmap(hIcon);
         }
         catch
@@ -545,11 +767,46 @@ public static class FolderIconService
     }
 
     /// <summary>
+    /// Fallback: retrieve high-res icon from Windows System Image List (Jumbo 256x256 or ExtraLarge 48x48).
+    /// </summary>
+    private static Bitmap? GetIconFromSystemImageList(string path, int imageListType = SHIL_JUMBO)
+    {
+        var hIcon = IntPtr.Zero;
+        var pImageList = IntPtr.Zero;
+        try
+        {
+            var info = new SHFILEINFO();
+            var attrs = Directory.Exists(path) ? 0x00000010u : 0x00000080u;
+            var flags = 0x00004000u; // SHGFI_SYSICONINDEX
+            if (!File.Exists(path) && !Directory.Exists(path))
+                flags |= 0x00000010u; // SHGFI_USEFILEATTRIBUTES
+
+            var res = SHGetFileInfo(path, attrs, ref info, (uint)Marshal.SizeOf<SHFILEINFO>(), flags);
+            if (res == IntPtr.Zero) return null;
+
+            var iid = new Guid("46EB5926-582E-4017-9FDF-E8998DAA0950"); // IID_IImageList
+            if (SHGetImageList(imageListType, ref iid, out pImageList) != 0 || pImageList == IntPtr.Zero)
+                return null;
+
+            hIcon = ImageList_GetIcon(pImageList, info.iIcon, ILD_TRANSPARENT);
+            if (hIcon == IntPtr.Zero) return null;
+
+            return IconToBitmap(hIcon);
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            if (hIcon != IntPtr.Zero) DestroyIcon(hIcon);
+            if (pImageList != IntPtr.Zero) Marshal.Release(pImageList);
+        }
+    }
+
+    /// <summary>
     /// Last resort: extract the associated icon via SHGetFileInfo(SHGFI_ICON) —
     /// only 32px, used when every 256-capable source failed (e.g. unresolved .lnk).
-    /// Note: the icon handle is returned in <see cref="SHFILEINFO.hIcon"/>, not as the
-    /// function's return value. The shell image list is NOT used because its icons are
-    /// colorized (bluish) variants that differ from what Explorer shows.
     /// </summary>
     private static Bitmap? GetIconFromShGetFileInfo(string path)
     {
@@ -626,6 +883,25 @@ public static class FolderIconService
 
             ApplyAlphaFromMask(hdc, hbmMask, width, height, pixels);
 
+            var hasAlpha = false;
+            var needsPremul = false;
+            for (var i = 0; i < pixels.Length; i += 4)
+            {
+                var a = pixels[i + 3];
+                if (a != 0) hasAlpha = true;
+                if (pixels[i] > a || pixels[i + 1] > a || pixels[i + 2] > a)
+                {
+                    needsPremul = true;
+                }
+            }
+
+            if (!hasAlpha)
+            {
+                for (var i = 3; i < pixels.Length; i += 4)
+                    pixels[i] = 255;
+                needsPremul = false;
+            }
+
             var writeable = new WriteableBitmap(
                 new PixelSize(width, height),
                 new Vector(96, 96),
@@ -637,25 +913,39 @@ public static class FolderIconService
                 unsafe
                 {
                     var dst = new Span<byte>((void*)framebuffer.Address, pixels.Length);
-                    for (var i = 0; i < pixels.Length; i += 4)
+                    if (!needsPremul)
                     {
-                        var b = pixels[i];
-                        var g = pixels[i + 1];
-                        var r = pixels[i + 2];
-                        var a = pixels[i + 3];
-                        if (a == 255)
+                        pixels.CopyTo(dst);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < pixels.Length; i += 4)
                         {
-                            dst[i] = b;
-                            dst[i + 1] = g;
-                            dst[i + 2] = r;
-                            dst[i + 3] = 255;
-                        }
-                        else if (a != 0)
-                        {
-                            dst[i] = (byte)(b * a / 255);
-                            dst[i + 1] = (byte)(g * a / 255);
-                            dst[i + 2] = (byte)(r * a / 255);
-                            dst[i + 3] = a;
+                            var b = pixels[i];
+                            var g = pixels[i + 1];
+                            var r = pixels[i + 2];
+                            var a = pixels[i + 3];
+                            if (a == 255)
+                            {
+                                dst[i] = b;
+                                dst[i + 1] = g;
+                                dst[i + 2] = r;
+                                dst[i + 3] = 255;
+                            }
+                            else if (a == 0)
+                            {
+                                dst[i] = 0;
+                                dst[i + 1] = 0;
+                                dst[i + 2] = 0;
+                                dst[i + 3] = 0;
+                            }
+                            else
+                            {
+                                dst[i] = (byte)(b * a / 255);
+                                dst[i + 1] = (byte)(g * a / 255);
+                                dst[i + 2] = (byte)(r * a / 255);
+                                dst[i + 3] = a;
+                            }
                         }
                     }
                 }

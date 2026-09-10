@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Search.ViewModels"
+             xmlns:services="using:Search.Services"
+             mc:Ignorable="d" d:DesignWidth="72" d:DesignHeight="72"
+             x:Class="Search.Views.Controls.Search1x1"
+             x:DataType="vm:SearchViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.card-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style Selector="Button.card-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#15888888" />
+        </Style>
+        <Style Selector="TextBox.flyout-input">
+            <Setter Property="Background" Value="#20808080" />
+            <Setter Property="BorderBrush" Value="#30ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="5">
+        <Button Name="MainCardButton"
+                Classes="card-btn"
+                CornerRadius="14"
+                Click="OnCardClicked">
+            <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Center Logo with floating search badge -->
+                <Grid Grid.Row="0" Width="40" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <PathIcon Data="{Binding EngineIconPath}"
+                              Foreground="{Binding EngineColor}"
+                              Width="26" Height="26"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+
+                    <!-- Mini Search Badge at bottom-right -->
+                    <Border Width="15" Height="15"
+                            CornerRadius="7.5"
+                            Background="#D0333333"
+                            BorderBrush="#40FFFFFF"
+                            BorderThickness="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,-2,-2">
+                        <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                                  Foreground="#FFFFFF"
+                                  Width="9" Height="9"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+
+                <!-- Engine Name Label -->
+                <TextBlock Grid.Row="1"
+                           Text="{Binding EngineName}"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="60"
+                           Margin="0,2,0,0"/>
+            </Grid>
+
+            <!-- Quick Search Flyout on Click -->
+            <Button.Flyout>
+                <Flyout Placement="Bottom" ShowMode="Standard">
+                    <Border Width="240" Padding="8" CornerRadius="12" Background="#F0202020" BorderBrush="#30FFFFFF" BorderThickness="1">
+                        <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+                            <Button Grid.Column="0"
+                                    Classes="card-btn"
+                                    Width="28" Height="28"
+                                    CornerRadius="6"
+                                    Margin="0,0,6,0"
+                                    Click="OnEngineIconClicked"
+                                    ToolTip.Tip="点击切换搜索引擎">
+                                <PathIcon Data="{Binding EngineIconPath}"
+                                          Foreground="{Binding EngineColor}"
+                                          Width="18" Height="18"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                            </Button>
+
+                            <TextBox Grid.Column="1"
+                                     Name="FlyoutTextBox"
+                                     Classes="flyout-input"
+                                     Text="{Binding QueryText, Mode=TwoWay}"
+                                     Watermark="{Binding SearchPlaceholder}"
+                                     KeyDown="OnFlyoutKeyDown"/>
+
+                            <Button Grid.Column="2"
+                                    Classes="card-btn"
+                                    Width="28" Height="28"
+                                    CornerRadius="6"
+                                    Margin="6,0,0,0"
+                                    Background="{Binding EngineColor}"
+                                    Click="OnFlyoutSearchClicked">
+                                <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                                          Foreground="#FFFFFF"
+                                          Width="14" Height="14"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Flyout>
+            </Button.Flyout>
+        </Button>
+    </Grid>
+</UserControl>

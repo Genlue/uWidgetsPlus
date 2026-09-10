@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <root>
     <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
@@ -168,9 +168,6 @@
         <data name="Folders_WatchDesc" xml:space="preserve">
             <value>Descending</value>
         </data>
-        <data name="Folders_WatchHideSubfolders" xml:space="preserve">
-            <value>Hide subfolders</value>
-        </data>
         <data name="Folders_RowLayout" xml:space="preserve">
             <value>Row layout</value>
         </data>
@@ -179,5 +176,23 @@
         </data>
         <data name="Folders_RowLayout_Fixed" xml:space="preserve">
             <value>Fixed height</value>
+        </data>
+        <data name="Folders_SingleFile_Title" xml:space="preserve">
+            <value>Single File</value>
+        </data>
+        <data name="Folders_SingleFile_Subtitle" xml:space="preserve">
+            <value>Single file or folder shortcut</value>
+        </data>
+        <data name="Folders_SingleFile_IconPercent" xml:space="preserve">
+            <value>Icon Size Percent</value>
+        </data>
+        <data name="Folders_SingleFile_Target" xml:space="preserve">
+            <value>Target</value>
+        </data>
+        <data name="Folders_SingleFile_Pick" xml:space="preserve">
+            <value>Select File/Folder</value>
+        </data>
+        <data name="Folders_SingleFile_EmptyHint" xml:space="preserve">
+            <value>Drop file or folder here</value>
         </data>
 </root>

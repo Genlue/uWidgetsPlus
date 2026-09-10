@@ -17,7 +17,9 @@ public class UpdateTimer : IDisposable
         timer.Tick += OnTimerTick;
         
         if (OperatingSystem.IsWindows())
-            SystemEvents.SessionSwitch += SystemEventsOnSessionSwitch;
+        {
+            try { SystemEvents.SessionSwitch += SystemEventsOnSessionSwitch; } catch { }
+        }
     }
 
     public void Subscribe(Action action)
@@ -59,7 +61,9 @@ public class UpdateTimer : IDisposable
         timer.Stop();
         timer.Tick -= OnTimerTick;
         if (OperatingSystem.IsWindows())
-            SystemEvents.SessionSwitch -= SystemEventsOnSessionSwitch;
+        {
+            try { SystemEvents.SessionSwitch -= SystemEventsOnSessionSwitch; } catch { }
+        }
         GC.SuppressFinalize(this);
     }
 }

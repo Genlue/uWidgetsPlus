@@ -1,4 +1,4 @@
-﻿namespace uWidgets.Core.Models.Attributes;
+namespace uWidgets.Core.Models.Attributes;
 
 /// <summary>
 /// Attribute to register a widget inside an assembly.
@@ -8,13 +8,17 @@
 /// <param name="editModelViewType">Type of UserControl for editing the model.</param>
 /// <param name="title">Resource key of your widget's name</param>
 /// <param name="subtitle">Resource key of your widget's description</param>
+/// <param name="defaultColumns">Default width in grid columns (defaults to 2).</param>
+/// <param name="defaultRows">Default height in grid rows (defaults to 2).</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class WidgetInfoAttribute(
     Type viewType, 
     Type? modelType = null, 
     Type? editModelViewType = null, 
     string? title = null, 
-    string? subtitle = null) 
+    string? subtitle = null,
+    int defaultColumns = 2,
+    int defaultRows = 2) 
     : Attribute
 {
     /// <summary>
@@ -42,4 +46,14 @@ public class WidgetInfoAttribute(
     /// Resource key of your widget's description.
     /// </summary>
     public string? Subtitle { get; } = subtitle;
+
+    /// <summary>
+    /// Default width in grid columns.
+    /// </summary>
+    public int DefaultColumns { get; } = defaultColumns;
+
+    /// <summary>
+    /// Default height in grid rows.
+    /// </summary>
+    public int DefaultRows { get; } = defaultRows;
 }

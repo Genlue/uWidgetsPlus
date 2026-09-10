@@ -1,0 +1,66 @@
+using System;
+using System.Linq;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
+using Search.Locales;
+using Search.Models;
+using Search.ViewModels;
+
+namespace Search.Services;
+
+public static class SearchMenuHelper
+{
+    public static void ShowEngineMenu(Button button, SearchViewModel vm)
+    {
+        var flyout = new MenuFlyout
+        {
+            Placement = PlacementMode.BottomEdgeAlignedLeft
+        };
+
+        foreach (var engine in vm.AllEngines.Where(e => e.IsEnabled))
+        {
+            var isCurrent = engine.Id.Equals(vm.CurrentEngine?.Id, StringComparison.OrdinalIgnoreCase);
+            var prefix = isCurrent ? "✓ " : "   ";
+            var item = new MenuItem
+            {
+                Header = $"{prefix}{engine.Name} ({engine.Category})",
+                FontWeight = isCurrent ? FontWeight.SemiBold : FontWeight.Normal,
+                Icon = new PathIcon
+                {
+                    Data = Geometry.Parse(SearchIconProvider.GetPath(engine.IconKey)),
+                    Foreground = Brush.Parse(engine.IconColor),
+                    Width = 14,
+                    Height = 14
+                }
+            };
+
+            var target = engine;
+            item.Click += (_, _) => vm.SelectEngine(target);
+            flyout.Items.Add(item);
+        }
+
+        flyout.Items.Add(new Separator());
+
+        var homeItem = new MenuItem
+        {
+            Header = $"🌐 打开 {vm.EngineName} 官网",
+            Icon = new PathIcon
+            {
+                Data = Geometry.Parse(SearchIconProvider.ExternalLinkIcon),
+                Width = 14,
+                Height = 14
+            }
+        };
+        homeItem.Click += (_, _) =>
+        {
+            if (vm.CurrentEngine != null)
+            {
+                SearchLauncher.Launch(vm.CurrentEngine, "");
+            }
+        };
+        flyout.Items.Add(homeItem);
+
+        flyout.ShowAt(button);
+    }
+}

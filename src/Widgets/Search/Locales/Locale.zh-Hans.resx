@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Search" xml:space="preserve">
+        <value>搜索</value>
+    </data>
+    <data name="Search_Title" xml:space="preserve">
+        <value>搜索</value>
+    </data>
+    <data name="Search_Subtitle" xml:space="preserve">
+        <value>快捷聚合与高度自定义搜索栏</value>
+    </data>
+    <data name="Search_Placeholder" xml:space="preserve">
+        <value>输入搜索内容...</value>
+    </data>
+    <data name="Search_Button" xml:space="preserve">
+        <value>搜索</value>
+    </data>
+    <data name="Search_Clear" xml:space="preserve">
+        <value>清空</value>
+    </data>
+    <data name="Search_Engine" xml:space="preserve">
+        <value>搜索引擎</value>
+    </data>
+    <data name="Search_Settings" xml:space="preserve">
+        <value>搜索设置</value>
+    </data>
+    <data name="Search_Manage_Engines" xml:space="preserve">
+        <value>管理搜索引擎</value>
+    </data>
+    <data name="Search_Add_Engine" xml:space="preserve">
+        <value>新增引擎</value>
+    </data>
+    <data name="Search_Edit_Engine" xml:space="preserve">
+        <value>编辑引擎</value>
+    </data>
+    <data name="Search_Engine_Name" xml:space="preserve">
+        <value>名称</value>
+    </data>
+    <data name="Search_Engine_Url" xml:space="preserve">
+        <value>URL 模板 (用 {q} 代替关键词)</value>
+    </data>
+    <data name="Search_Engine_Category" xml:space="preserve">
+        <value>分类</value>
+    </data>
+    <data name="Search_Default" xml:space="preserve">
+        <value>默认</value>
+    </data>
+    <data name="Search_Restore_Defaults" xml:space="preserve">
+        <value>恢复出厂预设</value>
+    </data>
+    <data name="Search_Clear_On_Search" xml:space="preserve">
+        <value>搜索后自动清空输入框</value>
+    </data>
+    <data name="Search_Save_History" xml:space="preserve">
+        <value>记录最近搜索历史</value>
+    </data>
+    <data name="Search_Clear_History" xml:space="preserve">
+        <value>清除搜索历史</value>
+    </data>
+    <data name="Search_History" xml:space="preserve">
+        <value>最近搜索</value>
+    </data>
+    <data name="Search_Quick_Engines" xml:space="preserve">
+        <value>快速切换</value>
+    </data>
+    <data name="Search_Category_All" xml:space="preserve">
+        <value>全部</value>
+    </data>
+    <data name="Search_Category_AI" xml:space="preserve">
+        <value>AI 智能</value>
+    </data>
+    <data name="Search_Category_Dev" xml:space="preserve">
+        <value>开发者</value>
+    </data>
+    <data name="Search_Category_Media" xml:space="preserve">
+        <value>影音媒体</value>
+    </data>
+    <data name="Search_Category_Community" xml:space="preserve">
+        <value>问答社区</value>
+    </data>
+</root>

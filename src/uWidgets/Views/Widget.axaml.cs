@@ -28,6 +28,10 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly Func<UserControl> userControl;
     private readonly Func<Settings> settingsWindow;
     private readonly Func<EditWidget>? editWidgetWindow;
+    private (int Columns, int Rows)? manualSpan;
+    private readonly bool isFrameless;
+
+    public bool IsFrameless => isFrameless;
 
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -49,6 +53,12 @@ public partial class Widget : Window, INotifyPropertyChanged
         this.displayMonitor = displayMonitor;
         
         InitializeComponent();
+
+        var control = userControl();
+        isFrameless = control is IFramelessWidget;
+        if (isFrameless)
+            control.Classes.Add("Frameless");
+        ContentPresenter.Content = control;
         
         // The native transparency level is a LOCAL value, not a style: a runtime
         // surface switch then deterministically reconfigures the existing window
@@ -59,7 +69,6 @@ public partial class Widget : Window, INotifyPropertyChanged
         Height = widgetLayoutProvider.Get().Height;
         Width = widgetLayoutProvider.Get().Width;
         Title = $"{widgetLayoutProvider.Get().Type} {widgetLayoutProvider.Get().SubType}";
-        ContentPresenter.Content = userControl();
         DataContext = this;
         
         SetMinMaxSize(this.appSettingsProvider.Get().Layout.LockSize);
@@ -69,8 +78,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         // Manual grid: size is driven by the grid (span derived from the stored pixel size).
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
         {
-            var (columns, rows) = GetSpan();
-            gridService.SetSize(this, columns, rows);
+            manualSpan = GetSpan();
+            gridService.SetSize(this, manualSpan.Value.Columns, manualSpan.Value.Rows);
         }
         
         Activated += OnActivated;
@@ -137,15 +146,73 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     public bool ShowEditButton => editWidgetWindow != null;
     public string Edit => $"{Locale.Widget_Edit} \"{widgetLayoutProvider.Get().Type}\"";
-    public CornerRadius Radius => appSettingsProvider.Get().Theme.UseNativeFrame ? new(0) : new(appSettingsProvider.Get().Dimensions.Radius / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
 
     /// <summary>
-    /// True when the card should render the outline highlight ring: any glass
-    /// surface with the outline width &gt; 0 (the outline is an option of the
-    /// 毛玻璃 theme itself), no native frame.
+    /// Adaptively scale corner radius for widgets of different sizes.
+    /// 1x1 small widgets scale to ~55% (iOS app icon style, balanced curvature).
+    /// 1xN or Nx1 strip widgets scale to ~72% (prevents excessive rounding on the short edge).
+    /// Standard and large widgets (2x2, 4x2, etc.) keep the full configured radius.
+    /// </summary>
+    private double ResolveEffectiveRadius(double baseRadius)
+    {
+        if (baseRadius <= 0) return 0;
+
+        int cols = 2, rows = 2;
+        if (pendingSpan.HasValue)
+        {
+            cols = pendingSpan.Value.Columns;
+            rows = pendingSpan.Value.Rows;
+        }
+        else if (manualSpan.HasValue)
+        {
+            cols = manualSpan.Value.Columns;
+            rows = manualSpan.Value.Rows;
+        }
+        else
+        {
+            try
+            {
+                (cols, rows) = GetSpan();
+            }
+            catch { }
+        }
+
+        var width = ClientSize.Width > 0 ? ClientSize.Width : Width;
+        var height = ClientSize.Height > 0 ? ClientSize.Height : Height;
+        var margin = WidgetMargin.Left;
+        var cardW = Math.Max(1, width - 2 * margin);
+        var cardH = Math.Max(1, height - 2 * margin);
+        var minSide = Math.Min(cardW, cardH);
+
+        // 1x1 small widget (single file, icon tile, or <= 90px square)
+        if ((cols <= 1 && rows <= 1) || minSide <= 90)
+        {
+            return Math.Max(4, Math.Round(baseRadius * 0.55));
+        }
+
+        // 1xN or Nx1 strip widget (e.g. 2x1, 4x1, 1x2, 1x4, or short edge <= 125px)
+        if (cols <= 1 || rows <= 1 || minSide <= 125)
+        {
+            return Math.Max(6, Math.Round(baseRadius * 0.72));
+        }
+
+        return baseRadius;
+    }
+
+    public CornerRadius Radius => (isFrameless || appSettingsProvider.Get().Theme.UseNativeFrame)
+        ? new(0)
+        : new(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius) / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
+
+    public Theme GlassMaterial => appSettingsProvider.Get().Theme;
+    public bool IsLiquidGlass => !isFrameless && GlassMaterial.IsLiquidGlass;
+
+    /// <summary>
+    /// True when the card should render the outline highlight ring: glass surface
+    /// with the outline width &gt; 0, no native frame.
     /// </summary>
     private bool IsOutlined =>
-        appSettingsProvider.Get().Theme.IsGlass
+        !isFrameless
+        && appSettingsProvider.Get().Theme.IsGlass
         && appSettingsProvider.Get().Theme.OutlineWidth > 0
         && !appSettingsProvider.Get().Theme.UseNativeFrame;
 
@@ -206,9 +273,14 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// <summary>
     /// Margin between the widget content and the grid lines (manual grid mode).
     /// </summary>
-    public Thickness WidgetMargin => appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
-        ? new Thickness(appSettingsProvider.Get().Dimensions.Margin)
-        : new Thickness(0);
+    public Thickness WidgetMargin => isFrameless ? new Thickness(0) :
+        (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
+            ? new Thickness(appSettingsProvider.Get().Dimensions.Margin)
+            : new Thickness(0));
+
+    public IBrush WidgetCardBackground => isFrameless
+        ? Brushes.Transparent
+        : (this.TryFindResource("WidgetBackground", out var res) && res is IBrush brush ? brush : Brushes.Transparent);
 
     /// <summary>
     /// Context-menu size section title: "Grid size" in manual mode, with the
@@ -236,7 +308,11 @@ public partial class Widget : Window, INotifyPropertyChanged
             // values — report the target span until it settles.
             if (pendingSpan is { } target) return target;
 
-            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return GetSpan();
+            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+            {
+                manualSpan ??= GetSpan();
+                return manualSpan.Value;
+            }
 
             var dimensions = appSettingsProvider.Get().Dimensions;
             var unit = dimensions.Size + dimensions.Margin;
@@ -356,9 +432,42 @@ public partial class Widget : Window, INotifyPropertyChanged
         // SystemDecorations.None, which is the widget's normal mode).
         var width = ClientSize.Width > 0 ? ClientSize.Width : Width;
         var height = ClientSize.Height > 0 ? ClientSize.Height : Height;
+        if (width <= 0 || height <= 0) return;
+
+        if (isFrameless)
+        {
+            Border.Width = width;
+            Border.Height = height;
+            Border.Margin = new Thickness(0);
+            Border.BorderThickness = new Thickness(0);
+            Border.CornerRadius = new CornerRadius(0);
+            Border.BorderBrush = null;
+            Border.Background = Brushes.Transparent;
+
+            ContentPresenter.Width = width;
+            ContentPresenter.Height = height;
+            ContentPresenter.Clip = null;
+            return;
+        }
+
         var margin = WidgetMargin.Left;
-        ContentPresenter.Width = Math.Max(1, width - 2 * margin);
-        ContentPresenter.Height = Math.Max(1, height - 2 * margin);
+        var cardW = Math.Max(1, width - 2 * margin);
+        var cardH = Math.Max(1, height - 2 * margin);
+
+        Border.Width = cardW;
+        Border.Height = cardH;
+
+        var outline = WidgetOutlineThickness;
+        var innerW = Math.Max(1, cardW - outline.Left - outline.Right);
+        var innerH = Math.Max(1, cardH - outline.Top - outline.Bottom);
+
+        ContentPresenter.Width = innerW;
+        ContentPresenter.Height = innerH;
+
+        Notify(nameof(Radius));
+        var r = Radius.TopLeft;
+        var innerR = Math.Max(0, r - outline.Left);
+        ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, innerW, innerH), innerR, innerR);
 
         // Outlined glass: the corner-fade notches follow the card aspect ratio.
         Notify(nameof(WidgetOutlineThickness));
@@ -373,8 +482,30 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void ApplyWidgetRegion()
     {
-        // Native frame: no custom clipping (would clip the OS frame).
+        // Frameless widgets: in native blur mode, the child view manages the glyph region;
+        // in glass or solid mode, clear the region to keep full 32-bit alpha and smooth anti-aliasing.
+        if (isFrameless)
+        {
+            if (!appSettingsProvider.Get().Theme.UsesNativeBlur)
+            {
+                InteropService.ClearWidgetRegion(this);
+            }
+            return;
+        }
+
+        // Native frame: no custom clipping.
         if (appSettingsProvider.Get().Theme.UseNativeFrame)
+        {
+            InteropService.ClearWidgetRegion(this);
+            return;
+        }
+
+        // Only frosted glass (acrylic) needs native window clipping because OS DWM
+        // applies acrylic blur to the entire HWND.
+        // Liquid glass and solid surfaces do NOT use native blur; their transparent
+        // margins and anti-aliased rounded corners composite via 32-bit per-pixel alpha,
+        // so applying a 1-bit GDI region truncates the anti-aliased curved edge and creates jaggedness.
+        if (!appSettingsProvider.Get().Theme.UsesNativeBlur)
         {
             InteropService.ClearWidgetRegion(this);
             return;
@@ -388,15 +519,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         var cardWidth = Math.Max(1, width - 2 * margin);
         var cardHeight = Math.Max(1, height - 2 * margin);
 
-        // Dimensions.Radius is stored in physical pixels (converted to DIPs for
-        // the Avalonia Border by the Radius property) — use it as-is here.
         InteropService.SetWidgetRegion(
             this,
             margin,
             margin,
             cardWidth,
             cardHeight,
-            appSettingsProvider.Get().Dimensions.Radius);
+            (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius)));
     }
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
@@ -408,23 +537,21 @@ public partial class Widget : Window, INotifyPropertyChanged
         // re-snap the position while keeping the cell span.
         if (oldData?.Layout.GridMode != newData.Layout.GridMode || oldData?.Grid != newData.Grid)
         {
-            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary ?? Screens.All.FirstOrDefault();
-            var area = screen?.WorkingArea;
-            var scaling = screen?.Scaling ?? 1.0;
-            var oldGrid = oldData?.Grid ?? newData.Grid;
-            // Old cell size in DIPs (the previous build stored window sizes in DIPs
-            // while the grid metrics are physical — divide them back).
-            var oldCell = GridMetrics.Resolve(
-                oldGrid,
-                area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080).Cell / scaling;
-            var columns = Math.Max(1, (int) Math.Round(Width / (double) oldCell));
-            var rows = Math.Max(1, (int) Math.Round(Height / (double) oldCell));
+            if (newData.Layout.GridMode == GridMode.Manual)
+            {
+                manualSpan ??= GetSpan();
+                var (columns, rows) = manualSpan.Value;
 
-            SetMinMaxSize(false);
-            gridService.SetSize(this, columns, rows);
-            SetMinMaxSize(true);
-            AfterMove();
-            AfterResize();
+                SetMinMaxSize(false);
+                gridService.SetSize(this, columns, rows);
+                SetMinMaxSize(true);
+                AfterMove();
+                AfterResize();
+            }
+            else
+            {
+                manualSpan = null;
+            }
         }
 
         if (oldData?.Dimensions != newData.Dimensions)
@@ -440,14 +567,18 @@ public partial class Widget : Window, INotifyPropertyChanged
             || oldData?.Layout.LockSize != newData.Layout.LockSize || oldData?.Theme != newData.Theme)
         {
             // Surface switch (毛玻璃↔纯色): reconfigure the native transparency.
-            if (oldData?.Theme?.IsGlass != newData.Theme.IsGlass)
+            if (oldData?.Theme?.UsesNativeBlur != newData.Theme.UsesNativeBlur)
                 ApplyTransparencyHint();
+            Notify(nameof(GlassMaterial));
+            Notify(nameof(IsLiquidGlass));
             Notify(nameof(WidgetMargin));
+            Notify(nameof(WidgetCardBackground));
             Notify(nameof(Radius));
             Notify(nameof(SizeMenuTitle));
             Notify(nameof(ToolTipVisible));
             Notify(nameof(WidgetOutlineThickness));
             Notify(nameof(WidgetOutlineBrush));
+            UpdateContentSize();
             ApplyWidgetRegion();
         }
     }
@@ -462,7 +593,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void ApplyTransparencyHint()
     {
-        TransparencyLevelHint = appSettingsProvider.Get().Theme.IsGlass
+        TransparencyLevelHint = appSettingsProvider.Get().Theme.UsesNativeBlur
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];
     }
@@ -532,6 +663,17 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         if (appSettingsProvider.Get().Layout.LockPosition) return;
         
+        // In manual grid mode, ignore drag if the click landed in the outer grid margin
+        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+        {
+            var margin = WidgetMargin;
+            var p = e.GetPosition(this);
+            var card = new Rect(margin.Left, margin.Top,
+                Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
+                Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
+            if (!card.Contains(p)) return;
+        }
+
         ToolTip.SetIsOpen(this, false);
         if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
         
@@ -552,7 +694,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         var owning = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId);
         var current = displayMonitor.Find(this);
         var movedToAnotherScreen = current != null && owning != null && owning.Screen.Bounds != current.Screen.Bounds;
-        var span = movedToAnotherScreen ? ResolveSpanFor(owning) : (Columns: 1, Rows: 1);
+        var span = movedToAnotherScreen ? (manualSpan ?? ResolveSpanFor(owning)) : (Columns: 1, Rows: 1);
         
         TransferOwnership();
         
@@ -627,6 +769,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         // mid-animation size (locking to the animated value previously made the
         // resize snap back to the old span, e.g. M → stays 2×2).
         pendingSpan = (columns, rows);
+        manualSpan = (columns, rows);
         SetMinMaxSize(false);
         Transitions = new Transitions
         {
@@ -651,6 +794,9 @@ public partial class Widget : Window, INotifyPropertyChanged
         Scale();
         var settings = widgetLayoutProvider.Get();
         widgetLayoutProvider.Save(settings with { Width = (int)Width, Height = (int)Height });
+        Notify(nameof(Radius));
+        UpdateContentSize();
+        ApplyWidgetRegion();
         Notify(nameof(SizeMenuTitle));
         // Re-sync the context-menu size steppers with the committed span (the
         // binding does not refresh itself while the menu is open).
@@ -701,6 +847,19 @@ public partial class Widget : Window, INotifyPropertyChanged
         var (cellPx, _, _) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var layout = widgetLayoutProvider.Get();
         var scaling = attached.Screen.Scaling;
+        return (ResolveSpan(layout.Width, cellPx, scaling), ResolveSpan(layout.Height, cellPx, scaling));
+    }
+
+    /// <summary>
+    /// Resolve the widget's cell span against a specific Grid configuration.
+    /// </summary>
+    private (int Columns, int Rows) ResolveSpanAgainstGrid(uWidgets.Core.Models.Settings.Grid grid)
+    {
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary ?? Screens.All.FirstOrDefault();
+        var area = screen?.WorkingArea;
+        var scaling = screen?.Scaling ?? 1.0;
+        var (cellPx, _, _) = GridMetrics.Resolve(grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
+        var layout = widgetLayoutProvider.Get();
         return (ResolveSpan(layout.Width, cellPx, scaling), ResolveSpan(layout.Height, cellPx, scaling));
     }
     
@@ -772,8 +931,10 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual && !Equals(oldConfig?.Grid, config.Grid))
         {
+            manualSpan ??= (oldConfig?.Grid != null ? ResolveSpanAgainstGrid(oldConfig.Grid) : GetSpan());
+            var (columns, rows) = manualSpan.Value;
+
             SetMinMaxSize(false);
-            var (columns, rows) = GetSpan();
             gridService.SetSize(this, columns, rows);
             SetMinMaxSize(true);
             AfterResize();

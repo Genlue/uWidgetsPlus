@@ -34,6 +34,11 @@ public class ThemeService : IThemeService
     {
         Source = new Uri("avares://uWidgets/Styles/Solid.axaml")
     };
+
+    private readonly StyleInclude liquidGlassStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/LiquidGlass.axaml")
+    };
     
     private readonly StyleInclude monochromeStyle = new(new Uri("avares://uWidgets/"))
     {
@@ -94,8 +99,9 @@ public class ThemeService : IThemeService
         // Surface material drives both the background style and the transparency
         // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
         // transparency so the opacity slider actually blends with the desktop.
-        SwitchStyle(transparentStyle, theme.IsGlass);
+        SwitchStyle(transparentStyle, theme.UsesNativeBlur);
         SwitchStyle(solidStyle, !theme.IsGlass);
+        SwitchStyle(liquidGlassStyle, theme.IsLiquidGlass);
 
         // Monochrome color source: 黑白 = black in light / white in dark mode
         // (both text AND accent colors), 强调色 = accent-based (the historic

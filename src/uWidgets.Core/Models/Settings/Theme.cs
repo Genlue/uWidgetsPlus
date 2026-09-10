@@ -55,6 +55,7 @@ namespace uWidgets.Core.Models.Settings;
 /// (dark wallpaper → dark mode, light wallpaper → light mode). When enabled,
 /// <see cref="DarkMode"/> is ignored.
 /// </param>
+/// <param name="LiquidGlass">Static glass optics; null uses the default parameters.</param>
 public record Theme(
     bool? DarkMode, 
     string? AccentColor, 
@@ -68,7 +69,8 @@ public record Theme(
     string? SolidBackgroundDark = null,
     string? SolidBackgroundLight = null,
     MonochromeStyle? MonochromeVariant = null,
-    bool AutoTheme = false)
+    bool AutoTheme = false,
+    LiquidGlassSettings? LiquidGlass = null)
 {
     /// <summary>Default highlight-ring color when <see cref="OutlineColor"/> is not set
     /// (soft gray-white, less stark than pure white).</summary>
@@ -99,6 +101,15 @@ public record Theme(
     /// (frosted glass and its outlined variant); false for <see cref="SurfaceStyle.Solid"/>.
     /// </summary>
     public bool IsGlass => EffectiveSurface != SurfaceStyle.Solid;
+
+    /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
+    public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
+
+    /// <summary>Only frosted glass uses the native, fixed-radius acrylic backdrop.</summary>
+    public bool UsesNativeBlur => IsGlass && !IsLiquidGlass;
+
+    /// <summary>Defaults and validated ranges for old or manually edited configurations.</summary>
+    public LiquidGlassSettings EffectiveLiquidGlass => (LiquidGlass ?? new()).Normalize();
 
     /// <summary>
     /// The highlighted glass ring color; falls back to <see cref="DefaultOutlineColor"/>

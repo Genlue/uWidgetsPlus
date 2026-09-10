@@ -54,6 +54,10 @@ public class WallpaperThemeService : IDisposable
         }
         return isDark;
     }
+    /// <summary>
+    /// Forces an immediate re-check of the wallpaper brightness.
+    /// </summary>
+    public void RequestCheck() => OnTick(this, EventArgs.Empty);
 
     private async void OnTick(object? sender, EventArgs e)
     {

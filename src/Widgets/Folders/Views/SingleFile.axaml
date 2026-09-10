@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:locales="clr-namespace:Folders.Locales"
+             mc:Ignorable="d" d:DesignWidth="80" d:DesignHeight="80"
+             x:Class="Folders.Views.SingleFile"
+             Margin="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Focusable="False">
+
+    <Border Name="RootBorder" Background="Transparent"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Panel Name="ContainerPanel"
+               HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!-- Empty state placeholder (visible when no file/folder is assigned) -->
+            <Border Name="EmptyPlaceholder"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    CornerRadius="10"
+                    BorderThickness="1.5"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                    Background="#10888888"
+                    Padding="6"
+                    IsVisible="False"
+                    Cursor="Hand">
+                <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <PathIcon Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                              Width="22" Height="22"
+                              Opacity="0.6"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                </Panel>
+            </Border>
+
+            <!-- Real Shell Icon -->
+            <Image Name="IconImage"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Stretch="Uniform"
+                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                   RenderTransformOrigin="50%,50%">
+                <Image.RenderTransform>
+                    <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
+                </Image.RenderTransform>
+            </Image>
+
+            <!-- Drop highlight overlay -->
+            <Border Name="DropOverlay"
+                    IsVisible="False"
+                    IsHitTestVisible="False"
+                    Background="#25888888"
+                    BorderBrush="{DynamicResource SystemAccentColor}"
+                    BorderThickness="2"
+                    CornerRadius="10"/>
+        </Panel>
+    </Border>
+</UserControl>

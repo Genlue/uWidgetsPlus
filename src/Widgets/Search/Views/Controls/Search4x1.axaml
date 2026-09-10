@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Search.ViewModels"
+             xmlns:services="using:Search.Services"
+             mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="72"
+             x:Class="Search.Views.Controls.Search4x1"
+             x:DataType="vm:SearchViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.engine-btn">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25888888" />
+        </Style>
+        <Style Selector="TextBox.search-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.search-input:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="14,0" ColumnDefinitions="Auto, Auto, *, Auto, Auto" VerticalAlignment="Center">
+        <!-- Left: Engine Selector Button -->
+        <Button Grid.Column="0"
+                Classes="engine-btn"
+                Height="38"
+                CornerRadius="19"
+                Padding="10,0"
+                VerticalAlignment="Center"
+                Click="OnEngineSelectorClicked"
+                ToolTip.Tip="点击切换搜索引擎">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="7">
+                <PathIcon Data="{Binding EngineIconPath}"
+                          Foreground="{Binding EngineColor}"
+                          Width="18" Height="18"
+                          VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding EngineName}"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <PathIcon Data="{x:Static services:SearchIconProvider.ChevronDown}"
+                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                          Width="10" Height="10"
+                          VerticalAlignment="Center"
+                          Opacity="0.7"/>
+            </StackPanel>
+        </Button>
+
+        <!-- Separator -->
+        <Rectangle Grid.Column="1"
+                   Width="1.5" Height="22"
+                   Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                   Opacity="0.2"
+                   Margin="10,0,10,0"
+                   VerticalAlignment="Center"/>
+
+        <!-- Center: Input Text Box -->
+        <TextBox Grid.Column="2"
+                 Name="SearchInputBox"
+                 Classes="search-input"
+                 FontSize="14"
+                 VerticalAlignment="Center"
+                 VerticalContentAlignment="Center"
+                 Text="{Binding QueryText, Mode=TwoWay}"
+                 Watermark="{Binding SearchPlaceholder}"
+                 KeyDown="OnInputKeyDown"/>
+
+        <!-- Clear Button -->
+        <Button Grid.Column="3"
+                Classes="icon-btn"
+                Width="26" Height="26"
+                CornerRadius="13"
+                Margin="4,0"
+                VerticalAlignment="Center"
+                IsVisible="{Binding HasQuery}"
+                Click="OnClearClicked"
+                ToolTip.Tip="清空">
+            <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
+                      Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                      Width="12" Height="12"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"/>
+        </Button>
+
+        <!-- Search Action Button -->
+        <Button Grid.Column="4"
+                Classes="icon-btn"
+                Width="38" Height="38"
+                CornerRadius="19"
+                Margin="4,0,0,0"
+                VerticalAlignment="Center"
+                Background="{Binding EngineColor}"
+                Click="OnSearchActionClicked"
+                ToolTip.Tip="搜索">
+            <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                      Foreground="#FFFFFF"
+                      Width="16" Height="16"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"/>
+        </Button>
+    </Grid>
+</UserControl>

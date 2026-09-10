@@ -1,0 +1,273 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Tools.Locales"
+             x:Class="Tools.Views.TranslatorView">
+    <UserControl.Styles>
+        <Style Selector="TextBox.trans-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.trans-box:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25888888" />
+        </Style>
+        <Style Selector="Button.menu-btn">
+            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.menu-btn:pointerover">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+        <Style Selector="Border.card-box">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <!-- 2x2 Small Tier Responsive Styles -->
+        <Style Selector="UserControl.tier-small">
+            <Setter Property="Margin" Value="6,5" />
+        </Style>
+        <Style Selector="UserControl.tier-small Button.menu-btn">
+            <Setter Property="Padding" Value="3,1" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="UserControl.tier-small Button.icon-btn">
+            <Setter Property="Padding" Value="2" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBox.trans-box">
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector="UserControl.tier-small Border.card-box">
+            <Setter Property="Padding" Value="6,3" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock#LoadingText">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock#CharCountText">
+            <Setter Property="FontSize" Value="8.5" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock#StatusText">
+            <Setter Property="FontSize" Value="8.5" />
+        </Style>
+        <Style Selector="UserControl.tier-small Button#TranslateBtn">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-small) Button#InputTranslateBtn">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <!-- 4x2 Medium and 4x4 Large Tiers: Vertical multi-line scroll mode -->
+        <Style Selector="UserControl:not(.tier-small) TextBox.trans-box">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-small) TextBox.trans-box ScrollViewer">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-small) TextBox.trans-box ScrollViewer:pointerover">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        </Style>
+
+        <Style Selector="UserControl.tier-large TextBox.trans-box">
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="Padding" Value="6,4" />
+        </Style>
+        <Style Selector="UserControl.tier-medium TextBox.trans-box">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+
+        <!-- 2x2 and 4x2: Forbid scrollbar from expanding into thick clickable bar that blocks text -->
+        <Style Selector="UserControl:not(.tier-large) ScrollBar">
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:horizontal">
+            <Setter Property="Height" Value="2.5" />
+            <Setter Property="MinHeight" Value="2.5" />
+            <Setter Property="MaxHeight" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:horizontal /template/ Track">
+            <Setter Property="Height" Value="2.5" />
+            <Setter Property="MinHeight" Value="2.5" />
+            <Setter Property="MaxHeight" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:horizontal /template/ Thumb">
+            <Setter Property="Height" Value="2.5" />
+            <Setter Property="MinHeight" Value="2.5" />
+            <Setter Property="MaxHeight" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:horizontal:pointerover /template/ Track">
+            <Setter Property="Height" Value="2.5" />
+            <Setter Property="MinHeight" Value="2.5" />
+            <Setter Property="MaxHeight" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:horizontal:pointerover /template/ Thumb">
+            <Setter Property="Height" Value="2.5" />
+            <Setter Property="MinHeight" Value="2.5" />
+            <Setter Property="MaxHeight" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:vertical">
+            <Setter Property="Width" Value="2.5" />
+            <Setter Property="MinWidth" Value="2.5" />
+            <Setter Property="MaxWidth" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:vertical /template/ Track">
+            <Setter Property="Width" Value="2.5" />
+            <Setter Property="MinWidth" Value="2.5" />
+            <Setter Property="MaxWidth" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:vertical /template/ Thumb">
+            <Setter Property="Width" Value="2.5" />
+            <Setter Property="MinWidth" Value="2.5" />
+            <Setter Property="MaxWidth" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:vertical:pointerover /template/ Track">
+            <Setter Property="Width" Value="2.5" />
+            <Setter Property="MinWidth" Value="2.5" />
+            <Setter Property="MaxWidth" Value="2.5" />
+        </Style>
+        <Style Selector="UserControl:not(.tier-large) ScrollBar:vertical:pointerover /template/ Thumb">
+            <Setter Property="Width" Value="2.5" />
+            <Setter Property="MinWidth" Value="2.5" />
+            <Setter Property="MaxWidth" Value="2.5" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Content root grid: dynamic layout managed by ApplyTier -->
+    <Grid x:Name="ContentGrid" Margin="0" RowDefinitions="*,Auto,*" ColumnDefinitions="*,*">
+        <!-- Toast Banner -->
+        <Border x:Name="ToastBanner" Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2"
+                VerticalAlignment="Top" HorizontalAlignment="Center"
+                Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="12" Padding="14,4" Margin="0,4,0,0"
+                IsVisible="False" ZIndex="10">
+            <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Clipboard_Copied}" FontSize="12" FontWeight="SemiBold"
+                       Foreground="White" />
+        </Border>
+
+        <!-- Input Box Border -->
+        <Border x:Name="InputBoxBorder" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box" Padding="8,5">
+            <Grid RowDefinitions="*,Auto">
+                <TextBox x:Name="InputTextBox" Classes="trans-box" Watermark="{x:Static locales:Locale.Tools_Translator_InputHint}"
+                         KeyUp="OnInputKeyUp" TextChanged="OnInputTextChanged" />
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="4,2,2,0">
+                    <TextBlock x:Name="CharCountText" Text="0 字符" FontSize="10" Opacity="0.4" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <Button Grid.Column="1" Classes="icon-btn" Margin="0,0,2,0" Click="OnClearInputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Clear}">
+                        <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                  Width="10" Height="10" Opacity="0.5" />
+                    </Button>
+                    <Button x:Name="InputTranslateBtn" Grid.Column="2" Classes="icon-btn" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
+                        <PathIcon Data="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
+                                  Width="10" Height="10" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Middle / Top Control Bar -->
+        <Grid x:Name="ControlBarGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" Margin="0,3,0,3" VerticalAlignment="Center">
+            <!-- Source Language Menu Button -->
+            <Button x:Name="SourceLangBtn" Grid.Column="0" Classes="menu-btn" Click="OnMenuBtnClicked">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <TextBlock x:Name="SourceLangText" Text="自动" FontSize="10" />
+                    <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="SourceLangMenu" />
+                </Button.ContextMenu>
+            </Button>
+
+            <!-- Swap Button ⇄ -->
+            <Button Grid.Column="1" Classes="icon-btn" Margin="1,0" Click="OnSwapClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Swap}">
+                <PathIcon Data="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"
+                          Width="10" Height="10" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+            </Button>
+
+            <!-- Target Language Menu Button -->
+            <Button x:Name="TargetLangBtn" Grid.Column="2" Classes="menu-btn" Click="OnMenuBtnClicked">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <TextBlock x:Name="TargetLangText" Text="中文" FontSize="10" />
+                    <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="TargetLangMenu" />
+                </Button.ContextMenu>
+            </Button>
+
+            <!-- Spacer -->
+            <Panel Grid.Column="3" />
+
+            <!-- Translation Engine Menu Button -->
+            <Button x:Name="EngineBtn" Grid.Column="4" Classes="menu-btn" Margin="0" Click="OnMenuBtnClicked">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <TextBlock x:Name="EngineText" Text="有道" FontSize="10" />
+                    <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="EngineMenu" />
+                </Button.ContextMenu>
+            </Button>
+
+            <!-- Translate Action / Loading -->
+            <Button x:Name="TranslateBtn" Grid.Column="5" Classes="icon-btn" Margin="2,0,0,0" Click="OnTranslateClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Translate}">
+                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                    <PathIcon Data="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
+                              Width="12" Height="12" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+                    <TextBlock x:Name="LoadingText" Text="…" FontSize="9" Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                               VerticalAlignment="Center" IsVisible="False" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Output Box Border -->
+        <Border x:Name="OutputBoxBorder" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Classes="card-box" Padding="8,5">
+            <Grid RowDefinitions="*,Auto">
+                <TextBox x:Name="OutputTextBox" Classes="trans-box" IsReadOnly="True"
+                         Watermark="{x:Static locales:Locale.Tools_Translator_OutputHint}" />
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,2,2,0">
+                    <TextBlock x:Name="StatusText" Text="" FontSize="10" Opacity="0.5" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <Button Grid.Column="1" Classes="icon-btn" Click="OnCopyOutputClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Translator_Copy}">
+                        <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                  Width="11" Height="11" Opacity="0.6" />
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

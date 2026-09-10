@@ -193,7 +193,7 @@ public partial class GridEditor : Window
         ParamPanel.IsVisible = true;
         ColumnsInput.Value = grid.Columns;
         RowsInput.Value = grid.Rows;
-        CellInput.Value = (decimal) Math.Round(grid.CellPercent);
+        CellInput.Value = (decimal) grid.CellPercent;
         ParamTitle.Text = Locale.Settings_Advanced_GridEdit;
     }
 
@@ -207,7 +207,7 @@ public partial class GridEditor : Window
         {
             Columns = Math.Max(1, (int) columns),
             Rows = Math.Max(1, (int) rows),
-            CellPercent = Math.Clamp((double) cell, 1, 50)
+            CellPercent = Math.Max(0.01, (double) cell)
         };
 
         if (newGrid != CurrentGrid)
@@ -314,7 +314,7 @@ public partial class GridEditor : Window
         {
             XPercent = Math.Clamp((bounds.X + Canvas.GetLeft(GridVisual) * scaling - area.X) * 100.0 / area.Width, 0, 100),
             YPercent = Math.Clamp((bounds.Y + Canvas.GetTop(GridVisual) * scaling - area.Y) * 100.0 / area.Height, 0, 100),
-            CellPercent = Math.Clamp(cellPx * 100.0 / area.Width, 1, 50)
+            CellPercent = Math.Max(0.01, cellPx * 100.0 / area.Width)
         };
 
         if (newGrid != grid)

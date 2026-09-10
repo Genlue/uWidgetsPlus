@@ -564,4 +564,82 @@
     <data name="Settings_MultiScreen_WidgetCount" xml:space="preserve">
         <value>Widgets: {0}</value>
     </data>
+    <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
+        <value>Liquid glass</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
+        <value>Liquid glass · static</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Description" xml:space="preserve">
+        <value>Static wallpaper refraction with directional highlights. Changes apply immediately; text stays sharp. For live wallpapers or different images per monitor, the Windows wallpaper image is used.</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Blur" xml:space="preserve">
+        <value>Blur radius</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BlurHint" xml:space="preserve">
+        <value>0–100 · 0 keeps the wallpaper sharp</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refraction" xml:space="preserve">
+        <value>Refraction</value>
+    </data>
+    <data name="Settings_Appearance_Glass_RefractionHint" xml:space="preserve">
+        <value>0–100% · bends the image near the edge</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidth" xml:space="preserve">
+        <value>Glass edge depth</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeWidthHint" xml:space="preserve">
+        <value>4–80 · width of the curved glass edge</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Highlight" xml:space="preserve">
+        <value>Highlight intensity</value>
+    </data>
+    <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
+        <value>0–100% · rim light and inner reflections</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
+        <value>Chromatic dispersion</value>
+    </data>
+    <data name="Settings_Appearance_Glass_DispersionHint" xml:space="preserve">
+        <value>0–100% · subtle color separation at refracted edges</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngle" xml:space="preserve">
+        <value>Light direction</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LightAngleHint" xml:space="preserve">
+        <value>0–360° · 225° lights the upper left</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTint" xml:space="preserve">
+        <value>Edge tint</value>
+    </data>
+    <data name="Settings_Appearance_Glass_EdgeTintHint" xml:space="preserve">
+        <value>0–100% · softly stains the rim with the colors around the edge, 0 disables</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align" xml:space="preserve">
+        <value>Align wallpaper…</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Title" xml:space="preserve">
+        <value>Wallpaper alignment</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Hint" xml:space="preserve">
+        <value>Nudge the offset until the glass background matches the real wallpaper behind the widget. Every change applies immediately to all widgets.</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Horizontal" xml:space="preserve">
+        <value>Horizontal</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Vertical" xml:space="preserve">
+        <value>Vertical</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Reset" xml:space="preserve">
+        <value>Reset offsets</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Align_Close" xml:space="preserve">
+        <value>Close</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Reset" xml:space="preserve">
+        <value>Reset glass parameters</value>
+    </data>
+    <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
+        <value>Refresh wallpaper</value>
+    </data>
 </root>

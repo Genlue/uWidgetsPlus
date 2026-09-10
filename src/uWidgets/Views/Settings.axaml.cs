@@ -44,7 +44,10 @@ public partial class Settings : Window
     /// </summary>
     private void ApplyTransparencyHint()
     {
-        TransparencyLevelHint = appSettingsProvider.Get().Theme.IsGlass
+        var theme = appSettingsProvider.Get().Theme;
+        GlassSurface.Material = theme;
+        GlassSurface.IsVisible = theme.IsLiquidGlass;
+        TransparencyLevelHint = theme.UsesNativeBlur
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];
     }

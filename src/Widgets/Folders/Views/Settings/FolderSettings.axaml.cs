@@ -11,6 +11,8 @@ using Folders.Services;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 
+#pragma warning disable CA1416
+
 namespace Folders.Views.Settings;
 
 public partial class FolderSettings : UserControl
@@ -320,18 +322,23 @@ public partial class FolderSettings : UserControl
 
     private async void OnPickFile(object? sender, RoutedEventArgs e)
     {
-        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
-        if (storageProvider == null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        var hwnd = topLevel?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+        var files = ShellFilePicker.PickFilesNoDereference(hwnd, "uWidgets", allowMultiple: true);
 
-        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        if (files.Count == 0 && topLevel?.StorageProvider != null)
         {
-            Title = "uWidgets",
-            AllowMultiple = true
-        });
+            var storageFiles = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "uWidgets",
+                AllowMultiple = true
+            });
+            files = storageFiles.Select(f => f.Path.LocalPath).ToList();
+        }
 
         if (files.Count == 0) return;
 
-        var items = model.Items.Concat(files.Select(f => f.Path.LocalPath)).Distinct().ToList();
+        var items = model.Items.Concat(files).Distinct().ToList();
         Save(model with { Items = items });
     }
 

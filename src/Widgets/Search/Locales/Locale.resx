@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Search" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="Search_Title" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="Search_Subtitle" xml:space="preserve">
+        <value>Quick spotlight and customizable search bar</value>
+    </data>
+    <data name="Search_Placeholder" xml:space="preserve">
+        <value>Search anything...</value>
+    </data>
+    <data name="Search_Button" xml:space="preserve">
+        <value>Search</value>
+    </data>
+    <data name="Search_Clear" xml:space="preserve">
+        <value>Clear</value>
+    </data>
+    <data name="Search_Engine" xml:space="preserve">
+        <value>Search Engine</value>
+    </data>
+    <data name="Search_Settings" xml:space="preserve">
+        <value>Search Settings</value>
+    </data>
+    <data name="Search_Manage_Engines" xml:space="preserve">
+        <value>Manage Search Engines</value>
+    </data>
+    <data name="Search_Add_Engine" xml:space="preserve">
+        <value>Add Engine</value>
+    </data>
+    <data name="Search_Edit_Engine" xml:space="preserve">
+        <value>Edit Engine</value>
+    </data>
+    <data name="Search_Engine_Name" xml:space="preserve">
+        <value>Name</value>
+    </data>
+    <data name="Search_Engine_Url" xml:space="preserve">
+        <value>URL Template ({q} for keyword)</value>
+    </data>
+    <data name="Search_Engine_Category" xml:space="preserve">
+        <value>Category</value>
+    </data>
+    <data name="Search_Default" xml:space="preserve">
+        <value>Default</value>
+    </data>
+    <data name="Search_Restore_Defaults" xml:space="preserve">
+        <value>Restore Presets</value>
+    </data>
+    <data name="Search_Clear_On_Search" xml:space="preserve">
+        <value>Clear input after search</value>
+    </data>
+    <data name="Search_Save_History" xml:space="preserve">
+        <value>Record recent search history</value>
+    </data>
+    <data name="Search_Clear_History" xml:space="preserve">
+        <value>Clear History</value>
+    </data>
+    <data name="Search_History" xml:space="preserve">
+        <value>Recent Searches</value>
+    </data>
+    <data name="Search_Quick_Engines" xml:space="preserve">
+        <value>Quick Engines</value>
+    </data>
+    <data name="Search_Category_All" xml:space="preserve">
+        <value>All</value>
+    </data>
+    <data name="Search_Category_AI" xml:space="preserve">
+        <value>AI</value>
+    </data>
+    <data name="Search_Category_Dev" xml:space="preserve">
+        <value>Dev</value>
+    </data>
+    <data name="Search_Category_Media" xml:space="preserve">
+        <value>Media</value>
+    </data>
+    <data name="Search_Category_Community" xml:space="preserve">
+        <value>Community</value>
+    </data>
+</root>

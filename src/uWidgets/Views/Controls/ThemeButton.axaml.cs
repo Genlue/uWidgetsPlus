@@ -1,9 +1,8 @@
 using System;
-using System.Diagnostics;
-using System.Threading;
+using System.ComponentModel;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -15,12 +14,23 @@ using uWidgets.Services;
 
 namespace uWidgets.Views.Controls;
 
-public partial class ThemeButton : UserControl
+public partial class ThemeButton : UserControl, INotifyPropertyChanged
 {
+    public new event PropertyChangedEventHandler? PropertyChanged;
     private static readonly Bitmap wallpaper = GetWallpaperPreview();
     public Theme AppTheme { get; }
     public Bitmap Wallpaper => wallpaper;
     public bool DimWallpaper => AppTheme.DarkMode == true;
+    public bool IsLiquidGlass => AppTheme.IsLiquidGlass;
+    public bool IsFrosted => AppTheme.UsesNativeBlur;
+    public bool IsSelected => appSettingsProvider.Get().Theme.EffectiveSurface == AppTheme.EffectiveSurface
+        || (IsFrosted && appSettingsProvider.Get().Theme.EffectiveSurface == SurfaceStyle.OutlinedAcrylic);
+    public IBrush SelectionBrush => IsSelected ? Brushes.DodgerBlue : Brushes.Transparent;
+    public Theme GlassMaterial => appSettingsProvider.Get().Theme with
+    {
+        Surface = SurfaceStyle.LiquidGlass,
+        OpacityLevel = IsSelected ? appSettingsProvider.Get().Theme.OpacityLevel : AppTheme.OpacityLevel
+    };
     public Brush WidgetBackground
     {
         get
@@ -52,7 +62,7 @@ public partial class ThemeButton : UserControl
         : new FontFamily(AppTheme.FontFamily);
 
     /// <summary>The preset name shown below the preview (毛玻璃 / 纯色).</summary>
-    public string ThemeName => AppTheme.IsGlass
+    public string ThemeName => IsLiquidGlass ? Locale.Settings_Appearance_Surface_LiquidGlass : AppTheme.IsGlass
         ? Locale.Settings_Appearance_Surface_Frosted
         : Locale.Settings_Appearance_Surface_Solid;
 
@@ -67,7 +77,7 @@ public partial class ThemeButton : UserControl
     /// the top-right and bottom-left (conic gradient; square card → 315° start).
     /// </summary>
     public IBrush? PreviewBorderBrush =>
-        appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
+        AppTheme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
             ? BuildPreviewOutline()
             : AppTheme.UseNativeFrame ? new SolidColorBrush(Color.Parse("#60808080")) : null;
 
@@ -95,7 +105,7 @@ public partial class ThemeButton : UserControl
 
     public Thickness PreviewBorderThickness => AppTheme.UseNativeFrame
         ? new Thickness(1)
-        : appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
+        : AppTheme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0
             ? new Thickness(Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6))
             : new Thickness(0);
 
@@ -120,22 +130,39 @@ public partial class ThemeButton : UserControl
         AppTheme = appTheme;
         DataContext = this;
         InitializeComponent();
+        AttachedToVisualTree += (_, _) =>
+        {
+            appSettingsProvider.DataChanged += OnSettingsChanged;
+            RefreshPreview();
+        };
+        DetachedFromVisualTree += (_, _) => appSettingsProvider.DataChanged -= OnSettingsChanged;
+    }
+
+    private void OnSettingsChanged(object sender, AppSettings? oldData, AppSettings newData) => RefreshPreview();
+
+    private void RefreshPreview()
+    {
+        foreach (var property in new[] { nameof(IsSelected), nameof(SelectionBrush), nameof(GlassMaterial),
+            nameof(WidgetBackground), nameof(WidgetForeground), nameof(PreviewBorderBrush), nameof(PreviewBorderThickness) })
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
     
     public static Bitmap GetWallpaperPreview(int targetHeight = 150)
     {
-        var originalBitmap = new Bitmap(InteropService.GetWallpaperPath());
-
-        var aspectRatio = (double)originalBitmap.PixelSize.Width / originalBitmap.PixelSize.Height;
-        var targetWidth = (int)(targetHeight * aspectRatio);
-        var renderTarget = new RenderTargetBitmap(new PixelSize(targetWidth, targetHeight), new Vector(96, 96));
-
-        using var context = renderTarget.CreateDrawingContext(false);
-        var sourceRect = new Rect(0, 0, originalBitmap.PixelSize.Width, originalBitmap.PixelSize.Height);
-        var targetRect = new Rect(0, 0, targetWidth, targetHeight);
-
-        context.DrawImage(originalBitmap, sourceRect, targetRect);
-
+        var snapshot = LiquidGlassWallpaper.Get();
+        try
+        {
+            if (snapshot.ImageBytes != null)
+            {
+                using var stream = new MemoryStream(snapshot.ImageBytes);
+                return Bitmap.DecodeToHeight(stream, targetHeight);
+            }
+        }
+        catch (Exception) { /* No readable wallpaper: preview the desktop solid color. */ }
+        var renderTarget = new RenderTargetBitmap(new PixelSize(targetHeight * 4 / 3, targetHeight), new Vector(96, 96));
+        using (var context = renderTarget.CreateDrawingContext(false))
+            context.FillRectangle(new SolidColorBrush(Color.FromRgb(snapshot.Background.Red, snapshot.Background.Green, snapshot.Background.Blue)),
+                new Rect(0, 0, targetHeight * 4 / 3, targetHeight));
         return renderTarget;
     }
 
@@ -147,6 +174,7 @@ public partial class ThemeButton : UserControl
     private void Apply(object? sender, RoutedEventArgs e)
     {
         var settings = appSettingsProvider.Get();
+        if (IsSelected) return;
         var newTheme = settings.Theme with
         {
             Surface = AppTheme.EffectiveSurface,

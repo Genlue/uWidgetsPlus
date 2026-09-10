@@ -53,6 +53,7 @@
                      coated by the opacity level so the slider works in every mode. -->
                 <SolidColorBrush x:Key="WidgetBackground" Color="{DynamicResource SystemAltHighColor}" Opacity="{DynamicResource BackgroundOpacity}" />
                 <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" />
+                <SolidColorBrush x:Key="SettingsWindowBackground" Color="{DynamicResource SystemChromeLowColor}" />
             </Style.Resources>
         </Style>
     </Application.Styles>

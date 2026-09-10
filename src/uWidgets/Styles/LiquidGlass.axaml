@@ -1,0 +1,18 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style>
+        <Style.Resources>
+            <SolidColorBrush x:Key="WidgetBackground" Color="Transparent" />
+            <!-- Settings retain a readable coating over the same static optics. -->
+            <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.96" />
+            <SolidColorBrush x:Key="SettingsWindowBackground" Color="Transparent" />
+            <x:Double x:Key="TextOpacity">1</x:Double>
+        </Style.Resources>
+    </Style>
+    <Style Selector="Window">
+        <Setter Property="TransparencyLevelHint" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBlock">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+</Styles>

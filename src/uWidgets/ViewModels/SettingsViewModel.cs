@@ -48,10 +48,17 @@ public class SettingsViewModel(IAppSettingsProvider appSettingsProvider, IAssemb
                 group => group.Key, 
                 group => group.MaxBy(assembly => assembly.Version)!)
             .Select(assembly => new PageViewModel(
-                    typeof(Gallery), StreamGeometry.Parse(assembly.Value.IconData), assembly.Value.DisplayName, assembly.Value 
+                    typeof(Gallery), SafeParseIcon(assembly.Value.IconData), assembly.Value.DisplayName, assembly.Value 
                     ))
             .OrderBy(page => page.Text)
             .ToArray();
+
+    private static StreamGeometry? SafeParseIcon(string? data)
+    {
+        if (string.IsNullOrWhiteSpace(data)) return null;
+        try { return StreamGeometry.Parse(data); }
+        catch { return null; }
+    }
 
     private static StreamGeometry? GetIcon(string name) =>
         (StreamGeometry?)(Application.Current!.TryFindResource(name, out var icon) ? icon : null);

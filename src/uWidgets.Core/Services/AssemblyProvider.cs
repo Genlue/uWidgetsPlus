@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Resources;
 using System.Runtime.Loader;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,7 +44,7 @@ public class AssemblyProvider : IAssemblyProvider
     {
         try
         {
-            var context = new AssemblyLoadContext(filePath, true);
+            var context = new PluginLoadContext(filePath);
             var assembly = context.LoadFromAssemblyPath(filePath);
             var localeAttribute = assembly.GetCustomAttributes<LocaleAttribute>().FirstOrDefault();
             var companyAttribute = assembly.GetCustomAttributes<AssemblyCompanyAttribute>().FirstOrDefault();
@@ -68,7 +68,6 @@ public class AssemblyProvider : IAssemblyProvider
         {
             return null;
         }
-       
     }
     
     /// <inheritdoc />
@@ -104,20 +103,93 @@ public class AssemblyProvider : IAssemblyProvider
         {
             return ActivatorUtilities.CreateInstance(serviceProvider, type, args);
         }
-        catch (Exception e)
+        catch
         {
-            throw new InvalidOperationException($"Failed to create an instance of {type.Name}", e);
+            try
+            {
+                if (args.Length == 0)
+                    return Activator.CreateInstance(type)!;
+                return Activator.CreateInstance(type, args)!;
+            }
+            catch
+            {
+                var constructors = type.GetConstructors()
+                    .OrderByDescending(c => c.GetParameters().Length);
+                foreach (var ctor in constructors)
+                {
+                    var pars = ctor.GetParameters();
+                    var values = new object?[pars.Length];
+                    var ok = true;
+                    for (int i = 0; i < pars.Length; i++)
+                    {
+                        var pt = pars[i].ParameterType;
+                        var fromArgs = args.FirstOrDefault(a => a != null && pt.IsAssignableFrom(a.GetType()));
+                        if (fromArgs != null)
+                        {
+                            values[i] = fromArgs;
+                        }
+                        else
+                        {
+                            var fromDi = serviceProvider.GetService(pt);
+                            if (fromDi != null)
+                            {
+                                values[i] = fromDi;
+                            }
+                            else if (pars[i].HasDefaultValue)
+                            {
+                                values[i] = pars[i].DefaultValue;
+                            }
+                            else
+                            {
+                                ok = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (ok)
+                    {
+                        try
+                        {
+                            return ctor.Invoke(values);
+                        }
+                        catch { }
+                    }
+                }
+                throw new InvalidOperationException($"Failed to create an instance of {type.Name}");
+            }
         }
     }
 
     /// <inheritdoc />
     public ResourceManager? GetLocaleResourceManager(Assembly assembly)
     {
-        return assembly
-            .DefinedTypes
-            .FirstOrDefault(type => type.Name == "Locale")?
-            .GetProperty(nameof(ResourceManager), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)?
-            .GetValue(null) as ResourceManager;
+        try
+        {
+            var assemblyName = assembly.GetName().Name;
+            var localeType = assembly.GetType($"{assemblyName}.Locales.Locale")
+                          ?? assembly.GetType("Locale");
+            if (localeType == null)
+            {
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types.Where(t => t != null).Cast<Type>().ToArray();
+                }
+                localeType = types.FirstOrDefault(t => t.Name == "Locale");
+            }
+
+            return localeType?
+                .GetProperty(nameof(ResourceManager), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)?
+                .GetValue(null) as ResourceManager;
+        }
+        catch
+        {
+            return null;
+        }
     }
     
     private string GetAssemblyPath(string name, bool updateCache = false)
@@ -150,7 +222,23 @@ public class AssemblyProvider : IAssemblyProvider
             }
 
             var assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-            return assemblyPath != null ? LoadFromAssemblyPath(assemblyPath) : null;
+            if (assemblyPath != null)
+            {
+                return LoadFromAssemblyPath(assemblyPath);
+            }
+
+            // Probe adjacent directory for widget-local dependencies (e.g. Microsoft.Windows.SDK.NET.dll)
+            var pluginDir = Path.GetDirectoryName(pluginPath);
+            if (pluginDir != null)
+            {
+                var candidate = Path.Combine(pluginDir, $"{assemblyName.Name}.dll");
+                if (File.Exists(candidate))
+                {
+                    return LoadFromAssemblyPath(candidate);
+                }
+            }
+
+            return null;
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)

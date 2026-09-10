@@ -17,17 +17,17 @@
             <controls:Setting Icon="{DynamicResource WidgetSize}" 
                               Title="{x:Static locales:Locale.Settings_Advanced_GridColumns_Title}" 
                               Subtitle="{x:Static locales:Locale.Settings_Advanced_GridColumns_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="1" Maximum="20" Value="{Binding GridColumns, StringFormat=F0}" />
+                <NumericUpDown MinWidth="130" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" Value="{Binding GridColumns}" />
             </controls:Setting>
             <controls:Setting Icon="{DynamicResource WidgetSize}" 
                               Title="{x:Static locales:Locale.Settings_Advanced_GridRows_Title}" 
                               Subtitle="{x:Static locales:Locale.Settings_Advanced_GridRows_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="1" Maximum="20" Value="{Binding GridRows, StringFormat=F0}" />
+                <NumericUpDown MinWidth="130" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" Value="{Binding GridRows}" />
             </controls:Setting>
             <controls:Setting Icon="{DynamicResource WidgetSize}" 
                               Title="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Title}" 
                               Subtitle="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="1" Maximum="50" Increment="1" Value="{Binding GridCellPercent, StringFormat=F0}" />
+                <NumericUpDown MinWidth="130" Minimum="0.01" Increment="0.1" FormatString="0.##" Value="{Binding GridCellPercent}" />
             </controls:Setting>
             <controls:Setting Icon="{DynamicResource SnapPosition}" 
                               Title="{x:Static locales:Locale.Settings_Advanced_GridPosition_Title}" 

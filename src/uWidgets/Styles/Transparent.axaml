@@ -17,6 +17,7 @@
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
                 <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.9" />
+                <SolidColorBrush x:Key="SettingsWindowBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.9" />
                 <x:Double x:Key="TextOpacity">0.8</x:Double>
             </ResourceDictionary>
         </Style.Resources>

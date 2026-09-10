@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Search.ViewModels"
+             xmlns:services="using:Search.Services"
+             xmlns:models="using:Search.Models"
+             mc:Ignorable="d" d:DesignWidth="152" d:DesignHeight="152"
+             x:Class="Search.Views.Controls.Search2x2"
+             x:DataType="vm:SearchViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.engine-btn">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+        <Style Selector="Button.dock-btn">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#15FFFFFF" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+        </Style>
+        <Style Selector="Button.dock-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+        </Style>
+        <Style Selector="TextBox.search-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.search-input:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="9,6" RowDefinitions="Auto, Auto, Auto" VerticalAlignment="Center">
+        <!-- Top Row: Engine Selector -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6" VerticalAlignment="Center">
+            <Button Grid.Column="0"
+                    Classes="engine-btn"
+                    Height="26"
+                    HorizontalAlignment="Left"
+                    Click="OnEngineSelectorClicked"
+                    ToolTip.Tip="点击切换搜索引擎">
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <PathIcon Data="{Binding EngineIconPath}"
+                              Foreground="{Binding EngineColor}"
+                              Width="14" Height="14"
+                              VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding EngineName}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               MaxWidth="74"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                    <PathIcon Data="{x:Static services:SearchIconProvider.ChevronDown}"
+                              Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Width="9" Height="9"
+                              VerticalAlignment="Center"
+                              Opacity="0.7"/>
+                </StackPanel>
+            </Button>
+
+            <Button Grid.Column="1"
+                    Classes="engine-btn"
+                    Width="24" Height="24"
+                    CornerRadius="12"
+                    Padding="0"
+                    Click="OnOpenHomepageClicked"
+                    ToolTip.Tip="在浏览器打开官网">
+                <PathIcon Data="{x:Static services:SearchIconProvider.ExternalLinkIcon}"
+                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                          Width="11" Height="11"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+            </Button>
+        </Grid>
+
+        <!-- Middle Row: Search Input Capsule -->
+        <Border Grid.Row="1"
+                Height="34"
+                CornerRadius="17"
+                Background="#25808080"
+                BorderBrush="#25FFFFFF"
+                BorderThickness="1"
+                Padding="4,2"
+                Margin="0,0,0,8">
+            <Grid ColumnDefinitions="*, Auto, Auto" VerticalAlignment="Center">
+                <TextBox Grid.Column="0"
+                         Name="SearchInputBox"
+                         Classes="search-input"
+                         Text="{Binding QueryText, Mode=TwoWay}"
+                         Watermark="{Binding SearchPlaceholder}"
+                         KeyDown="OnInputKeyDown"/>
+
+                <Button Grid.Column="1"
+                        Classes="dock-btn"
+                        Width="20" Height="20"
+                        CornerRadius="10"
+                        BorderThickness="0"
+                        Background="Transparent"
+                        Margin="2,0"
+                        IsVisible="{Binding HasQuery}"
+                        Click="OnClearClicked"
+                        ToolTip.Tip="清空">
+                    <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
+                              Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Width="10" Height="10"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Button>
+
+                <Button Grid.Column="2"
+                        Classes="dock-btn"
+                        Width="24" Height="24"
+                        CornerRadius="12"
+                        Background="{Binding EngineColor}"
+                        BorderThickness="0"
+                        Click="OnSearchActionClicked"
+                        ToolTip.Tip="搜索">
+                    <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                              Foreground="#FFFFFF"
+                              Width="12" Height="12"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Bottom Row: Quick Switch Dock (scrollable with wheel) -->
+        <ScrollViewer Grid.Row="2"
+                      Name="DockScroller"
+                      HorizontalScrollBarVisibility="Hidden"
+                      VerticalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Center"
+                      ClipToBounds="True">
+            <ItemsControl Name="QuickDockItems">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:SearchEngine">
+                        <Button Classes="dock-btn"
+                                Tag="{Binding}"
+                                Click="OnQuickEngineClicked"
+                                ToolTip.Tip="{Binding Name}">
+                            <PathIcon Data="{Binding SvgPath}"
+                                      Foreground="{Binding IconColor}"
+                                      Width="13" Height="13"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

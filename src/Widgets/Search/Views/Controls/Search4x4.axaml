@@ -1,0 +1,261 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Search.ViewModels"
+             xmlns:services="using:Search.Services"
+             xmlns:models="using:Search.Models"
+             mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="312"
+             x:Class="Search.Views.Controls.Search4x4"
+             x:DataType="vm:SearchViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.engine-btn">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.engine-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+        <Style Selector="Button.cat-pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="7,2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+        <Style Selector="Button.cat-pill:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#20808080" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.grid-card">
+            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#15FFFFFF" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="2,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Height" Value="48" />
+        </Style>
+        <Style Selector="Button.grid-card:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#30808080" />
+            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+        </Style>
+        <Style Selector="Button.chip-btn">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#12FFFFFF" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.chip-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="TextBox.search-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="TextBox.search-input:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="12,10" RowDefinitions="Auto, Auto, *, Auto">
+        <!-- Section 0: Top Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto, *" Margin="0,0,0,8" VerticalAlignment="Center">
+            <!-- Left: Engine Selector Button -->
+            <Button Grid.Column="0"
+                    Classes="engine-btn"
+                    Height="30"
+                    Click="OnEngineSelectorClicked"
+                    ToolTip.Tip="点击切换搜索引擎">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <PathIcon Data="{Binding EngineIconPath}"
+                              Foreground="{Binding EngineColor}"
+                              Width="16" Height="16"
+                              VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding EngineName}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <PathIcon Data="{x:Static services:SearchIconProvider.ChevronDown}"
+                              Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Width="10" Height="10"
+                              VerticalAlignment="Center"
+                              Opacity="0.7"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Right: Category Filter Pills -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        HorizontalAlignment="Right">
+                <Button Classes="cat-pill" Content="全部" Tag="全部" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="通用" Tag="通用" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="开发" Tag="开发者" Click="OnCategoryClicked"/>
+                <Button Classes="cat-pill" Content="AI" Tag="AI 智能" Click="OnCategoryClicked"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Section 1: Spotlight Search Input Bar -->
+        <Border Grid.Row="1"
+                Height="40"
+                CornerRadius="20"
+                Background="#25808080"
+                BorderBrush="#25FFFFFF"
+                BorderThickness="1"
+                Padding="6,2"
+                Margin="0,0,0,10">
+            <Grid ColumnDefinitions="Auto, *, Auto, Auto" VerticalAlignment="Center">
+                <PathIcon Grid.Column="0"
+                          Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                          Width="15" Height="15"
+                          Margin="4,0,2,0"
+                          VerticalAlignment="Center"
+                          Opacity="0.6"/>
+
+                <TextBox Grid.Column="1"
+                         Name="SearchInputBox"
+                         Classes="search-input"
+                         Text="{Binding QueryText, Mode=TwoWay}"
+                         Watermark="{Binding SearchPlaceholder}"
+                         KeyDown="OnInputKeyDown"/>
+
+                <Button Grid.Column="2"
+                        Classes="cat-pill"
+                        Width="22" Height="22"
+                        CornerRadius="11"
+                        Padding="0"
+                        Margin="2,0"
+                        IsVisible="{Binding HasQuery}"
+                        Click="OnClearClicked"
+                        ToolTip.Tip="清空">
+                    <PathIcon Data="{x:Static services:SearchIconProvider.ClearIcon}"
+                              Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Width="11" Height="11"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Button>
+
+                <Button Grid.Column="3"
+                        Classes="engine-btn"
+                        Width="32" Height="32"
+                        CornerRadius="16"
+                        Padding="0"
+                        Margin="2,0,1,0"
+                        Background="{Binding EngineColor}"
+                        Click="OnSearchActionClicked"
+                        ToolTip.Tip="搜索">
+                    <PathIcon Data="{x:Static services:SearchIconProvider.DefaultSearchIcon}"
+                              Foreground="#FFFFFF"
+                              Width="14" Height="14"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Section 2: Engine Grid Matrix (8 cards, 4 columns x 2 rows, perfectly symmetric) -->
+        <Grid Grid.Row="2" RowDefinitions="Auto, *" Margin="0,0,0,8">
+            <TextBlock Grid.Row="0"
+                       Text="搜索引擎直达"
+                       FontSize="11"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       Margin="2,0,0,6"/>
+
+            <ItemsControl Grid.Row="1"
+                          Name="GridMatrixItems"
+                          HorizontalAlignment="Stretch">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:SearchEngine">
+                        <Button Classes="grid-card"
+                                Margin="2.5"
+                                Tag="{Binding}"
+                                Click="OnGridEngineClicked"
+                                ToolTip.Tip="{Binding Name}">
+                            <Grid RowDefinitions="Auto, Auto" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <PathIcon Grid.Row="0"
+                                          Data="{Binding SvgPath}"
+                                          Foreground="{Binding IconColor}"
+                                          Width="16" Height="16"
+                                          HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding Name}"
+                                           FontSize="10"
+                                           FontWeight="Medium"
+                                           MaxWidth="56"
+                                           TextTrimming="CharacterEllipsis"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,2,0,0"/>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <!-- Section 3: Recent Searches (3 chips, fits completely) -->
+        <Grid Grid.Row="3"
+              RowDefinitions="Auto, Auto"
+              IsVisible="{Binding HasHistory}">
+            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="2,0,2,4">
+                <TextBlock Grid.Column="0"
+                           Text="最近搜索"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+
+                <Button Grid.Column="1"
+                        Classes="cat-pill"
+                        Padding="4,1"
+                        Click="OnClearAllHistoryClicked"
+                        ToolTip.Tip="清空所有历史">
+                    <PathIcon Data="{x:Static services:SearchIconProvider.TrashIcon}"
+                              Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              Width="11" Height="11"/>
+                </Button>
+            </Grid>
+
+            <ItemsControl Grid.Row="1"
+                          Name="HistoryChipsItems"
+                          HorizontalAlignment="Left">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Button Classes="chip-btn"
+                                Content="{Binding}"
+                                Tag="{Binding}"
+                                Click="OnHistoryChipClicked"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Grid>
+</UserControl>

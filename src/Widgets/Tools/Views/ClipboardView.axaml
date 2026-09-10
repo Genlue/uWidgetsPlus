@@ -1,0 +1,236 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Tools.Locales"
+             xmlns:local="clr-namespace:Tools.Views"
+             xmlns:models="clr-namespace:Tools.Models"
+             x:Class="Tools.Views.ClipboardView">
+    <UserControl.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25888888" />
+        </Style>
+        <Style Selector="Button.filter-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+        <Style Selector="Button.filter-btn:pointerover">
+            <Setter Property="Background" Value="#15888888" />
+        </Style>
+        <Style Selector="Button.filter-btn.active">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.menu-pill">
+            <Setter Property="Background" Value="#18808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.menu-pill:pointerover">
+            <Setter Property="Background" Value="#28808080" />
+        </Style>
+        <Style Selector="Border.item-card">
+            <Setter Property="Background" Value="#16808080" />
+            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.item-card:pointerover">
+            <Setter Property="Background" Value="#26808080" />
+        </Style>
+        <Style Selector=":not(:pointerover) ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+        <Style Selector=":pointerover ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        </Style>
+
+        <!-- 2x2 Small Tier Responsive Styles -->
+        <Style Selector="UserControl.tier-small Button.copy-item-btn">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="UserControl.tier-small Border.item-card">
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock.item-title">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="MaxLines" Value="1" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock.item-time">
+            <Setter Property="FontSize" Value="9" />
+        </Style>
+        <Style Selector="UserControl.tier-small TextBlock.item-sub">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="UserControl.tier-small Border.item-thumb">
+            <Setter Property="MaxWidth" Value="34" />
+            <Setter Property="MaxHeight" Value="28" />
+        </Style>
+        <Style Selector="UserControl.tier-small Border.item-icon">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+        </Style>
+        <Style Selector="UserControl.tier-small Border.item-icon PathIcon">
+            <Setter Property="Width" Value="11" />
+            <Setter Property="Height" Value="11" />
+        </Style>
+        <Style Selector="UserControl.tier-small Button.delete-item-btn">
+            <Setter Property="Padding" Value="2" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Content root grid: natural margin handled by Widget host container (Margin=12) -->
+    <Grid Margin="0" RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6" VerticalAlignment="Center">
+            <!-- Title & Count -->
+            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_Title}" FontWeight="SemiBold" FontSize="13"
+                           Foreground="{DynamicResource SystemControlForegroundAccentBrush}" VerticalAlignment="Center" />
+                <Border Background="#20808080" CornerRadius="8" Padding="5,1" VerticalAlignment="Center">
+                    <TextBlock x:Name="CountBadgeText" Text="0" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                </Border>
+            </StackPanel>
+
+            <!-- Inline Filter Tabs (Visible in Medium and Large tiers) -->
+            <StackPanel x:Name="InlineFilterPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="2"
+                        IsVisible="False">
+                <Button x:Name="FilterAllBtn" Classes="filter-btn active" Content="{x:Static locales:Locale.Tools_Clipboard_All}" Click="OnFilterClicked" Tag="All" />
+                <Button x:Name="FilterTextBtn" Classes="filter-btn" Content="{x:Static locales:Locale.Tools_Clipboard_Text}" Click="OnFilterClicked" Tag="Text" />
+                <Button x:Name="FilterImageBtn" Classes="filter-btn" Content="{x:Static locales:Locale.Tools_Clipboard_Image}" Click="OnFilterClicked" Tag="Image" />
+                <Button x:Name="FilterFilesBtn" Classes="filter-btn" Content="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnFilterClicked" Tag="Files" />
+            </StackPanel>
+
+            <!-- Right Controls: Filter dropdown in 2x2 + Clear button -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <!-- Compact Filter Menu Button (Visible in Small 2x2 tier) -->
+                <Button x:Name="CompactFilterBtn" Classes="menu-pill" Padding="6,2" VerticalAlignment="Center"
+                        Click="OnCompactFilterBtnClicked" IsVisible="True">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <TextBlock x:Name="CompactFilterText" Text="全部" FontSize="10" />
+                        <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="FilterMenu">
+                            <MenuItem Header="全部" Click="OnSelectFilterMenuItem" Tag="All" />
+                            <MenuItem Header="文本" Click="OnSelectFilterMenuItem" Tag="Text" />
+                            <MenuItem Header="图片" Click="OnSelectFilterMenuItem" Tag="Image" />
+                            <MenuItem Header="文件" Click="OnSelectFilterMenuItem" Tag="Files" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <!-- Clear Button -->
+                <Button Classes="icon-btn" Padding="4" VerticalAlignment="Center" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Clear}">
+                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="12" Height="12" Opacity="0.7" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Toast Notification Banner -->
+        <Border x:Name="ToastBanner" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center"
+                Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="12" Padding="14,4" Margin="0,4,0,0"
+                IsVisible="False" ZIndex="10">
+            <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Clipboard_Copied}" FontSize="12" FontWeight="SemiBold"
+                       Foreground="White" />
+        </Border>
+
+        <!-- Empty State -->
+        <StackPanel x:Name="EmptyStatePanel" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="8" IsVisible="False">
+            <PathIcon Data="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 16H5V5h2v3h10V5h2v14z"
+                      Width="30" Height="30" Opacity="0.3" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_Empty}" FontSize="11" Opacity="0.5"
+                       HorizontalAlignment="Center" TextAlignment="Center" />
+        </StackPanel>
+
+        <!-- History List -->
+        <ScrollViewer x:Name="HistoryScrollViewer" Grid.Row="1">
+            <ItemsControl x:Name="HistoryList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="models:ClipboardItem">
+                        <Border Classes="item-card" Margin="0,0,0,5" Padding="8,5" PointerPressed="OnCardPointerPressed">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <!-- Icon / Thumbnail -->
+                                <Border Grid.Column="0" VerticalAlignment="Center" Margin="0,0,6,0">
+                                    <Panel>
+                                        <!-- Image Thumbnail -->
+                                        <Border Classes="item-thumb" CornerRadius="4" ClipToBounds="True" MaxHeight="44" MaxWidth="56"
+                                                IsVisible="{Binding ImagePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
+                                        </Border>
+
+                                        <!-- Text Icon -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="#204090ff"
+                                                IsVisible="{Binding Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                                                      Width="13" Height="13" Foreground="#4090ff" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- Files Icon -->
+                                        <Border Classes="item-icon" Width="26" Height="26" CornerRadius="5" Background="#20ffaa00"
+                                                IsVisible="{Binding FilePaths, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                            <PathIcon Data="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
+                                                      Width="13" Height="13" Foreground="#ffaa00" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                    </Panel>
+                                </Border>
+
+                                <!-- Details -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Classes="item-title" Text="{Binding DisplayTitle}" FontSize="12" FontWeight="Normal"
+                                               TextTrimming="CharacterEllipsis" MaxLines="2"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Classes="item-time" Text="{Binding RelativeTime}" FontSize="10" Opacity="0.5"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                        <TextBlock Classes="item-sub" Text="{Binding DisplaySubtitle}" FontSize="10" Opacity="0.5"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Action Buttons -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="1" VerticalAlignment="Center">
+                                    <Button Classes="icon-btn copy-item-btn" Click="OnItemCopyClicked" Tag="{Binding}" ToolTip.Tip="复制">
+                                        <PathIcon Data="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                                                  Width="11" Height="11" Opacity="0.6" />
+                                    </Button>
+                                    <Button Classes="icon-btn delete-item-btn" Click="OnItemDeleteClicked" Tag="{Binding}" ToolTip.Tip="删除">
+                                        <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                                  Width="10" Height="10" Opacity="0.4" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

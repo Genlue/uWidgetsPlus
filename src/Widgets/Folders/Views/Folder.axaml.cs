@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Avalonia;
@@ -163,12 +164,16 @@ public partial class Folder : UserControl
         DropHint.IsVisible = false;
     }
 
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int nVirtKey);
+
     private void OnItemPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var point = e.GetCurrentPoint(this);
         if (point.Properties.IsRightButtonPressed) return;
         // Ctrl + left drag moves the widget window (host handles it); never open the file.
-        if (point.Properties.IsLeftButtonPressed && e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+        var isCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control) || (GetKeyState(0x11) & 0x8000) != 0;
+        if (point.Properties.IsLeftButtonPressed && isCtrl) return;
         if (sender is Control { DataContext: FolderItem item })
             Open(item);
     }
@@ -266,7 +271,7 @@ public partial class Folder : UserControl
         if (IsWatchFolderMode) return;
         if (!e.Data.Contains(DataFormats.FileNames)) return;
 
-        var paths = e.Data.GetFileNames()?.Where(path => File.Exists(path) || Directory.Exists(path)).ToList() ?? [];
+        var paths = e.Data.GetFiles()?.Select(f => f.Path.LocalPath).Where(path => File.Exists(path) || Directory.Exists(path)).ToList() ?? [];
         if (paths.Count == 0) return;
 
         var newItems = model.Items.Concat(paths).Distinct().ToList();

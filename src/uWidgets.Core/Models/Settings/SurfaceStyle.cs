@@ -2,8 +2,7 @@ namespace uWidgets.Core.Models.Settings;
 
 /// <summary>
 /// The widget surface material. This is the primary distinction between the
-/// appearance presets; the remaining LiquidGlass mode is planned and reserved
-/// so it slots in without reworking the model.
+/// appearance presets.
 /// </summary>
 public enum SurfaceStyle
 {
@@ -13,7 +12,7 @@ public enum SurfaceStyle
     /// <summary>纯色: fully opaque background.</summary>
     Solid = 1,
 
-    /// <summary>液态玻璃 / liquid glass: planned, reserved for a future build.</summary>
+    /// <summary>液态玻璃: static wallpaper refraction, adjustable blur and specular highlights.</summary>
     LiquidGlass = 2,
 
     /// <summary>

@@ -1,0 +1,151 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Music.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="320" d:DesignHeight="320"
+             Margin="0"
+             x:Class="Music.Views.Controls.MusicLarge"
+             x:DataType="vm:MusicViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="ProgressBar.seek-bar">
+            <Setter Property="MinHeight" Value="5"/>
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="CornerRadius" Value="2.5"/>
+            <Setter Property="Background" Value="#35888888"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="ProgressBarRoot"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            ClipToBounds="True"
+                            Height="{TemplateBinding Height}">
+                        <Panel>
+                            <Border Name="PART_Indicator"
+                                    Background="{TemplateBinding Foreground}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    HorizontalAlignment="Left"/>
+                        </Panel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.ctrl-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.ctrl-btn:pointerover">
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto" Margin="16,12" VerticalAlignment="Center">
+        <!-- Top: Prominent Large Album Artwork Frame (184x184) -->
+        <Border Grid.Row="0" Width="184" Height="184" CornerRadius="20"
+                ClipToBounds="True" Background="#18FFFFFF"
+                HorizontalAlignment="Center" Margin="0,0,0,10">
+            <Panel>
+                <!-- Fallback Vinyl Disc -->
+                <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"
+                          Width="72" Height="72"
+                          Opacity="0.4"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}"/>
+                <!-- Album Artwork -->
+                <Image Source="{Binding CoverBitmap}"
+                       Stretch="UniformToFill"
+                       IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            </Panel>
+        </Border>
+
+        <!-- Middle: Title, Artist & App Badge -->
+        <StackPanel Grid.Row="1" Spacing="2" HorizontalAlignment="Center" Margin="0,0,0,8">
+            <!-- App Badge -->
+            <Border Background="#22888888" CornerRadius="5" Padding="8,2.5"
+                    HorizontalAlignment="Center" Margin="0,0,0,4">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding PlayerName}" FontSize="11" FontWeight="SemiBold"
+                               Opacity="0.9"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Song Title -->
+            <TextBlock Text="{Binding TrackTitle}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                       HorizontalAlignment="Center" Margin="0,0,0,2"/>
+
+            <!-- Artist -->
+            <TextBlock Text="{Binding Artist}"
+                       FontSize="14" FontWeight="Medium" Opacity="0.9"
+                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Timeline & Progress Bar (240px wide, perfectly proportioned) -->
+        <StackPanel Grid.Row="2" Spacing="3" HorizontalAlignment="Center" Width="240" Margin="0,0,0,10" IsVisible="{Binding ShowProgressBar}">
+            <Border Name="ProgressTrack" Height="16" Background="Transparent"
+                    Cursor="Hand" PointerPressed="OnProgressPointerPressed"
+                    VerticalAlignment="Center">
+                <ProgressBar Classes="seek-bar"
+                             Minimum="0" Maximum="1" Value="{Binding ProgressPercent}"
+                             VerticalAlignment="Center"
+                             IsHitTestVisible="False"/>
+            </Border>
+
+            <!-- Time Labels -->
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,-1,0,0">
+                <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="11.5"
+                           FontWeight="Medium" Opacity="0.85"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11.5"
+                           FontWeight="Medium" Opacity="0.85"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Bottom: Playback Controls (Generous 52px play button, tactile feel) -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="24" HorizontalAlignment="Center" Margin="0,4,0,0">
+            <!-- Previous -->
+            <Button Classes="ctrl-btn" Width="38" Height="38" CornerRadius="19"
+                    Command="{Binding SkipPrevious}"
+                    IsEnabled="{Binding CanSkipPrevious}">
+                <PathIcon Data="M6 6h2v12H6zm3.5 6l8.5 6V6z" Width="15" Height="15"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            </Button>
+
+            <!-- Play / Pause -->
+            <Button Classes="ctrl-btn" Width="52" Height="52" CornerRadius="26"
+                    Background="#35888888"
+                    Command="{Binding TogglePlayPause}"
+                    IsEnabled="{Binding CanPlayPause}">
+                <Panel>
+                    <!-- Play Icon -->
+                    <PathIcon Data="M8 5v14l11-7z" Width="20" Height="20"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              IsVisible="{Binding !IsPlaying}"/>
+                    <!-- Pause Icon -->
+                    <PathIcon Data="M6 19h4V5H6v14zm8-14v14h4V5h-4z" Width="18" Height="18"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              IsVisible="{Binding IsPlaying}"/>
+                </Panel>
+            </Button>
+
+            <!-- Next -->
+            <Button Classes="ctrl-btn" Width="38" Height="38" CornerRadius="19"
+                    Command="{Binding SkipNext}"
+                    IsEnabled="{Binding CanSkipNext}">
+                <PathIcon Data="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" Width="15" Height="15"
+                          Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

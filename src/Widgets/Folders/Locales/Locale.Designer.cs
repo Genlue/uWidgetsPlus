@@ -377,5 +377,41 @@ namespace Folders.Locales {
                 return ResourceManager.GetString("Folders_RowLayout_Fixed", resourceCulture);
             }
         }
+
+        public static string Folders_SingleFile_Title {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_Title", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleFile_Subtitle {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleFile_IconPercent {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_IconPercent", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleFile_Target {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_Target", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleFile_Pick {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_Pick", resourceCulture);
+            }
+        }
+
+        public static string Folders_SingleFile_EmptyHint {
+            get {
+                return ResourceManager.GetString("Folders_SingleFile_EmptyHint", resourceCulture);
+            }
+        }
     }
 }

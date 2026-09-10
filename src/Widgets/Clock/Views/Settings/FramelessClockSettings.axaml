@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:Clock.Locales"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:viewModels="clr-namespace:Clock.ViewModels"
+             x:Class="Clock.Views.Settings.FramelessClockSettings"
+             x:DataType="viewModels:FramelessClockSettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Spacing="6" Margin="0 0 10 0">
+            <!-- 基础时间设置 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_Use24Hours}">
+                <ToggleSwitch IsChecked="{Binding Use24Hours}"/>
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Clock_ShowSeconds}">
+                <ToggleSwitch IsChecked="{Binding ShowSeconds}"/>
+            </controls:Setting>
+
+            <!-- 视觉主题样式（跟随全局 / 毛玻璃 / 液态玻璃 / 纯色） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_ThemeMode}">
+                <ComboBox ItemsSource="{Binding ThemeModeOptions}" SelectedItem="{Binding SelectedThemeModeOption}" Width="160">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ThemeModeOption">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 4"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 字体选择（精选手机锁屏艺术大字 + 全部系统字体） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_FontFamily}">
+                <ComboBox ItemsSource="{Binding FontOptions}" SelectedItem="{Binding SelectedFontOption}" Width="210">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ClockFontOption">
+                            <StackPanel Orientation="Vertical" Margin="0 3">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12.5"/>
+                                <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 字体粗细 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_FontWeight}">
+                <ComboBox ItemsSource="{Binding FontWeightOptions}" SelectedItem="{Binding SelectedFontWeightOption}" Width="160">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:FontWeightOption">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 4"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+
+            <!-- 拉伸模式 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_StretchFill}"
+                              Subtitle="{x:Static locales:Locale.Clock_StretchFill_Subtitle}">
+                <ToggleSwitch IsChecked="{Binding StretchFill}"/>
+            </controls:Setting>
+
+            <!-- 覆盖颜色遮罩 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_EnableOverlay}"
+                              Subtitle="{x:Static locales:Locale.Clock_EnableOverlay_Subtitle}">
+                <ToggleSwitch IsChecked="{Binding EnableOverlay}"/>
+            </controls:Setting>
+
+            <StackPanel IsVisible="{Binding ShowOverlayOptions}" Spacing="6">
+                <controls:Setting Title="{x:Static locales:Locale.Clock_FollowAccentColor}">
+                    <ToggleSwitch IsChecked="{Binding FollowAccentColor}"/>
+                </controls:Setting>
+
+                <controls:Setting IsVisible="{Binding ShowCustomColor}" Title="{x:Static locales:Locale.Clock_OverlayColor}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <ColorPicker Color="{Binding OverlayColorPickerValue}" Height="36" Width="72" IsAlphaVisible="False" />
+                        <TextBox Text="{Binding OverlayColor}" Width="100" Watermark="#400078D4" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </controls:Setting>
+
+                <controls:Setting Title="{x:Static locales:Locale.Clock_OverlayOpacity}">
+                    <Grid ColumnDefinitions="*,Auto" Width="180">
+                        <Slider Minimum="5" Maximum="100" Value="{Binding OverlayOpacityPercent}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding OverlayOpacityPercent, StringFormat='{}{0}%'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
+                    </Grid>
+                </controls:Setting>
+            </StackPanel>
+
+            <!-- 时区设置 -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_LocalTimeZone}">
+                <ToggleSwitch IsChecked="{Binding UseLocalTimeZone}"/>
+            </controls:Setting>
+            <controls:Setting IsVisible="{Binding ShowTimeZones}" Title="{x:Static locales:Locale.Clock_TimeZone}">
+                <ComboBox ItemsSource="{Binding TimeZones}" Width="160" SelectedItem="{Binding TimeZone}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="system:TimeZoneInfo">
+                            <TextBlock Text="{Binding DisplayName}" Margin="0 4"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:Setting>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

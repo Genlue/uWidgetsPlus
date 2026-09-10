@@ -40,11 +40,11 @@
             <StackPanel Spacing="6" Width="240">
                 <TextBlock Name="ParamTitle" FontWeight="Bold" Foreground="White" FontSize="14" />
                 <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="列数 (Columns)" />
-                <NumericUpDown Name="ColumnsInput" Minimum="1" Maximum="30" Increment="1" FormatString="F0" />
+                <NumericUpDown Name="ColumnsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
                 <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="行数 (Rows)" />
-                <NumericUpDown Name="RowsInput" Minimum="1" Maximum="30" Increment="1" FormatString="F0" />
+                <NumericUpDown Name="RowsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
                 <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="格子边长 (%)" />
-                <NumericUpDown Name="CellInput" Minimum="1" Maximum="50" Increment="1" FormatString="F0" />
+                <NumericUpDown Name="CellInput" Minimum="0.01" Increment="0.1" FormatString="0.##" />
                 <Separator Margin="0 6" />
                 <Button Name="CenterButton" Click="OnCenterClicked" />
                 <StackPanel Orientation="Horizontal" Spacing="6">

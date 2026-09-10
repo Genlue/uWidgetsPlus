@@ -55,7 +55,9 @@ public partial class Gallery : UserControl
                 assemblyInfo.AssemblyName,
                 widgetInfo.ViewType.Name,
                 locale?.GetString(widgetInfo.Title ?? string.Empty),
-                locale?.GetString(widgetInfo.Subtitle ?? string.Empty)
+                locale?.GetString(widgetInfo.Subtitle ?? string.Empty),
+                widgetInfo.DefaultColumns,
+                widgetInfo.DefaultRows
             ))
             .ToList();
 
@@ -87,15 +89,16 @@ public partial class Gallery : UserControl
             // Monitor not ready (edge case): legacy primary placement.
             var legacy = layoutProvider.Get().FindById(ScreensLayout.LegacyPrimaryId)
                          ?? new ScreenLayout(ScreensLayout.LegacyPrimaryId, null, null, null, null, null, []);
+            var (defaultW, defaultH) = DefaultSize(settingsWindow, preview.DefaultColumns, preview.DefaultRows);
             var legacyLayout = new WidgetLayout(preview.Type, preview.Subtype, pointer.X, pointer.Y, 
-                DefaultSize(settingsWindow), DefaultSize(settingsWindow), null);
+                defaultW, defaultH, null);
             widgetFactory.Add(legacy, legacyLayout).Show();
             return;
         }
 
         var screenConfig = attached.Config ?? displayMonitor.EnsureConfig(attached);
-        var (x, y, size) = ComputePlacement(screenConfig, attached, new Point(pointer.X, pointer.Y));
-        var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, size, size, null);
+        var (x, y, w, h) = ComputePlacement(screenConfig, attached, new Point(pointer.X, pointer.Y), preview.DefaultColumns, preview.DefaultRows);
+        var widgetLayout = new WidgetLayout(preview.Type, preview.Subtype, x, y, w, h, null);
         widgetFactory.Add(screenConfig, widgetLayout).Show();
     }
 
@@ -103,29 +106,34 @@ public partial class Gallery : UserControl
     /// Compute the initial placement (position relative to the owning screen's
     /// working area + size) for a new widget on the target screen.
     /// </summary>
-    private (int X, int Y, int Size) ComputePlacement(ScreenLayout screenConfig, AttachedScreen attached, Point pointer)
+    private (int X, int Y, int Width, int Height) ComputePlacement(
+        ScreenLayout screenConfig, AttachedScreen attached, Point pointer, int defaultCols = 2, int defaultRows = 2)
     {
         var settings = appSettingsProvider.Get();
         var screen = attached.Screen;
         var area = screen.WorkingArea;
 
+        int width;
+        int height;
+
         if (settings.Layout.GridMode != GridMode.Manual)
         {
-            var size = (int) (2 * settings.Dimensions.Size + settings.Dimensions.Margin);
-            return ((int)(pointer.X - area.X), (int)(pointer.Y - area.Y), size);
+            width = (int) (defaultCols * settings.Dimensions.Size + (defaultCols - 1) * settings.Dimensions.Margin);
+            height = (int) (defaultRows * settings.Dimensions.Size + (defaultRows - 1) * settings.Dimensions.Margin);
+            return ((int)(pointer.X - area.X), (int)(pointer.Y - area.Y), width, height);
         }
 
         var grid = screenConfig.Grid ?? settings.Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
         var (cell, gridX, gridY) = GridMetrics.Resolve(grid, area.X, area.Y, area.Width, area.Height);
         var scaling = screen.Scaling;
-        // New widgets default to the L preset (2×2 cells).
-        var cellSize = (int) Math.Round(2 * cell / scaling);
+        width = (int) Math.Round(defaultCols * cell / scaling);
+        height = (int) Math.Round(defaultRows * cell / scaling);
         var x = gridX + (int) Math.Round((pointer.X - gridX) / (double) cell) * cell;
         var y = gridY + (int) Math.Round((pointer.Y - gridY) / (double) cell) * cell;
-        return (x - area.X, y - area.Y, cellSize);
+        return (x - area.X, y - area.Y, width, height);
     }
 
-    private int DefaultSize(Window? settingsWindow)
+    private (int Width, int Height) DefaultSize(Window? settingsWindow, int defaultCols = 2, int defaultRows = 2)
     {
         var settings = appSettingsProvider.Get();
         if (settings.Layout.GridMode == GridMode.Manual)
@@ -133,8 +141,11 @@ public partial class Gallery : UserControl
             var screen = settingsWindow?.Screens.Primary;
             var area = screen?.WorkingArea;
             var (cell, _, _) = GridMetrics.Resolve(settings.Grid, area?.X ?? 0, area?.Y ?? 0, area?.Width ?? 1920, area?.Height ?? 1080);
-            return (int) Math.Round(2 * cell / (screen?.Scaling ?? 1.0));
+            var scaling = screen?.Scaling ?? 1.0;
+            return ((int) Math.Round(defaultCols * cell / scaling), (int) Math.Round(defaultRows * cell / scaling));
         }
-        return 2 * settings.Dimensions.Size + settings.Dimensions.Margin;
+        var w = (int) (defaultCols * settings.Dimensions.Size + (defaultCols - 1) * settings.Dimensions.Margin);
+        var h = (int) (defaultRows * settings.Dimensions.Size + (defaultRows - 1) * settings.Dimensions.Margin);
+        return (w, h);
     }
 }

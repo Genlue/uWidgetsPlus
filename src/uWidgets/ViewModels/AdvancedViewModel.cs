@@ -121,19 +121,19 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     public int GridColumns
     {
         get => EffectiveGrid.Columns;
-        set => SaveGrid(EffectiveGrid with { Columns = Math.Clamp(value, 1, 30) });
+        set => SaveGrid(EffectiveGrid with { Columns = Math.Max(1, value) });
     }
 
     public int GridRows
     {
         get => EffectiveGrid.Rows;
-        set => SaveGrid(EffectiveGrid with { Rows = Math.Clamp(value, 1, 30) });
+        set => SaveGrid(EffectiveGrid with { Rows = Math.Max(1, value) });
     }
 
     public double GridCellPercent
     {
         get => EffectiveGrid.CellPercent;
-        set => SaveGrid(EffectiveGrid with { CellPercent = Math.Clamp(value, 1, 50) });
+        set => SaveGrid(EffectiveGrid with { CellPercent = Math.Max(0.01, value) });
     }
 
     public double GridXPercent

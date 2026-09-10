@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -219,5 +219,23 @@
     </data>
     <data name="Folders_RowLayout_Fixed" xml:space="preserve">
         <value>固定行高</value>
+    </data>
+    <data name="Folders_SingleFile_Title" xml:space="preserve">
+        <value>单文件</value>
+    </data>
+    <data name="Folders_SingleFile_Subtitle" xml:space="preserve">
+        <value>单个文件或文件夹快捷方式</value>
+    </data>
+    <data name="Folders_SingleFile_IconPercent" xml:space="preserve">
+        <value>图标大小比例</value>
+    </data>
+    <data name="Folders_SingleFile_Target" xml:space="preserve">
+        <value>目标路径</value>
+    </data>
+    <data name="Folders_SingleFile_Pick" xml:space="preserve">
+        <value>选择文件/文件夹</value>
+    </data>
+    <data name="Folders_SingleFile_EmptyHint" xml:space="preserve">
+        <value>拖入文件或文件夹</value>
     </data>
 </root>

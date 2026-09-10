@@ -33,6 +33,7 @@
 ./build.ps1                      # dist\win-x64\uWidgets.exe
 ./build.ps1 -Runtime win-arm64   # ARM64
 ./build.ps1 -Portable            # 额外产出官方式便携 zip（exe + Widgets + json）
+./build.ps1 -Msi                 # 生成 Windows 标准 MSI 安装包 (dist\installer\...)
 ```
 
 ### 原理

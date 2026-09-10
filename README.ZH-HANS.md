@@ -19,6 +19,7 @@
   <img src="https://img.shields.io/badge/Avalonia-11.1-purple?logo=avaloniaui"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?logo=windows"/>
   <img src="https://img.shields.io/badge/Release-Single--File%20EXE-success"/>
+  <img src="https://img.shields.io/badge/Installer-MSI%20Package-blue?logo=windows"/>
 </div>
 
 <br />
@@ -95,8 +96,12 @@ cd uWidgetsPlus
 # 一键编译并生成单文件 EXE
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 
+# 一键编译并生成 Windows 标准 MSI 安装包
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Msi
+
 # 产物输出路径
 # dist/win-x64/uWidgets.exe
+# dist/installer/uWidgetsPlus-1.7.5-win-x64.msi
 ```
 
 ---

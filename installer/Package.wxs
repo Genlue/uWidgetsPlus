@@ -1,0 +1,88 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="uWidgetsPlus"
+           Manufacturer="Genlue"
+           Version="1.7.5"
+           UpgradeCode="9E38A34F-7561-4B9F-8463-7186F0BA0930"
+           Scope="perMachine"
+           Language="1033">
+
+    <SummaryInformation Description="uWidgetsPlus Installer"
+                        Manufacturer="Genlue" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Application Icon & ARP Metadata -->
+    <Icon Id="AppIcon" SourceFile=".github\images\icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Genlue/uWidgetsPlus" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/Genlue/uWidgetsPlus" />
+    <Property Id="ARPCONTACT" Value="Genlue" />
+    <Property Id="ARPCOMMENTS" Value="macOS styled desktop widgets for Windows" />
+
+    <!-- Directory Structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="uWidgetsPlus" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="uWidgetsPlus" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Components -->
+    <ComponentGroup Id="ProductComponents">
+      <!-- Main Application Executable -->
+      <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">
+        <File Id="uWidgetsExe"
+              Source="dist\win-x64\uWidgets.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Start Menu Shortcut -->
+      <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Guid="*">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="uWidgetsPlus"
+                  Description="uWidgetsPlus - Desktop Widgets for Windows"
+                  Target="[!uWidgetsExe]"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RemoveFolder Id="CleanUpAppFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Genlue\uWidgetsPlus"
+                       Name="startMenuShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <!-- Desktop Shortcut -->
+      <Component Id="DesktopShortcutComponent" Directory="DesktopFolder" Guid="*">
+        <Shortcut Id="AppDesktopShortcut"
+                  Name="uWidgetsPlus"
+                  Description="uWidgetsPlus - Desktop Widgets for Windows"
+                  Target="[!uWidgetsExe]"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\Genlue\uWidgetsPlus"
+                       Name="desktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Features -->
+    <Feature Id="MainFeature" Title="uWidgetsPlus" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <!-- UI Configuration -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="installer\License.rtf" />
+  </Package>
+</Wix>

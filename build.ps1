@@ -31,7 +31,9 @@ param(
     [ValidateSet("Release", "Debug")]
     [string]$Configuration = "Release",
 
-    [switch]$Portable
+    [switch]$Portable,
+
+    [switch]$Msi
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,6 +42,14 @@ $project = Join-Path $root "src\uWidgets\uWidgets.csproj"
 $dist = Join-Path $root "dist\$Runtime"
 
 if (-not (Test-Path $project)) { throw "Project not found: $project" }
+
+# Stop any running uWidgets instances to prevent file lock during publish
+$running = Get-Process -Name "uWidgets" -ErrorAction SilentlyContinue
+if ($running) {
+    Write-Warning "uWidgets is currently running. Stopping process to overwrite output binary..."
+    Stop-Process -Name "uWidgets" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 500
+}
 
 Write-Host "==> Publishing uWidgets ($Configuration, $Runtime, single-file)..." -ForegroundColor Cyan
 dotnet publish $project `
@@ -82,6 +92,23 @@ if ($Portable) {
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path "$portable\*" -DestinationPath $zip
     Write-Host "==> Portable zip: $zip" -ForegroundColor Green
+}
+
+# --- Optional: MSI installer packaging via WiX v5 ---
+if ($Msi) {
+    Write-Host "==> Building MSI Installer ($Runtime)..." -ForegroundColor Cyan
+    $msiDir = Join-Path $root "dist\installer"
+    if (-not (Test-Path $msiDir)) { New-Item -ItemType Directory -Path $msiDir -Force | Out-Null }
+    $msiOut = Join-Path $msiDir "uWidgetsPlus-1.7.5-$Runtime.msi"
+    $arch = switch ($Runtime) {
+        "win-x64" { "x64" }
+        "win-x86" { "x86" }
+        "win-arm64" { "arm64" }
+        default { "x64" }
+    }
+    wix build (Join-Path $root "installer\Package.wxs") -arch $arch -ext WixToolset.UI.wixext -out $msiOut
+    if ($LASTEXITCODE -ne 0) { throw "WiX build failed (exit code $LASTEXITCODE)" }
+    Write-Host "==> MSI created: $msiOut ($([math]::Round((Get-Item $msiOut).Length / 1MB, 1)) MB)" -ForegroundColor Green
 }
 
 Write-Host "Done." -ForegroundColor Green

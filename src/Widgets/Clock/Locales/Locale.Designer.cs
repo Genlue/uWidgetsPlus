@@ -367,5 +367,29 @@ namespace Clock.Locales {
                 return ResourceManager.GetString("Clock_ThemeMode_Solid", resourceCulture);
             }
         }
+
+        public static string Clock_DyeIntensity {
+            get {
+                return ResourceManager.GetString("Clock_DyeIntensity", resourceCulture);
+            }
+        }
+
+        public static string Clock_DyeIntensity_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_DyeIntensity_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Clock_RefractionWidth {
+            get {
+                return ResourceManager.GetString("Clock_RefractionWidth", resourceCulture);
+            }
+        }
+
+        public static string Clock_RefractionWidth_Subtitle {
+            get {
+                return ResourceManager.GetString("Clock_RefractionWidth_Subtitle", resourceCulture);
+            }
+        }
     }
 }

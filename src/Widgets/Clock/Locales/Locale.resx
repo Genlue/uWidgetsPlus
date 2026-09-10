@@ -147,4 +147,16 @@
     <data name="Clock_ThemeMode_Solid" xml:space="preserve">
         <value>Solid Fill</value>
     </data>
+    <data name="Clock_DyeIntensity" xml:space="preserve">
+        <value>Edge Dye Intensity</value>
+    </data>
+    <data name="Clock_DyeIntensity_Subtitle" xml:space="preserve">
+        <value>Adjusts the edge tint strength for numeral contours (default 10%)</value>
+    </data>
+    <data name="Clock_RefractionWidth" xml:space="preserve">
+        <value>Edge Refraction Width</value>
+    </data>
+    <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
+        <value>Adjusts the refraction bending width for numeral edges (default 0 px)</value>
+    </data>
 </root>

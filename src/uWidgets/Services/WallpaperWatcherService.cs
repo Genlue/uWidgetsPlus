@@ -17,6 +17,7 @@ public class WallpaperWatcherService : IDisposable
 {
     private readonly WallpaperThemeService? wallpaperThemeService;
     private readonly DispatcherTimer debounceTimer;
+    private readonly DispatcherTimer followUpTimer;
     private FileSystemWatcher? fileWatcher;
     private bool disposed;
 
@@ -28,9 +29,15 @@ public class WallpaperWatcherService : IDisposable
 
         debounceTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(250)
+            Interval = TimeSpan.FromMilliseconds(200)
         };
         debounceTimer.Tick += OnDebounceTick;
+
+        followUpTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(650)
+        };
+        followUpTimer.Tick += OnFollowUpTick;
 
         if (OperatingSystem.IsWindows())
         {
@@ -61,6 +68,7 @@ public class WallpaperWatcherService : IDisposable
                 fileWatcher = new FileSystemWatcher(themesDir)
                 {
                     NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.CreationTime,
+                    IncludeSubdirectories = true,
                     EnableRaisingEvents = true
                 };
 
@@ -77,7 +85,10 @@ public class WallpaperWatcherService : IDisposable
 
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
-        if (e.Category is UserPreferenceCategory.Desktop or UserPreferenceCategory.Color or UserPreferenceCategory.General)
+        if (e.Category is UserPreferenceCategory.Desktop 
+            or UserPreferenceCategory.Color 
+            or UserPreferenceCategory.General 
+            or UserPreferenceCategory.VisualStyle)
         {
             TriggerWallpaperChanged();
         }
@@ -91,9 +102,10 @@ public class WallpaperWatcherService : IDisposable
     private void OnFileChanged(object? sender, FileSystemEventArgs e)
     {
         var name = Path.GetFileName(e.FullPath);
-        if (name.StartsWith("TranscodedWallpaper", StringComparison.OrdinalIgnoreCase) ||
+        if (name.StartsWith("Transcoded", StringComparison.OrdinalIgnoreCase) ||
             name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
             name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+            name.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
             name.Equals("slideshow.ini", StringComparison.OrdinalIgnoreCase))
         {
             TriggerWallpaperChanged();
@@ -128,6 +140,22 @@ public class WallpaperWatcherService : IDisposable
 
         // 4. Raise event for any external listeners
         WallpaperChanged?.Invoke();
+
+        // 5. Schedule a follow-up refresh to capture the 100% settled wallpaper
+        // after Windows desktop cross-fade transition completes
+        followUpTimer.Stop();
+        followUpTimer.Start();
+    }
+
+    private void OnFollowUpTick(object? sender, EventArgs e)
+    {
+        followUpTimer.Stop();
+        if (disposed) return;
+
+        LiquidGlassWallpaper.Invalidate();
+        LiquidGlassSurface.RefreshAll();
+        wallpaperThemeService?.RequestCheck();
+        WallpaperChanged?.Invoke();
     }
 
     public void Dispose()
@@ -136,6 +164,7 @@ public class WallpaperWatcherService : IDisposable
         disposed = true;
 
         debounceTimer.Stop();
+        followUpTimer.Stop();
 
         if (OperatingSystem.IsWindows())
         {

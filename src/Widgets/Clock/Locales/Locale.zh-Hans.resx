@@ -246,4 +246,16 @@
   <data name="Clock_ThemeMode_Solid" xml:space="preserve">
     <value>纯色</value>
   </data>
+  <data name="Clock_DyeIntensity" xml:space="preserve">
+    <value>边缘染色强度</value>
+  </data>
+  <data name="Clock_DyeIntensity_Subtitle" xml:space="preserve">
+    <value>调节数字轮廓弯月面吸收壁纸与主题环境色的浓度（默认 10%）</value>
+  </data>
+  <data name="Clock_RefractionWidth" xml:space="preserve">
+    <value>边缘折射宽度</value>
+  </data>
+  <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
+    <value>调节数字边缘折射区域的宽度（默认 0 px）</value>
+  </data>
 </root>

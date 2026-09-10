@@ -125,12 +125,15 @@ public sealed class LiquidGlassSurface : Control
             var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
             var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
             var position = window != null ? this.PointToScreen(default) : default;
+            var widget = window as Widget;
+            var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
             var frame = new LiquidGlassRenderer.Frame(width, height, renderScale, (float)CornerRadius.TopLeft,
                 (float)((position.X - left) * quality), (float)((position.Y - top) * quality),
                 (float)(desktopWidth * quality), (float)(desktopHeight * quality),
                 (float)(((screen?.Bounds.X ?? 0) - left) * quality), (float)(((screen?.Bounds.Y ?? 0) - top) * quality),
                 (float)((screen?.Bounds.Width ?? 1920) * quality), (float)((screen?.Bounds.Height ?? 1080) * quality),
-                Material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality);
+                Material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
+                Columns: cols, Rows: rows);
             if (Preview)
                 frame = frame with { DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
                     DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,

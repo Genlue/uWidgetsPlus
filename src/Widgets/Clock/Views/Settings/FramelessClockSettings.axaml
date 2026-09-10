@@ -27,6 +27,24 @@
                 </ComboBox>
             </controls:Setting>
 
+            <!-- 边缘染色强度（默认 10%） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_DyeIntensity}"
+                              Subtitle="{x:Static locales:Locale.Clock_DyeIntensity_Subtitle}">
+                <Grid ColumnDefinitions="*,Auto" Width="180">
+                    <Slider Minimum="0" Maximum="100" Value="{Binding DyeIntensityPercent}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding DyeIntensityPercent, StringFormat='{}{0}%'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
+                </Grid>
+            </controls:Setting>
+
+            <!-- 边缘折射宽度（默认 0 px） -->
+            <controls:Setting Title="{x:Static locales:Locale.Clock_RefractionWidth}"
+                              Subtitle="{x:Static locales:Locale.Clock_RefractionWidth_Subtitle}">
+                <Grid ColumnDefinitions="*,Auto" Width="180">
+                    <Slider Minimum="0" Maximum="60" Value="{Binding RefractionWidth}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding RefractionWidth, StringFormat='{}{0} px'}" Width="42" TextAlignment="Right" VerticalAlignment="Center" Margin="8 0 0 0"/>
+                </Grid>
+            </controls:Setting>
+
             <!-- 字体选择（精选手机锁屏艺术大字 + 全部系统字体） -->
             <controls:Setting Title="{x:Static locales:Locale.Clock_FontFamily}">
                 <ComboBox ItemsSource="{Binding FontOptions}" SelectedItem="{Binding SelectedFontOption}" Width="210">

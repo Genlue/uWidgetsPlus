@@ -75,13 +75,42 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         SetupTimer();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
     private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         window = TopLevel.GetTopLevel(this) as Window;
         if (window != null)
         {
+            window.PositionChanged -= OnWindowPositionChanged;
             window.PositionChanged += OnWindowPositionChanged;
         }
+
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        LiquidGlassWallpaper.WallpaperInvalidated += OnWallpaperInvalidated;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
+        if (appSettingsProvider != null)
+        {
+            appSettingsProvider.DataChanged -= OnAppSettingsChanged;
+            appSettingsProvider.DataChanged += OnAppSettingsChanged;
+        }
+
         UpdateTransparencyLevel();
         ClearLiquidGlassCache();
         RequestBackdropRender();
@@ -89,6 +118,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        LiquidGlassWallpaper.WallpaperInvalidated -= OnWallpaperInvalidated;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+
         if (window != null)
         {
             window.PositionChanged -= OnWindowPositionChanged;
@@ -111,6 +143,26 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         ClearLiquidGlassCache();
         liquidGlassBitmap?.Dispose();
         liquidGlassBitmap = null;
+    }
+
+    private void OnWallpaperInvalidated()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(OnWallpaperInvalidated);
+            return;
+        }
+
+        lastRegionKey = null;
+        ClearLiquidGlassCache();
+        UpdateTransparencyLevel();
+        RequestBackdropRender();
+        InvalidateVisual();
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        OnWallpaperInvalidated();
     }
 
     private void OnSizeChanged()
@@ -344,6 +396,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         byte[] glyphMask = ExtractGlyphMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
 
         var effectiveTheme = theme ?? appSettingsProvider?.Get().Theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
+        var lg = (effectiveTheme.LiquidGlass ?? new LiquidGlassSettings()) with { EdgeTint = model.DyeIntensity };
+        effectiveTheme = effectiveTheme with { LiquidGlass = lg };
+
+        if (model.EnableOverlay)
+        {
+            var overlay = ResolveOverlayColor(model, effectiveTheme);
+            var overlayHex = $"#{overlay.R:X2}{overlay.G:X2}{overlay.B:X2}";
+            effectiveTheme = effectiveTheme with { AccentColor = overlayHex };
+        }
         var isDark = ActualThemeVariant == ThemeVariant.Dark;
         var screen = window?.Screens.ScreenFromWindow(window);
         var screenPos = window != null ? this.PointToScreen(default) : default;
@@ -354,13 +415,17 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var desktopWidth = (screens?.Max(s => s.Bounds.Right) ?? 1920) - left;
         var desktopHeight = (screens?.Max(s => s.Bounds.Bottom) ?? 1080) - top;
 
+        var widget = window as uWidgets.Views.Widget;
+        var (cols, rows) = widget?.CurrentSpan ?? (0, 0);
+
         var frame = new LiquidGlassRenderer.Frame(
             width, height, (float)scaling, 0f,
             screenPos.X - left, screenPos.Y - top,
             desktopWidth, desktopHeight,
             (screen?.Bounds.X ?? 0) - left, (screen?.Bounds.Y ?? 0) - top,
             screen?.Bounds.Width ?? 1920, screen?.Bounds.Height ?? 1080,
-            effectiveTheme, isDark);
+            effectiveTheme, isDark,
+            Columns: cols, Rows: rows);
 
         inFlightRenders.Add(key);
         preRenderCts ??= new CancellationTokenSource();
@@ -371,7 +436,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             if (token.IsCancellationRequested) return;
             var wallpaper = LiquidGlassWallpaper.Get();
             if (token.IsCancellationRequested) return;
-            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
+            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask, model.RefractionWidth);
             if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
 
             Dispatcher.UIThread.Post(() =>
@@ -422,8 +487,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         foreach (var (key, (validTime, _)) in liquidGlassCache)
         {
             bool isExpired = model.ShowSeconds
-                ? validTime < now.AddSeconds(-1)
-                : validTime.Date < now.Date || (validTime.Date == now.Date && (validTime.Hour < now.Hour || (validTime.Hour == now.Hour && validTime.Minute < now.Minute)));
+                ? validTime < now.AddSeconds(-2)
+                : validTime < now.AddMinutes(-2);
 
             if (isExpired)
             {
@@ -574,7 +639,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 }
             }
 
-            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark);
+            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
             return;
         }
 
@@ -614,6 +679,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                     context.DrawRectangle(new SolidColorBrush(Color.FromArgb(120, c.R, c.G, c.B)), null, new Rect(0, 0, targetW, targetH));
                 }
                 SchedulePreRender(now, isImmediate: true);
+                DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark, model, theme);
             }
 
             if (model.EnableOverlay)
@@ -625,7 +691,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 }
             }
 
-            DrawSpecularRim(context, stretchedGeometry, targetW, targetH, isDark);
             return;
         }
 
@@ -743,20 +808,82 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return mask;
     }
 
-    private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark)
+    private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
+        var optics = theme?.EffectiveLiquidGlass ?? new LiquidGlassSettings();
+        var edgeTint = (float)Math.Clamp(model.DyeIntensity / 100.0, 0.0, 1.0);
+
+        Color dye = isDark ? Color.FromRgb(200, 220, 245) : Color.FromRgb(240, 240, 245);
+        bool hasDye = false;
+
+        // 1. If model overlay is active, dye with overlay color
+        if (model.EnableOverlay)
+        {
+            var oc = ResolveOverlayColor(model, theme);
+            dye = Color.FromRgb(oc.R, oc.G, oc.B);
+            hasDye = true;
+        }
+        // 2. Otherwise if Theme Accent is configured, dye with accent
+        else if (!string.IsNullOrEmpty(theme?.AccentColor) && Color.TryParse(theme.AccentColor, out var accent))
+        {
+            dye = accent;
+            hasDye = true;
+        }
+        // 3. Otherwise try sampling wallpaper snapshot background
+        else
+        {
+            try
+            {
+                var wp = LiquidGlassWallpaper.Get();
+                var sk = wp.Background;
+                var maxC = Math.Max(sk.Red, Math.Max(sk.Green, sk.Blue));
+                var minC = Math.Min(sk.Red, Math.Min(sk.Green, sk.Blue));
+                var chroma = maxC - minC;
+                var luma = 0.2126f * sk.Red + 0.7152f * sk.Green + 0.0722f * sk.Blue;
+                if (chroma > 18 && luma > 24)
+                {
+                    dye = Color.FromRgb(sk.Red, sk.Green, sk.Blue);
+                    hasDye = true;
+                }
+            }
+            catch
+            {
+                // Fallback gracefully if wallpaper snapshot is unavailable
+            }
+        }
+
+        var tintFactor = hasDye ? edgeTint : 0f;
+
+        static Color Blend(Color baseC, Color tintC, float weight)
+        {
+            byte r = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.R + weight * tintC.R), 0, 255);
+            byte g = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.G + weight * tintC.G), 0, 255);
+            byte b = (byte)Math.Clamp((int)Math.Round((1f - weight) * baseC.B + weight * tintC.B), 0, 255);
+            return Color.FromArgb(baseC.A, r, g, b);
+        }
+
+        // Luminous dyed specular glass rim stops
+        var stop0Base = isDark ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(220, 255, 255, 255);
+        var stop1Base = isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(50, 255, 255, 255);
+        var stop2Base = isDark ? Color.FromArgb(140, 255, 255, 255) : Color.FromArgb(160, 255, 255, 255);
+
+        var stop0 = Blend(stop0Base, dye, 0.45f * tintFactor);
+        var stop1 = Blend(stop1Base, dye, 0.85f * tintFactor);
+        var stop2 = Blend(stop2Base, dye, 0.35f * tintFactor);
+
         var rimBrush = new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
             EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
             GradientStops =
             {
-                new GradientStop(Color.FromArgb(220, 255, 255, 255), 0.0),
-                new GradientStop(Color.FromArgb(50, 255, 255, 255), 0.45),
-                new GradientStop(Color.FromArgb(160, 255, 255, 255), 1.0)
+                new GradientStop(stop0, 0.0),
+                new GradientStop(stop1, 0.45),
+                new GradientStop(stop2, 1.0)
             }
         };
-        var rimThickness = Math.Clamp(Math.Min(targetW, targetH) * 0.012, 1.0, 3.5);
+
+        var rimThickness = Math.Clamp(Math.Min(targetW, targetH) * 0.009, 0.8, 2.2);
         var rimPen = new Pen(rimBrush, rimThickness);
         context.DrawGeometry(null, rimPen, geometry);
     }

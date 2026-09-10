@@ -14,7 +14,9 @@ public record FramelessClockModel(
     bool FollowAccentColor = true,
     string OverlayColor = "#400078D4",
     double OverlayOpacity = 0.35,
-    int ThemeMode = 0)
+    int ThemeMode = 0,
+    double DyeIntensity = 10.0,
+    double RefractionWidth = 0.0)
 {
     public FramelessClockModel() : this(true) { }
 }

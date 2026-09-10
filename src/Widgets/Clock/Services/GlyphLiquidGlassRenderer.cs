@@ -20,7 +20,7 @@ public static class GlyphLiquidGlassRenderer
     private const float Saturation = 1.22f;
     private const float HighlightReference = 65.0f;
 
-    public static byte[] Render(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask)
+    public static byte[] Render(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask, double? refractionWidth = null)
     {
         var optics = frame.Theme.EffectiveLiquidGlass;
         var scale = frame.Scale;
@@ -28,16 +28,56 @@ public static class GlyphLiquidGlassRenderer
         var height = frame.Height;
         var sigma = (float)optics.Blur * scale / 8f;
 
-        // Confine edge refraction to a delicate, sharp rim (1.5dp - 4.5dp)
-        // so numeral strokes stay crystal clear and legible without heavy warping
-        var maxLensWidth = Math.Max(1.5f * scale, Math.Min(width, height) * 0.08f);
-        var lensWidth = Math.Clamp((float)optics.EdgeWidth * scale * 0.25f, 1.5f * scale, Math.Min(4.5f * scale, maxLensWidth));
-        var lensShift = (float)(optics.Refraction / 100.0) * LensDips * scale;
-        var rimLineWidth = Math.Clamp(RimLineDips * scale, 0.75f, 2.2f * scale);
-        var dispStrength = (float)(optics.Dispersion / 100.0);
-
         // Compute Euclidean Distance Field and Outward Normals for the glyph mask
-        ComputeDistanceField(glyphMask, width, height, out var distField, out var nxField, out var nyField);
+        ComputeDistanceField(glyphMask, width, height, out var distField, out var nxField, out var nyField, out var maxStrokeDepth, out var avgStrokeDepth);
+
+        // Adaptive optics scaling for compact 1x1 widgets and 1-grid strips
+        var is1x1 = (frame.Columns == 1 && frame.Rows == 1) || (frame.Columns == 0 && Math.Min(width / scale, height / scale) <= 110f && Math.Max(width / scale, height / scale) <= 115f);
+        var is1Strip = !is1x1 && ((frame.Columns == 1 || frame.Rows == 1) || (frame.Columns == 0 && Math.Min(width / scale, height / scale) <= 130f));
+
+        var glyphEdgeScale = is1x1 ? 0.60f : (is1Strip ? 0.80f : 1.0f);
+        var glyphShiftScale = is1x1 ? 0.70f : (is1Strip ? 0.85f : 1.0f);
+        var glyphRimScale = is1x1 ? 0.80f : (is1Strip ? 0.90f : 1.0f);
+
+        // Representative stroke half-thickness (radius) derived directly from glyph distance field:
+        var estimatedRadius = Math.Max(avgStrokeDepth * 1.85f, maxStrokeDepth * 0.82f);
+        var strokeRadius = Math.Clamp(estimatedRadius, 2.0f * scale, Math.Min(width, height) * 0.25f);
+
+        // Refraction width calculation:
+        // When explicitly specified by widget configuration (e.g. Frameless Clock RefractionWidth):
+        // 0 means no refraction lens distortion (flat crystal-clear backdrop).
+        // >0 scales up to stroke half-thickness.
+        // When null, falls back to adaptive calculation based on global optics.EdgeWidth.
+        float lensWidth;
+        float lensShift;
+        float dispStrength;
+
+        if (refractionWidth.HasValue)
+        {
+            var rw = (float)Math.Max(0.0, refractionWidth.Value);
+            if (rw <= 0.001f)
+            {
+                lensWidth = 0f;
+                lensShift = 0f;
+                dispStrength = 0f;
+            }
+            else
+            {
+                lensWidth = Math.Clamp(rw * scale * glyphEdgeScale, 0.5f * scale, strokeRadius * 0.46f);
+                lensShift = Math.Clamp((float)(optics.Refraction / 100.0) * lensWidth * 1.85f * glyphShiftScale, 0.5f * scale, lensWidth * 2.5f);
+                dispStrength = (float)(optics.Dispersion / 100.0);
+            }
+        }
+        else
+        {
+            var edgeFrac = (float)Math.Clamp((optics.EdgeWidth / 24.0) * 0.38f * glyphEdgeScale, 0.18f, 0.46f);
+            lensWidth = Math.Clamp(strokeRadius * edgeFrac, 1.2f * scale, strokeRadius * 0.46f);
+            lensShift = Math.Clamp((float)(optics.Refraction / 100.0) * lensWidth * 1.85f * glyphShiftScale, 0.8f * scale, lensWidth * 2.5f);
+            dispStrength = (float)(optics.Dispersion / 100.0);
+        }
+
+        var dyeWidth = Math.Max(Math.Clamp(strokeRadius * 0.32f, 2.5f * scale, 12f * scale), lensWidth);
+        var rimLineWidth = Math.Clamp(Math.Max(lensWidth, strokeRadius * 0.15f) * 0.22f * glyphRimScale, 0.70f * scale, 2.4f * scale);
 
         var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, Math.Max(lensWidth + 8f, lensShift * 1.3f + 16f)));
         var info = new SKImageInfo(width + 2 * pad, height + 2 * pad);
@@ -129,15 +169,80 @@ public static class GlyphLiquidGlassRenderer
                 var g = Channel(middle.Green, coating.Green, luma, adapt, localTint);
                 var b = Channel(blue.Blue, coating.Blue, luma, adapt, localTint);
 
+                // --- Intelligent Edge Dyeing Algorithm for Numeral Meniscus ---
+                var u1 = dyeWidth > 0.001f ? Math.Clamp(depth / dyeWidth, 0f, 1f) : 1f;
+                var bezelAura = (depth < dyeWidth && dyeWidth > 0.001f) ? 0.5f * (1f + MathF.Cos(MathF.PI * u1)) : 0f;
+
+                float hlR = 255f, hlG = 255f, hlB = 255f;
+                float dyeR = 255f, dyeG = 255f, dyeB = 255f;
+                float dyeWeight = 0f;
+
+                if (edgeTint > 0.001f && bezelAura > 0.001f)
+                {
+                    // Absolute chroma & physical luminance gating
+                    var maxC = Math.Max(middle.Red, Math.Max(middle.Green, middle.Blue));
+                    var minC = Math.Min(middle.Red, Math.Min(middle.Green, middle.Blue));
+                    var chroma = (float)(maxC - minC);
+                    var chromaWeight = SmoothStep(10f, 26f, chroma);
+                    var lumaGate = SmoothStep(8f, 26f, luma);
+                    var colorWeight = chromaWeight * lumaGate;
+
+                    if (colorWeight > 0.001f)
+                    {
+                        middle.ToHsl(out var h, out var s, out var l);
+                        var glowS = Math.Clamp(s * 2.5f + 30f * colorWeight, 30f, 100f);
+                        var glowL = Math.Clamp(l * 0.20f + 48f, 44f, 62f);
+                        var pureGlow = SKColor.FromHsl(h, glowS, glowL);
+                        dyeR = pureGlow.Red;
+                        dyeG = pureGlow.Green;
+                        dyeB = pureGlow.Blue;
+                        dyeWeight = colorWeight;
+                    }
+                    else if (!string.IsNullOrEmpty(frame.Theme.AccentColor) && SKColor.TryParse(frame.Theme.AccentColor, out var accent))
+                    {
+                        dyeR = accent.Red;
+                        dyeG = accent.Green;
+                        dyeB = accent.Blue;
+                        dyeWeight = 0.85f;
+                    }
+
+                    if (dyeWeight > 0.001f)
+                    {
+                        // 1. Vibrant chromatic glaze on the outer meniscus edge
+                        var glazeStrength = Math.Clamp(edgeTint * 1.5f, 0f, 1f);
+                        var glazeMix = glazeStrength * bezelAura * 0.85f * dyeWeight;
+                        r += (dyeR - r) * glazeMix;
+                        g += (dyeG - g) * glazeMix;
+                        b += (dyeB - b) * glazeMix;
+
+                        // 2. Specular highlight is strongly tinted with the saturated dye color
+                        var hlTint = Math.Clamp(MathF.Pow(edgeTint, 0.55f) * 1.35f * dyeWeight, 0f, 1f);
+                        hlR = (1f - hlTint) * 255f + hlTint * dyeR;
+                        hlG = (1f - hlTint) * 255f + hlTint * dyeG;
+                        hlB = (1f - hlTint) * 255f + hlTint * dyeB;
+                    }
+                }
+
                 // Meniscus highlight & crisp glass rim line
                 var cosL = nx * lx + ny * ly;
-                var rimEdge = 1f - SmoothStep(0f, rimLineWidth, depth);
                 var directional = MathF.Max(0f, cosL);
-                var rimLight = rimEdge * (0.35f + 0.65f * MathF.Pow(directional, 0.85f));
+                var rimEdge = 1f - SmoothStep(0f, rimLineWidth, depth);
+
+                // Directional specular glint: only the light-facing edge catches direct specular shine!
+                var rimLight = rimEdge * (0.12f + 0.88f * MathF.Pow(directional, 1.2f));
+
+                // Direct rim dye: guarantees the outer stroke perimeter is visibly dyed, not white!
+                if (dyeWeight > 0.001f && edgeTint > 0.001f)
+                {
+                    var rimDyeFactor = rimEdge * Math.Clamp(edgeTint * 1.4f, 0f, 1f) * dyeWeight * 0.75f;
+                    r += (dyeR - r) * rimDyeFactor;
+                    g += (dyeG - g) * rimDyeFactor;
+                    b += (dyeB - b) * rimDyeFactor;
+                }
 
                 var meniscusLight = 0f;
-                var spreadWidth = lensWidth * 1.8f;
-                if (depth < spreadWidth)
+                var spreadWidth = lensWidth * 1.6f;
+                if (depth < spreadWidth && lensWidth > 0.001f)
                 {
                     var t = Math.Clamp(depth / lensWidth, 0f, 1f);
                     var tilt = (depth < lensWidth) ? MathF.Pow(1f - t, 2.0f) : 0f;
@@ -158,12 +263,13 @@ public static class GlyphLiquidGlassRenderer
                     meniscusLight = bevelLight + innerSheen;
                 }
 
-                var totalLight = highlightFactor * (rimLight * 1.35f + meniscusLight * 0.75f + ambientLuster);
-                var lightMix = Math.Clamp(totalLight, 0f, 1f);
+                var totalLight = highlightFactor * (rimLight * 1.10f + meniscusLight * 0.65f + ambientLuster);
+                // Cap total light mix at 0.78 so specular glint never totally blinds out the saturated dye color underneath
+                var lightMix = Math.Clamp(totalLight, 0f, 0.78f);
 
-                r += (255f - r) * lightMix;
-                g += (255f - g) * lightMix;
-                b += (255f - b) * lightMix;
+                r += (hlR - r) * lightMix;
+                g += (hlG - g) * lightMix;
+                b += (hlB - b) * lightMix;
 
                 // Anti-aliased alpha at character boundaries
                 var alpha = maskVal;
@@ -190,7 +296,8 @@ public static class GlyphLiquidGlassRenderer
     }
 
     private static void ComputeDistanceField(byte[] mask, int width, int height,
-        out float[] dist, out float[] nx, out float[] ny)
+        out float[] dist, out float[] nx, out float[] ny,
+        out float maxStrokeDepth, out float avgStrokeDepth)
     {
         var size = width * height;
         dist = new float[size];
@@ -239,7 +346,26 @@ public static class GlyphLiquidGlassRenderer
             }
         }
 
-        // Surface normals from distance gradient
+        // Calculate stroke depth statistics
+        var maxD = 0f;
+        var sumD = 0.0;
+        var count = 0;
+        for (var i = 0; i < size; i++)
+        {
+            var d = dist[i];
+            if (d > 0f && d < INF / 2f)
+            {
+                if (d > maxD) maxD = d;
+                sumD += d;
+                count++;
+            }
+        }
+        maxStrokeDepth = (count > 0) ? maxD : 2f;
+        avgStrokeDepth = (count > 0) ? (float)(sumD / count) : 1f;
+
+        // Raw distance gradient
+        var rawGx = new float[size];
+        var rawGy = new float[size];
         for (var y = 1; y < height - 1; y++)
         {
             var row = y * width;
@@ -248,18 +374,75 @@ public static class GlyphLiquidGlassRenderer
                 var idx = row + x;
                 if (mask[idx] > 10)
                 {
-                    var gx = dist[idx + 1] - dist[idx - 1];
-                    var gy = dist[idx + width] - dist[idx - width];
+                    rawGx[idx] = dist[idx + 1] - dist[idx - 1];
+                    rawGy[idx] = dist[idx + width] - dist[idx - width];
+                }
+            }
+        }
+
+        // Smooth continuous normal field: 7-tap separable filter over glyph mask
+        // Eliminates corner medial-axis creases and triangular seams
+        var tempGx = new float[size];
+        var tempGy = new float[size];
+        var weights = new[] { 1f, 3f, 6f, 8f, 6f, 3f, 1f }; // radius 3
+
+        for (var y = 0; y < height; y++)
+        {
+            var row = y * width;
+            for (var x = 0; x < width; x++)
+            {
+                var idx = row + x;
+                if (mask[idx] <= 10) continue;
+                float sx = 0f, sy = 0f, sw = 0f;
+                for (int k = -3; k <= 3; k++)
+                {
+                    var px = Math.Clamp(x + k, 0, width - 1);
+                    var pidx = row + px;
+                    if (mask[pidx] > 10)
+                    {
+                        var w = weights[k + 3];
+                        sx += rawGx[pidx] * w;
+                        sy += rawGy[pidx] * w;
+                        sw += w;
+                    }
+                }
+                if (sw > 0f)
+                {
+                    tempGx[idx] = sx / sw;
+                    tempGy[idx] = sy / sw;
+                }
+            }
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            var row = y * width;
+            for (var x = 0; x < width; x++)
+            {
+                var idx = row + x;
+                if (mask[idx] <= 10) continue;
+                float sx = 0f, sy = 0f, sw = 0f;
+                for (int k = -3; k <= 3; k++)
+                {
+                    var py = Math.Clamp(y + k, 0, height - 1);
+                    var pidx = py * width + x;
+                    if (mask[pidx] > 10)
+                    {
+                        var w = weights[k + 3];
+                        sx += tempGx[pidx] * w;
+                        sy += tempGy[pidx] * w;
+                        sw += w;
+                    }
+                }
+                if (sw > 0f)
+                {
+                    var gx = sx / sw;
+                    var gy = sy / sw;
                     var len = MathF.Sqrt(gx * gx + gy * gy);
                     if (len > 0.001f)
                     {
                         nx[idx] = -gx / len;
                         ny[idx] = -gy / len;
-                    }
-                    else
-                    {
-                        nx[idx] = 0f;
-                        ny[idx] = 0f;
                     }
                 }
             }
@@ -268,10 +451,10 @@ public static class GlyphLiquidGlassRenderer
 
     private static float Displacement(float depth, float lensWidth, float lensShift)
     {
-        if (lensWidth <= 0f || depth >= lensWidth) return 0f;
-        var t = Math.Clamp(depth / lensWidth, 0f, 1f);
-        var rimProfile = (1f - t) * (1f - t);
-        return lensShift * rimProfile;
+        if (depth <= 0f || depth >= lensWidth || lensWidth <= 0.001f || lensShift <= 0.001f) return 0f;
+        var t = depth / lensWidth;
+        var shape = MathF.Sin(MathF.PI * t) * MathF.Pow(1f - t, 1.4f) / 0.45f;
+        return lensShift * Math.Max(0f, shape);
     }
 
     private static float Channel(byte val, byte coat, float luma, float adapt, float localTint)
@@ -298,8 +481,22 @@ public static class GlyphLiquidGlassRenderer
 
     private static SKColor SamplePixel(SKColor[] pixels, int w, int h, float x, float y)
     {
-        var ix = Math.Clamp((int)Math.Round(x), 0, w - 1);
-        var iy = Math.Clamp((int)Math.Round(y), 0, h - 1);
-        return pixels[iy * w + ix];
+        var ix = Math.Clamp((int)MathF.Floor(x), 0, w - 1);
+        var iy = Math.Clamp((int)MathF.Floor(y), 0, h - 1);
+        var x1 = Math.Min(ix + 1, w - 1);
+        var y1 = Math.Min(iy + 1, h - 1);
+        var a = pixels[iy * w + ix];
+        var b = pixels[iy * w + x1];
+        var c = pixels[y1 * w + ix];
+        var d = pixels[y1 * w + x1];
+        var fx = x - ix;
+        var fy = y - iy;
+        return new SKColor(
+            Lerp(a.Red, b.Red, c.Red, d.Red),
+            Lerp(a.Green, b.Green, c.Green, d.Green),
+            Lerp(a.Blue, b.Blue, c.Blue, d.Blue));
+
+        byte Lerp(byte p, byte q, byte r, byte s) =>
+            (byte)Math.Clamp((int)MathF.Round((p + (q - p) * fx) * (1f - fy) + (r + (s - r) * fx) * fy), 0, 255);
     }
 }

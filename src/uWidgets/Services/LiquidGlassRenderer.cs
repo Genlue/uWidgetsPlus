@@ -35,7 +35,8 @@ public static class LiquidGlassRenderer
     public record Frame(int Width, int Height, float Scale, float Radius,
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
-        Theme Theme, bool Dark, bool SettingsSurface = false, float PixelScale = 1);
+        Theme Theme, bool Dark, bool SettingsSurface = false, float PixelScale = 1,
+        int Columns = 0, int Rows = 0);
 
     /// <summary>Rim displacement in DIPs at refraction = 100%. Prominent optical lens magnification.</summary>
     private const float LensDips = 32f;
@@ -54,6 +55,73 @@ public static class LiquidGlassRenderer
     /// <summary>Highlight slider value that reproduces the measured iOS material.</summary>
     private const double HighlightReference = 65.0;
 
+    /// <summary>
+    /// Optics scaling parameters tailored for compact widget sizes (1x1 and 1xN/Nx1 strips).
+    /// </summary>
+    public record AdaptiveOptics(
+        float EdgeScale,
+        float ShiftScale,
+        float SpreadMult,
+        float InnerMult,
+        float RimDips,
+        float MaxLensFrac,
+        float RimBaseLight,
+        float RimDirLight,
+        float RimLightScale);
+
+    /// <summary>
+    /// Evaluates adaptive size tier and scaling factors for compact widgets.
+    /// In 1x1 widgets (or <= 110 DIP squares) and 1-grid strips (1xN or Nx1), the edge refraction
+    /// width, lens displacement shift, and specular spread are proportionally moderated so that
+    /// the central area remains clear, calm, and readable without aggressive optical warping.
+    /// </summary>
+    public static AdaptiveOptics GetAdaptiveOptics(Frame frame, float minSideDip, float maxSideDip)
+    {
+        // 1. 1x1 small widget (single cell tile, e.g. weather temp, single dial, folder shortcut, or <= 110 DIP square)
+        bool is1x1 = (frame.Columns == 1 && frame.Rows == 1) || (frame.Columns == 0 && minSideDip <= 110f && maxSideDip <= 115f);
+        if (is1x1)
+        {
+            return new AdaptiveOptics(
+                EdgeScale: 0.58f,
+                ShiftScale: 0.68f,
+                SpreadMult: 1.40f,
+                InnerMult: 1.30f,
+                RimDips: 1.20f,
+                MaxLensFrac: 0.28f,
+                RimBaseLight: 0.28f,
+                RimDirLight: 0.62f,
+                RimLightScale: 1.10f);
+        }
+
+        // 2. 1-grid strip widget (1xN or Nx1, e.g. 2x1, 3x1, 4x1 search bar, 1x2, 1x4, or short edge <= 130 DIP)
+        bool is1Strip = (frame.Columns == 1 || frame.Rows == 1) || (frame.Columns == 0 && minSideDip <= 130f);
+        if (is1Strip)
+        {
+            return new AdaptiveOptics(
+                EdgeScale: 0.75f,
+                ShiftScale: 0.82f,
+                SpreadMult: 1.60f,
+                InnerMult: 1.45f,
+                RimDips: 1.40f,
+                MaxLensFrac: 0.35f,
+                RimBaseLight: 0.29f,
+                RimDirLight: 0.66f,
+                RimLightScale: 1.18f);
+        }
+
+        // 3. Standard and large cards (2x2, 4x2, 4x4, etc.): 100% full scale
+        return new AdaptiveOptics(
+            EdgeScale: 1.0f,
+            ShiftScale: 1.0f,
+            SpreadMult: 1.80f,
+            InnerMult: 1.60f,
+            RimDips: 1.60f,
+            MaxLensFrac: 0.45f,
+            RimBaseLight: 0.30f,
+            RimDirLight: 0.70f,
+            RimLightScale: 1.25f);
+    }
+
     /// <summary>Render one background to PNG. Safe on worker threads.</summary>
     public static byte[] Render(Frame frame, WallpaperSnapshot wallpaper)
     {
@@ -64,13 +132,20 @@ public static class LiquidGlassRenderer
         var sigma = (float)optics.Blur * scale / 8f;
         var radius = Math.Clamp(frame.Radius * scale, 0f, Math.Min(width, height) / 2f);
 
+        // Adaptive optics scaling for compact 1x1 widgets and 1-grid strips (1xN or Nx1)
+        var widthDip = width / scale;
+        var heightDip = height / scale;
+        var minSideDip = Math.Min(widthDip, heightDip);
+        var maxSideDip = Math.Max(widthDip, heightDip);
+        var adaptive = GetAdaptiveOptics(frame, minSideDip, maxSideDip);
+
         // In iOS, the lens is strictly an edge meniscus/bezel. The center of the glass
         // is 100% flat and crystal-clear (zero displacement, zero X-crease).
-        var maxLensWidth = Math.Max(0.5f, Math.Min(width, height) * 0.45f);
-        var minLensWidth = Math.Min(4f * scale, maxLensWidth);
-        var lensWidth = Math.Clamp((float)optics.EdgeWidth * scale, minLensWidth, maxLensWidth);
-        var lensShift = (float)(optics.Refraction / 100.0) * LensDips * scale;
-        var rimLineWidth = MathF.Max(RimLineDips * scale, 0.75f);
+        var maxLensWidth = Math.Max(0.5f, Math.Min(width, height) * adaptive.MaxLensFrac);
+        var minLensWidth = Math.Min(2.5f * scale, maxLensWidth);
+        var lensWidth = Math.Clamp((float)optics.EdgeWidth * scale * adaptive.EdgeScale, minLensWidth, maxLensWidth);
+        var lensShift = (float)(optics.Refraction / 100.0) * LensDips * scale * adaptive.ShiftScale;
+        var rimLineWidth = MathF.Max(adaptive.RimDips * scale, 0.65f);
         var dispStrength = (float)(optics.Dispersion / 100.0);
 
         var field = new BevelField(width, height, radius);
@@ -151,7 +226,7 @@ public static class LiquidGlassRenderer
                 // Translucency transition: the curved meniscus edge has higher crystal clarity,
                 // smoothly transitioning into the soft frosted coating in the interior.
                 // When opacity is 1.0 (or SettingsSurface), it remains 100% solid pure color.
-                var clarityRamp = (opacity >= 0.99) ? 0f : (1f - SmoothStep(0f, lensWidth * 1.5f, depth));
+                var clarityRamp = (opacity >= 0.99) ? 0f : (1f - SmoothStep(0f, Math.Min(lensWidth * 1.5f, Math.Min(width, height) * 0.40f), depth));
                 var localTint = tint * (1f - 0.28f * clarityRamp);
 
                 // Vibrancy + adaptive frost
@@ -167,10 +242,10 @@ public static class LiquidGlassRenderer
                 var u1 = Math.Clamp(depth / lensWidth, 0f, 1f);
                 var bezelAura = (depth < lensWidth) ? 0.5f * (1f + MathF.Cos(MathF.PI * u1)) : 0f;
 
-                // 2. Wide, soft ambient diffusion that gracefully sweeps deep into the glass interior (up to 2.5x lensWidth)
-                var innerSpread = lensWidth * 2.5f;
-                var u2 = Math.Clamp(depth / innerSpread, 0f, 1f);
-                var ambientDiffusion = (depth < innerSpread) ? 0.5f * (1f + MathF.Cos(MathF.PI * u2)) : 0f;
+                // 2. Wide, soft ambient diffusion that gracefully sweeps into the outer border band
+                var innerSpread = Math.Min(Math.Min(width, height) * 0.45f, lensWidth * adaptive.InnerMult);
+                var u2 = (innerSpread > 0f && depth < innerSpread) ? Math.Clamp(depth / innerSpread, 0f, 1f) : 1f;
+                var ambientDiffusion = (innerSpread > 0f && depth < innerSpread) ? 0.5f * (1f + MathF.Cos(MathF.PI * u2)) : 0f;
 
                 // Seamless blend: 65% bezel crest + 35% interior ambient diffusion
                 var softAura = 0.65f * bezelAura + 0.35f * ambientDiffusion;
@@ -179,29 +254,44 @@ public static class LiquidGlassRenderer
                 float rimGlow = 0f;
                 if (edgeTint > 0.001f && softAura > 0.001f)
                 {
-                    middle.ToHsl(out var h, out var s, out var l);
-                    // Smooth, continuous chroma weight: 0 for grayscale/neutral (s <= 2%), 1 for colorful (s >= 10%)
-                    var chromaWeight = SmoothStep(2f, 10f, s);
-                    var glowS = Math.Clamp(s * 2.2f + 25f * chromaWeight, 0f, 100f);
-                    var glowL = Math.Clamp(l * 0.15f + 48f, 46f, 60f);
-                    var pureGlow = SKColor.FromHsl(h, glowS, glowL);
+                    // Physical color detection:
+                    // 1. Absolute chroma: max(R,G,B) - min(R,G,B) in [0, 255].
+                    //    JPEG 4:2:0 chroma quantization & dark sensor noise routinely cause 2..12 delta,
+                    //    which relative HSL saturation falsely amplifies to 100% rainbow noise.
+                    var maxC = Math.Max(middle.Red, Math.Max(middle.Green, middle.Blue));
+                    var minC = Math.Min(middle.Red, Math.Min(middle.Green, middle.Blue));
+                    var chroma = (float)(maxC - minC);
+                    var chromaWeight = SmoothStep(14f, 32f, chroma);
 
-                    // Interpolate smoothly between neutral light and saturated spectral color (C1 continuous, no jagged thresholds)
-                    var glowR = (1f - chromaWeight) * 255f + chromaWeight * pureGlow.Red;
-                    var glowG = (1f - chromaWeight) * 255f + chromaWeight * pureGlow.Green;
-                    var glowB = (1f - chromaWeight) * 255f + chromaWeight * pureGlow.Blue;
+                    // 2. Physical luminance gating:
+                    //    Near-black backgrounds (luma < 10) lack physical radiance to cast a luminous colored aura.
+                    var lumaGate = SmoothStep(8f, 28f, luma);
+                    var colorWeight = chromaWeight * lumaGate;
 
-                    // 1. Soft chromatic glaze on the outer glass (only glazes when there is real color)
-                    var glazeMix = edgeTint * softAura * 0.35f * chromaWeight;
-                    r += (glowR - r) * glazeMix;
-                    g += (glowG - g) * glazeMix;
-                    b += (glowB - b) * glazeMix;
+                    if (colorWeight > 0.001f)
+                    {
+                        middle.ToHsl(out var h, out var s, out var l);
+                        var glowS = Math.Clamp(s * 2.2f + 25f * colorWeight, 0f, 100f);
+                        var glowL = Math.Clamp(l * 0.15f + 48f, 46f, 60f);
+                        var pureGlow = SKColor.FromHsl(h, glowS, glowL);
 
-                    // 2. Dynamic colored highlight tint (tapering from saturated color at rim to pure white inside)
-                    var hlMix = MathF.Pow(edgeTint, 0.70f) * softAura * chromaWeight;
-                    hlR = (1f - hlMix) * 255f + hlMix * pureGlow.Red;
-                    hlG = (1f - hlMix) * 255f + hlMix * pureGlow.Green;
-                    hlB = (1f - hlMix) * 255f + hlMix * pureGlow.Blue;
+                        var glowR = (1f - colorWeight) * 255f + colorWeight * pureGlow.Red;
+                        var glowG = (1f - colorWeight) * 255f + colorWeight * pureGlow.Green;
+                        var glowB = (1f - colorWeight) * 255f + colorWeight * pureGlow.Blue;
+
+                        // 1. Soft chromatic glaze on the outer glass (only glazes when there is genuine color)
+                        var glazeMix = edgeTint * softAura * 0.35f * colorWeight;
+                        r += (glowR - r) * glazeMix;
+                        g += (glowG - g) * glazeMix;
+                        b += (glowB - b) * glazeMix;
+
+                        // 2. Dynamic colored highlight tint (tapering from saturated color at rim to pure white inside)
+                        var hlMix = MathF.Pow(edgeTint, 0.70f) * softAura * colorWeight;
+                        hlR = (1f - hlMix) * 255f + hlMix * pureGlow.Red;
+                        hlG = (1f - hlMix) * 255f + hlMix * pureGlow.Green;
+                        hlB = (1f - hlMix) * 255f + hlMix * pureGlow.Blue;
+                    }
+
                     rimGlow = edgeTint * softAura * softAura * 0.35f;
                 }
 
@@ -210,11 +300,11 @@ public static class LiquidGlassRenderer
                 var cosL = bevel.Nx * lx + bevel.Ny * ly; // 1 when facing light, -1 when opposite
                 var rimEdge = 1f - SmoothStep(0f, rimLineWidth, depth);
                 var directional = MathF.Max(0f, cosL);
-                var rimLight = rimEdge * (0.30f + 0.70f * MathF.Pow(directional, 0.85f));
+                var rimLight = rimEdge * (adaptive.RimBaseLight + adaptive.RimDirLight * MathF.Pow(directional, 0.85f));
 
                 // 2. Meniscus curved reflection and continuous surface specular spread
                 var meniscusLight = 0f;
-                var spreadWidth = lensWidth * 1.8f;
+                var spreadWidth = Math.Min(Math.Min(width, height) * 0.45f, lensWidth * adaptive.SpreadMult);
                 if (depth < spreadWidth)
                 {
                     var t = Math.Clamp(depth / lensWidth, 0f, 1f);
@@ -241,7 +331,7 @@ public static class LiquidGlassRenderer
                 }
 
                 // 3. Combine highlights (Notice: ZERO depthShadow! Modern iOS is airy, clean, and shadowless)
-                var totalLight = highlightFactor * (rimLight * 1.25f + meniscusLight * 0.70f + ambientLuster) + rimGlow;
+                var totalLight = highlightFactor * (rimLight * adaptive.RimLightScale + meniscusLight * 0.70f + ambientLuster) + rimGlow;
                 var lightMix = Math.Clamp(totalLight, 0f, 1f);
 
                 // 4. Screen / Luminous Optical Blending with smart colored highlight

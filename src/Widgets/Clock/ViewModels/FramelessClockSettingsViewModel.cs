@@ -112,6 +112,28 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         }
     }
 
+    public double DyeIntensityPercent
+    {
+        get => Math.Round(model.DyeIntensity);
+        set
+        {
+            var clamped = Math.Clamp(value, 0.0, 100.0);
+            UpdateModel(model with { DyeIntensity = clamped });
+            this.RaisePropertyChanged(nameof(DyeIntensityPercent));
+        }
+    }
+
+    public double RefractionWidth
+    {
+        get => Math.Round(model.RefractionWidth);
+        set
+        {
+            var clamped = Math.Clamp(value, 0.0, 60.0);
+            UpdateModel(model with { RefractionWidth = clamped });
+            this.RaisePropertyChanged(nameof(RefractionWidth));
+        }
+    }
+
     public IReadOnlyList<FontWeightOption> FontWeightOptions { get; } =
     [
         new(100, Locale.Clock_FontWeight_100),

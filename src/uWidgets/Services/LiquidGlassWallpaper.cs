@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Avalonia.Threading;
 using Microsoft.Win32;
 using SkiaSharp;
 
@@ -49,6 +50,11 @@ public static class LiquidGlassWallpaper
         }
     }
 
+    /// <summary>
+    /// Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).
+    /// </summary>
+    public static event Action? WallpaperInvalidated;
+
     /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or wallpaper changed).</summary>
     public static void Invalidate()
     {
@@ -58,6 +64,22 @@ public static class LiquidGlassWallpaper
             captureExpiresTicks = 0;
             cached = null;
             cachedKey = null;
+        }
+
+        try
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                WallpaperInvalidated?.Invoke();
+            }
+            else
+            {
+                Dispatcher.UIThread.Post(() => WallpaperInvalidated?.Invoke());
+            }
+        }
+        catch
+        {
+            try { WallpaperInvalidated?.Invoke(); } catch { }
         }
     }
 

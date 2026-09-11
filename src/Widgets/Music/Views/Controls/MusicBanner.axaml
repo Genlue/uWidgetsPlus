@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Music.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="72"
+             Margin="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             x:Class="Music.Views.Controls.MusicBanner"
+             x:DataType="vm:MusicViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="ProgressBar.ios-bottom-bar">
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="2.5"/>
+            <Setter Property="Height" Value="2.5"/>
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="ProgressBarRoot"
+                            Background="{TemplateBinding Background}"
+                            ClipToBounds="True"
+                            Height="{TemplateBinding Height}">
+                        <Panel>
+                            <Border Name="PART_Indicator"
+                                    Background="{TemplateBinding Foreground}"
+                                    HorizontalAlignment="Left"/>
+                        </Panel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.banner-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.banner-btn:pointerover">
+            <Setter Property="Opacity" Value="0.75"/>
+        </Style>
+        <Style Selector="Button.banner-play-btn">
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.banner-play-btn:pointerover">
+            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="Opacity" Value="0.9"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <!-- Main Content Row -->
+        <Grid Name="MainGrid" ColumnDefinitions="Auto,*,Auto"
+              HorizontalAlignment="Stretch" VerticalAlignment="Center"
+              Margin="10,0,12,3">
+
+            <!-- Left: Cover Art -->
+            <Border Name="CoverBorder" Grid.Column="0"
+                    Width="46" Height="46" CornerRadius="10"
+                    ClipToBounds="True" Background="#16FFFFFF"
+                    VerticalAlignment="Center" Margin="0,0,10,0">
+                <Panel>
+                    <!-- Fallback Note / Disc -->
+                    <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
+                        <Border Background="#12FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                  Width="22" Height="22"
+                                  Opacity="0.45"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Panel>
+                    <!-- Album Artwork -->
+                    <Image Source="{Binding CoverBitmap}"
+                           Stretch="UniformToFill"
+                           IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                    <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="10" IsHitTestVisible="False"/>
+                </Panel>
+            </Border>
+
+            <!-- Middle: Track Info -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" Margin="0,0,8,0">
+                <TextBlock Name="TitleBlock"
+                           Text="{Binding TrackTitle}"
+                           FontSize="13.5" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                <TextBlock Name="ArtistBlock"
+                           Text="{Binding Artist}"
+                           FontSize="11" FontWeight="Normal" Opacity="0.72"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+            </StackPanel>
+
+            <!-- Right: Playback Controls -->
+            <StackPanel Name="ControlsPanel" Grid.Column="2"
+                        Orientation="Horizontal" Spacing="10"
+                        VerticalAlignment="Center">
+                <!-- Previous -->
+                <Button Name="PrevButton" Classes="banner-btn"
+                        Width="24" Height="24" CornerRadius="12"
+                        Command="{Binding SkipPrevious}"
+                        IsEnabled="{Binding CanSkipPrevious}">
+                    <PathIcon Data="M11.5 12L20.5 18.5V5.5L11.5 12zm-9 0L11.5 18.5V5.5L2.5 12z"
+                              Width="12" Height="12"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                </Button>
+
+                <!-- Play / Pause -->
+                <Button Classes="banner-play-btn" Width="30" Height="30" CornerRadius="15"
+                        Command="{Binding TogglePlayPause}"
+                        IsEnabled="{Binding CanPlayPause}">
+                    <Panel>
+                        <!-- Play Icon -->
+                        <PathIcon Data="M7 5.5v13l11-6.5-11-6.5z" Width="13" Height="13"
+                                  Margin="1.5,0,0,0"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  IsVisible="{Binding !IsPlaying}"/>
+                        <!-- Pause Icon -->
+                        <PathIcon Data="M6 5h4v14H6V5zm8 0h4v14h-4V5z" Width="11" Height="11"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  IsVisible="{Binding IsPlaying}"/>
+                    </Panel>
+                </Button>
+
+                <!-- Next -->
+                <Button Name="NextButton" Classes="banner-btn"
+                        Width="24" Height="24" CornerRadius="12"
+                        Command="{Binding SkipNext}"
+                        IsEnabled="{Binding CanSkipNext}">
+                    <PathIcon Data="M12.5 12L3.5 5.5v13L12.5 12zm9 0L12.5 5.5v13L21.5 12z"
+                              Width="12" Height="12"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Bottom Edge Progress Indicator -->
+        <ProgressBar Classes="ios-bottom-bar"
+                     VerticalAlignment="Bottom"
+                     HorizontalAlignment="Stretch"
+                     Minimum="0" Maximum="1"
+                     Value="{Binding ProgressPercent}"
+                     IsVisible="{Binding ShowProgressBar}"/>
+    </Panel>
+</UserControl>

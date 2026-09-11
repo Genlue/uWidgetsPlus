@@ -19,6 +19,8 @@ public class MediaManagerService : IDisposable
     public MediaTrackInfo CurrentTrack { get; private set; } = new();
 
     private Timer? pollTimer;
+    private DateTimeOffset lastSeekTime = DateTimeOffset.MinValue;
+    private TimeSpan lastSeekTarget = TimeSpan.Zero;
 
     public MediaManagerService()
     {
@@ -217,6 +219,13 @@ public class MediaManagerService : IDisposable
             var artist = props?.Artist ?? string.Empty;
             var album = props?.AlbumTitle ?? string.Empty;
             var appId = session.SourceAppUserModelId;
+            var accuratePos = GetAccuratePosition(timeline, isPlaying);
+
+            // If in seek cooldown and accuratePos is stale, don't overwrite user seek position
+            if (IsStaleSeekPosition(accuratePos))
+            {
+                accuratePos = CurrentTrack.Position;
+            }
 
             // If track identity and playback status are unchanged, just update timeline
             if (currentSessionId == appId &&
@@ -226,9 +235,9 @@ public class MediaManagerService : IDisposable
                 CurrentTrack.IsPlaying == isPlaying &&
                 (CurrentTrack.ThumbnailData != null || props?.Thumbnail == null))
             {
-                CurrentTrack.Position = timeline.Position;
+                CurrentTrack.Position = accuratePos;
                 CurrentTrack.Duration = timeline.EndTime;
-                TimelineChanged?.Invoke(timeline.Position, timeline.EndTime);
+                TimelineChanged?.Invoke(accuratePos, timeline.EndTime);
                 return;
             }
 
@@ -240,7 +249,7 @@ public class MediaManagerService : IDisposable
                 SourceAppId = appId,
                 PlayerName = rule?.Name ?? ResolveAppFriendlyName(appId),
                 IsPlaying = isPlaying,
-                Position = timeline.Position,
+                Position = accuratePos,
                 Duration = timeline.EndTime,
                 CanPlayPause = playback?.Controls.IsPlayPauseToggleEnabled ?? true,
                 CanSkipNext = playback?.Controls.IsNextEnabled ?? true,
@@ -277,12 +286,58 @@ public class MediaManagerService : IDisposable
     {
         try
         {
+            var isPlaying = session.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
             var timeline = session.GetTimelineProperties();
-            CurrentTrack.Position = timeline.Position;
+            var accuratePos = GetAccuratePosition(timeline, isPlaying);
+
+            if (IsStaleSeekPosition(accuratePos))
+            {
+                return;
+            }
+
+            CurrentTrack.Position = accuratePos;
             CurrentTrack.Duration = timeline.EndTime;
-            TimelineChanged?.Invoke(timeline.Position, timeline.EndTime);
+            TimelineChanged?.Invoke(accuratePos, timeline.EndTime);
         }
         catch { }
+    }
+
+    private bool IsStaleSeekPosition(TimeSpan pos)
+    {
+        if (DateTimeOffset.UtcNow - lastSeekTime < TimeSpan.FromSeconds(2.5))
+        {
+            if (Math.Abs((pos - lastSeekTarget).TotalSeconds) > 2.0)
+            {
+                return true;
+            }
+            lastSeekTime = DateTimeOffset.MinValue;
+        }
+        return false;
+    }
+
+    private static TimeSpan GetAccuratePosition(GlobalSystemMediaTransportControlsSessionTimelineProperties timeline, bool isPlaying)
+    {
+        var pos = timeline.Position;
+        if (isPlaying && timeline.LastUpdatedTime != default && timeline.LastUpdatedTime.Year > 2000)
+        {
+            var elapsed = DateTimeOffset.UtcNow - timeline.LastUpdatedTime;
+            if (elapsed > TimeSpan.Zero && elapsed < TimeSpan.FromHours(2))
+            {
+                pos += elapsed;
+            }
+        }
+
+        if (timeline.EndTime > TimeSpan.Zero)
+        {
+            if (pos > timeline.EndTime) pos = timeline.EndTime;
+            if (pos < TimeSpan.Zero) pos = TimeSpan.Zero;
+        }
+        else if (pos < TimeSpan.Zero)
+        {
+            pos = TimeSpan.Zero;
+        }
+
+        return pos;
     }
 
     public async Task<List<(string AppId, string Title, string Artist, bool IsPlaying)>> GetActiveSessionsAsync()
@@ -361,6 +416,8 @@ public class MediaManagerService : IDisposable
         if (currentSession == null) return;
         try
         {
+            lastSeekTime = DateTimeOffset.UtcNow;
+            lastSeekTarget = position;
             await currentSession.TryChangePlaybackPositionAsync(position.Ticks);
             CurrentTrack.Position = position;
             TimelineChanged?.Invoke(position, CurrentTrack.Duration);

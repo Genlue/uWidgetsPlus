@@ -1,4 +1,4 @@
-﻿using Clock.Models;
+using Clock.Models;
 using ReactiveUI;
 using uWidgets.Services;
 
@@ -8,18 +8,34 @@ public class DigitalClockViewModel : ReactiveObject, IDisposable
 {
     private readonly ClockModel clockModel;
     private readonly UpdateTimer timer;
+    private bool isRunning;
+    private TimeZoneInfo? cachedTimeZone;
 
     public DigitalClockViewModel(ClockModel clockModel)
     {
         this.clockModel = clockModel;
         timer = clockModel.ShowSeconds ? TimerService.Timer1Second : TimerService.Timer1Minute;
+        Start();
+    }
+    
+    public void Start()
+    {
+        if (isRunning) return;
+        isRunning = true;
         timer.Subscribe(UpdateTime);
         UpdateTime();
     }
-    
+
+    public void Stop()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+        timer.Unsubscribe(UpdateTime);
+    }
+
     public void Dispose()
     {
-        timer.Unsubscribe(UpdateTime);
+        Stop();
         GC.SuppressFinalize(this);
     }
 
@@ -30,9 +46,15 @@ public class DigitalClockViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(TimeText));
     }
     
-    private TimeZoneInfo TimeZoneInfo => clockModel.TimeZoneId != null
-        ? TimeZoneInfo.FindSystemTimeZoneById(clockModel.TimeZoneId)
-        : TimeZoneInfo.Local;
+    private TimeZoneInfo TimeZoneInfo => cachedTimeZone ??= (clockModel.TimeZoneId != null
+        ? SafeFindTimeZone(clockModel.TimeZoneId)
+        : TimeZoneInfo.Local);
+
+    private static TimeZoneInfo SafeFindTimeZone(string id)
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+        catch { return TimeZoneInfo.Local; }
+    }
 
     private DateTime time;
     public DateTime Time

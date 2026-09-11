@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -32,7 +33,7 @@ public partial class Settings : Window
             ApplyTitleBarStyle();
         };
         InitializeComponent();
-        ListBox.SelectedItem = SettingsViewModel.MenuItems[1];
+        ListBox.SelectedItem = viewModel.DefaultItem;
         ApplyTransparencyHint();
         ApplyTitleBarStyle();
     }
@@ -89,11 +90,34 @@ public partial class Settings : Window
     {
         Resized -= OnResized;
         KeyDown -= OnKeyDown;
+        Unloaded -= OnUnloaded;
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e) => 
         SplitView.IsPaneOpen = Width >= 800;
 
-    private void OnMenuItemChanged(object? _, SelectionChangedEventArgs e) => 
-        viewModel.SetCurrentPage(e.AddedItems[0] as PageViewModel);
+    private void OnMenuItemChanged(object? _, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0 && e.AddedItems[0] is PageViewModel item)
+        {
+            if (item.IsItem)
+            {
+                viewModel.SetCurrentPage(item);
+            }
+            else
+            {
+                // Revert selection if user clicked a non-item (header or separator)
+                if (viewModel.CurrentPageTitle != null)
+                {
+                    var prev = viewModel.AllItems.FirstOrDefault(x => x.Text == viewModel.CurrentPageTitle);
+                    if (prev != null)
+                    {
+                        ListBox.SelectedItem = prev;
+                        return;
+                    }
+                }
+                ListBox.SelectedItem = viewModel.DefaultItem;
+            }
+        }
+    }
 }

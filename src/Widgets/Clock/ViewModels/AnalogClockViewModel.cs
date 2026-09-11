@@ -9,20 +9,35 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
 {
     private readonly ClockModel clockModel;
     private readonly UpdateTimer timer;
+    private bool isRunning;
+    private TimeZoneInfo? cachedTimeZone;
 
     public AnalogClockViewModel(ClockModel clockModel)
     {
         this.clockModel = clockModel;
 
         timer = clockModel.ShowSeconds ? TimerService.Timer100Ms : TimerService.Timer5Seconds;
-        timer.Subscribe(UpdateTime);
-        
-        UpdateTime();
+        Start();
     }
     
+    public void Start()
+    {
+        if (isRunning) return;
+        isRunning = true;
+        timer.Subscribe(UpdateTime);
+        UpdateTime();
+    }
+
+    public void Stop()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+        timer.Unsubscribe(UpdateTime);
+    }
+
     public void Dispose()
     {
-        timer.Unsubscribe(UpdateTime);
+        Stop();
         GC.SuppressFinalize(this);
     }
 
@@ -42,9 +57,15 @@ public class AnalogClockViewModel : ReactiveObject, IDisposable
     /// </summary>
     public string DigitalTimeText => Time.ToString("HH:mm");
     
-    private TimeZoneInfo TimeZoneInfo => clockModel.TimeZoneId != null
-        ? TimeZoneInfo.FindSystemTimeZoneById(clockModel.TimeZoneId)
-        : TimeZoneInfo.Local;
+    private TimeZoneInfo TimeZoneInfo => cachedTimeZone ??= (clockModel.TimeZoneId != null
+        ? SafeFindTimeZone(clockModel.TimeZoneId)
+        : TimeZoneInfo.Local);
+
+    private static TimeZoneInfo SafeFindTimeZone(string id)
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+        catch { return TimeZoneInfo.Local; }
+    }
 
     private DateTime Time => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo);
         

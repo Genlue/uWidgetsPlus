@@ -72,34 +72,38 @@ Write-Host "==> Single file: $exe ($([math]::Round((Get-Item $exe).Length / 1MB,
 
 # --- Optional: classic portable layout (exe + Widgets + settings), zipped ---
 if ($Portable) {
-    $portable = Join-Path $root "dist\portable-$Runtime"
-    if (Test-Path $portable) { Remove-Item $portable -Recurse -Force }
-    New-Item -ItemType Directory -Path $portable -Force | Out-Null
+    $portableDir = Join-Path $root "dist\portable-$Runtime"
+    if (Test-Path $portableDir) { Remove-Item $portableDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
 
-    Copy-Item $exe $portable
-    Copy-Item (Join-Path $root "src\uWidgets\appSettings.json") $portable
-    Copy-Item (Join-Path $root "src\uWidgets\layout.json") $portable
+    Copy-Item $exe $portableDir
+    Copy-Item (Join-Path $root "src\uWidgets\appSettings.json") $portableDir
+    Copy-Item (Join-Path $root "src\uWidgets\layout.json") $portableDir
 
     $widgetsSrc = Join-Path $project "..\uWidgets\bin\$Configuration\net8.0\Widgets"
     if (-not (Test-Path $widgetsSrc)) { $widgetsSrc = Join-Path $root "src\uWidgets\bin\$Configuration\net8.0\Widgets" }
     if (Test-Path $widgetsSrc) {
-        Copy-Item $widgetsSrc (Join-Path $portable "Widgets") -Recurse
+        Copy-Item $widgetsSrc (Join-Path $portableDir "Widgets") -Recurse
     } else {
         Write-Warning "Widgets build output not found at $widgetsSrc — portable zip will lack widgets."
     }
 
     $zip = Join-Path $root "dist\uWidgets-$Runtime-portable.zip"
     if (Test-Path $zip) { Remove-Item $zip -Force }
-    Compress-Archive -Path "$portable\*" -DestinationPath $zip
+    Compress-Archive -Path "$portableDir\*" -DestinationPath $zip
     Write-Host "==> Portable zip: $zip" -ForegroundColor Green
 }
 
 # --- Optional: MSI installer packaging via WiX v5 ---
 if ($Msi) {
     Write-Host "==> Building MSI Installer ($Runtime)..." -ForegroundColor Cyan
+    $wxsPath = Join-Path $root "installer\Package.wxs"
+    $wxsContent = Get-Content $wxsPath -Raw
+    $verMatch = [regex]::Match($wxsContent, 'Version="([0-9\.]+)"')
+    $wxsVer = if ($verMatch.Success) { $verMatch.Groups[1].Value } else { "1.7.6" }
     $msiDir = Join-Path $root "dist\installer"
     if (-not (Test-Path $msiDir)) { New-Item -ItemType Directory -Path $msiDir -Force | Out-Null }
-    $msiOut = Join-Path $msiDir "uWidgetsPlus-1.7.5-$Runtime.msi"
+    $msiOut = Join-Path $msiDir "uWidgetsPlus-$wxsVer-$Runtime.msi"
     $arch = switch ($Runtime) {
         "win-x64" { "x64" }
         "win-x86" { "x86" }

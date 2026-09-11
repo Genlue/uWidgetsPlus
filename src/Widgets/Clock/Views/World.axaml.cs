@@ -26,6 +26,7 @@ public partial class World : UserControl
         Item3.DataContext = viewModel.Fourth;
 
         SizeChanged += OnSizeChanged;
+        Loaded += (_, _) => viewModel.Start();
         Unloaded += OnUnloaded;
         ApplyLayout();
     }
@@ -127,8 +128,6 @@ public partial class World : UserControl
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        viewModel.Dispose();
-        SizeChanged -= OnSizeChanged;
-        Unloaded -= OnUnloaded;
+        viewModel.Stop();
     }
 }

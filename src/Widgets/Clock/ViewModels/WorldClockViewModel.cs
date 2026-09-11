@@ -31,9 +31,12 @@ public class WorldClockViewModel : ReactiveObject, IDisposable
     public AnalogClockViewModel Third => viewModels[2];
     public AnalogClockViewModel Fourth => viewModels[3];
 
+    public void Start() => viewModels.ForEach(x => x.Start());
+    public void Stop() => viewModels.ForEach(x => x.Stop());
+
     public void Dispose()
     {
-        viewModels.ForEach(x => x.Dispose());
+        Stop();
         GC.SuppressFinalize(this);
     }
 }

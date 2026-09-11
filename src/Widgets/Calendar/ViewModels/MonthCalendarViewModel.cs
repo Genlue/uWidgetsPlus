@@ -9,17 +9,32 @@ public class MonthCalendarViewModel : ReactiveObject, IDisposable
 {
     private readonly MonthCalendarModel monthCalendarModel;
     private DateTime currentDate;
+    private bool isRunning;
     
     public MonthCalendarViewModel(MonthCalendarModel monthCalendarModel)
     {
         this.monthCalendarModel = monthCalendarModel;
+        Start();
+    }
+
+    public void Start()
+    {
+        if (isRunning) return;
+        isRunning = true;
         TimerService.Timer5Minutes.Subscribe(UpdateTime);
         UpdateTime();
     }
 
+    public void Stop()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+        TimerService.Timer5Minutes.Unsubscribe(UpdateTime);
+    }
+
     public void Dispose()
     {
-        TimerService.Timer5Minutes.Unsubscribe(UpdateTime);
+        Stop();
         GC.SuppressFinalize(this);
     }
     

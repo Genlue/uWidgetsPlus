@@ -6,16 +6,31 @@ namespace Calendar.ViewModels;
 public class DateCalendarViewModel : ReactiveObject, IDisposable
 {
     private DateTime currentDate;
+    private bool isRunning;
     
     public DateCalendarViewModel()
     {
+        Start();
+    }
+    
+    public void Start()
+    {
+        if (isRunning) return;
+        isRunning = true;
         TimerService.Timer5Minutes.Subscribe(UpdateTime);
         UpdateTime();
     }
-    
+
+    public void Stop()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+        TimerService.Timer5Minutes.Unsubscribe(UpdateTime);
+    }
+
     public void Dispose()
     {
-        TimerService.Timer5Minutes.Unsubscribe(UpdateTime);
+        Stop();
         GC.SuppressFinalize(this);
     }
 

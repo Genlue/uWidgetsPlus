@@ -31,6 +31,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private UpdateTimer? currentTimer;
     private Window? window;
+    private bool IsDesktopWidget => window is uWidgets.Views.Widget;
     private Bitmap? liquidGlassBitmap;
 
     // Cache of pre-rendered liquid glass frames keyed by time string
@@ -94,7 +95,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         window = TopLevel.GetTopLevel(this) as Window;
-        if (window != null)
+        if (window != null && IsDesktopWidget)
         {
             window.PositionChanged -= OnWindowPositionChanged;
             window.PositionChanged += OnWindowPositionChanged;
@@ -111,9 +112,13 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             appSettingsProvider.DataChanged += OnAppSettingsChanged;
         }
 
+        lastRegionKey = null;
+        hasRegionSet = false;
+        SetupTimer();
         UpdateTransparencyLevel();
         ClearLiquidGlassCache();
         RequestBackdropRender();
+        InvalidateVisual();
     }
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -123,11 +128,14 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         if (window != null)
         {
-            window.PositionChanged -= OnWindowPositionChanged;
-            if (hasRegionSet)
+            if (IsDesktopWidget)
             {
-                InteropService.ClearWidgetRegion(window);
-                hasRegionSet = false;
+                window.PositionChanged -= OnWindowPositionChanged;
+                if (hasRegionSet)
+                {
+                    InteropService.ClearWidgetRegion(window);
+                    hasRegionSet = false;
+                }
             }
             window = null;
         }
@@ -175,6 +183,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
     {
+        if (!IsDesktopWidget) return;
         var (_, isLiquidGlass, _) = ResolveEffectiveTheme();
         if (isLiquidGlass)
         {
@@ -190,7 +199,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         UpdateTransparencyLevel();
 
         var (isAcrylic, _, _) = ResolveEffectiveTheme();
-        if (window != null && !isAcrylic && hasRegionSet)
+        if (window != null && IsDesktopWidget && !isAcrylic && hasRegionSet)
         {
             InteropService.ClearWidgetRegion(window);
             hasRegionSet = false;
@@ -231,7 +240,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void SetupTimer()
     {
-        var targetTimer = model.ShowSeconds ? TimerService.Timer1Second : TimerService.Timer1Minute;
+        var targetTimer = IsDesktopWidget && model.ShowSeconds ? TimerService.Timer1Second : TimerService.Timer1Minute;
         if (currentTimer != targetTimer)
         {
             currentTimer?.Unsubscribe(OnTimerTick);
@@ -254,7 +263,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void UpdateTransparencyLevel()
     {
-        if (window == null) return;
+        if (window == null || !IsDesktopWidget) return;
         var (isAcrylic, _, _) = ResolveEffectiveTheme();
         window.TransparencyLevelHint = isAcrylic
             ? [WindowTransparencyLevel.AcrylicBlur]
@@ -314,6 +323,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void ScheduleUpcomingPreRenders(DateTime now)
     {
+        if (!IsDesktopWidget) return;
+
         if (model.ShowSeconds)
         {
             // Rolling lookahead buffer for upcoming seconds in the next minute
@@ -617,19 +628,23 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         // Theme 1: OS-level Acrylic (Real-time hardware DWM blur behind the glyphs)
         if (isAcrylic)
         {
-            var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}";
-            if (regionKey != lastRegionKey)
+            if (IsDesktopWidget)
             {
-                lastRegionKey = regionKey;
-                UpdateWindowRegion(stretchedGeometry, targetW, targetH);
+                var regionKey = $"{timeStr}_{targetW}_{targetH}_{model.FontFamily}_{model.FontWeight}_{model.StretchFill}";
+                if (regionKey != lastRegionKey || !hasRegionSet)
+                {
+                    lastRegionKey = regionKey;
+                    UpdateWindowRegion(stretchedGeometry, targetW, targetH);
+                }
             }
 
             using (context.PushGeometryClip(stretchedGeometry))
             {
-                // Acrylic surface wash
+                // Acrylic surface wash: in preview, provide higher opacity so it looks frosted in the gallery card
+                var alpha = IsDesktopWidget ? (isDark ? 70 : 48) : (isDark ? 160 : 180);
                 var tintWash = isDark
-                    ? Color.FromArgb(70, 32, 32, 32)
-                    : Color.FromArgb(48, 255, 255, 255);
+                    ? Color.FromArgb((byte)alpha, 60, 60, 60)
+                    : Color.FromArgb((byte)alpha, 240, 240, 240);
                 context.DrawRectangle(new SolidColorBrush(tintWash), null, new Rect(0, 0, targetW, targetH));
 
                 if (model.EnableOverlay)
@@ -644,7 +659,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
 
         // Ensure window region is cleared for Liquid Glass and Solid themes (clean 32-bit alpha)
-        if (hasRegionSet && window != null)
+        if (hasRegionSet && window != null && IsDesktopWidget)
         {
             InteropService.ClearWidgetRegion(window);
             hasRegionSet = false;
@@ -717,7 +732,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private void UpdateWindowRegion(Geometry geometry, double width, double height)
     {
-        if (window == null) return;
+        if (window == null || !IsDesktopWidget) return;
         var scaling = window.RenderScaling;
         var pixelW = Math.Max(1, (int)Math.Ceiling(width * scaling));
         var pixelH = Math.Max(1, (int)Math.Ceiling(height * scaling));
@@ -735,7 +750,7 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             rtb.CopyPixels(new PixelRect(0, 0, pixelW, pixelH), handle.AddrOfPinnedObject(), buffer.Length, pixelW * 4);
             var spans = ExtractSpans(buffer, pixelW, pixelH);
             InteropService.SetWindowRegionFromSpans(window, spans);
-            hasRegionSet = true;
+            hasRegionSet = spans.Count > 0;
         }
         catch (Exception ex)
         {
@@ -828,28 +843,6 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         {
             dye = accent;
             hasDye = true;
-        }
-        // 3. Otherwise try sampling wallpaper snapshot background
-        else
-        {
-            try
-            {
-                var wp = LiquidGlassWallpaper.Get();
-                var sk = wp.Background;
-                var maxC = Math.Max(sk.Red, Math.Max(sk.Green, sk.Blue));
-                var minC = Math.Min(sk.Red, Math.Min(sk.Green, sk.Blue));
-                var chroma = maxC - minC;
-                var luma = 0.2126f * sk.Red + 0.7152f * sk.Green + 0.0722f * sk.Blue;
-                if (chroma > 18 && luma > 24)
-                {
-                    dye = Color.FromRgb(sk.Red, sk.Green, sk.Blue);
-                    hasDye = true;
-                }
-            }
-            catch
-            {
-                // Fallback gracefully if wallpaper snapshot is unavailable
-            }
         }
 
         var tintFactor = hasDye ? edgeTint : 0f;

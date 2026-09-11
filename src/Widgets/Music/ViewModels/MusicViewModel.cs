@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -12,6 +13,11 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     private readonly MediaManagerService mediaService;
     private readonly DispatcherTimer timer;
     private MusicModel model;
+
+    // High-resolution clock & smooth timeline synchronization
+    private TimeSpan basePosition = TimeSpan.Zero;
+    private long lastSyncTimestamp;
+    private DateTimeOffset lastSeekTime = DateTimeOffset.MinValue;
 
     private string trackTitle = "未在播放";
     private string artist = "启动音乐软件开始聆听";
@@ -143,6 +149,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     public MusicViewModel(MusicModel model)
     {
         this.model = model;
+        lastSyncTimestamp = Stopwatch.GetTimestamp();
         mediaService = new MediaManagerService();
         mediaService.UpdateRules(model.PlayerRules);
 
@@ -151,7 +158,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
         timer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(1)
+            Interval = TimeSpan.FromMilliseconds(250)
         };
         timer.Tick += OnTimerTick;
         timer.Start();
@@ -167,9 +174,19 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
     private void OnTimerTick(object? sender, EventArgs e)
     {
-        if (IsPlaying && Duration > TimeSpan.Zero && Position < Duration)
+        if (!IsPlaying || Duration <= TimeSpan.Zero) return;
+
+        var elapsedTicks = Stopwatch.GetTimestamp() - lastSyncTimestamp;
+        var elapsedSeconds = (double)elapsedTicks / Stopwatch.Frequency;
+        var current = basePosition + TimeSpan.FromSeconds(elapsedSeconds);
+
+        if (current > Duration)
+            current = Duration;
+
+        // Monotonic check: progress must never jump backward during normal playback
+        if (current >= Position)
         {
-            Position += TimeSpan.FromSeconds(1);
+            Position = current;
         }
     }
 
@@ -189,6 +206,9 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
             Position = track.Position;
             Duration = track.Duration;
+            basePosition = track.Position;
+            lastSyncTimestamp = Stopwatch.GetTimestamp();
+            lastSeekTime = DateTimeOffset.MinValue;
 
             if (track.ThumbnailData != null && track.ThumbnailData.Length > 0)
             {
@@ -213,8 +233,47 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            Position = pos;
             Duration = dur;
+
+            // 1. Seek cooldown protection: ignore stale SMTC timeline updates
+            if (DateTimeOffset.UtcNow - lastSeekTime < TimeSpan.FromSeconds(2.5))
+            {
+                if (Math.Abs((pos - Position).TotalSeconds) > 2.0)
+                {
+                    // Stale SMTC timeline snapshot from before the seek -> ignore
+                    return;
+                }
+                lastSeekTime = DateTimeOffset.MinValue;
+            }
+
+            if (!IsPlaying)
+            {
+                // When paused or stopped, directly sync position
+                basePosition = pos;
+                lastSyncTimestamp = Stopwatch.GetTimestamp();
+                Position = pos;
+                return;
+            }
+
+            // 2. When playing: calculate difference between SMTC position and our monotonic clock
+            var elapsedTicks = Stopwatch.GetTimestamp() - lastSyncTimestamp;
+            var elapsedSeconds = (double)elapsedTicks / Stopwatch.Frequency;
+            var currentEstimated = basePosition + TimeSpan.FromSeconds(elapsedSeconds);
+
+            var diff = (pos - currentEstimated).TotalSeconds;
+
+            if (Math.Abs(diff) >= 1.5)
+            {
+                // Significant jump (e.g. user seeked or looped in external player) -> Snap immediately
+                basePosition = pos;
+                lastSyncTimestamp = Stopwatch.GetTimestamp();
+                Position = pos;
+            }
+            else if (Math.Abs(diff) > 0.25)
+            {
+                // Small drift: gently slew basePosition so it converges smoothly without jitter
+                basePosition += TimeSpan.FromSeconds(diff * 0.25);
+            }
         });
     }
 
@@ -232,6 +291,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
     private static string FormatTime(TimeSpan time)
     {
+        if (time < TimeSpan.Zero) time = TimeSpan.Zero;
         if (time.TotalHours >= 1)
             return time.ToString(@"h\:mm\:ss");
         return time.ToString(@"m\:ss");
@@ -259,6 +319,9 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
             var targetSeconds = duration.TotalSeconds * Math.Clamp(percent, 0.0, 1.0);
             var targetTime = TimeSpan.FromSeconds(targetSeconds);
             Position = targetTime;
+            basePosition = targetTime;
+            lastSyncTimestamp = Stopwatch.GetTimestamp();
+            lastSeekTime = DateTimeOffset.UtcNow;
             _ = mediaService.SeekAsync(targetTime);
         }
     }
@@ -286,7 +349,6 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
         timer.Stop();
         mediaService.TrackChanged -= OnTrackChanged;
         mediaService.TimelineChanged -= OnTimelineChanged;
-        mediaService.Dispose();
-        CoverBitmap?.Dispose();
+        CoverBitmap = null;
     }
 }

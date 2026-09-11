@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Music.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="160"
+             mc:Ignorable="d" d:DesignWidth="312" d:DesignHeight="140"
              Margin="0"
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
@@ -11,12 +11,13 @@
              x:DataType="vm:MusicViewModel">
 
     <UserControl.Styles>
-        <Style Selector="ProgressBar.seek-bar">
-            <Setter Property="MinHeight" Value="4"/>
-            <Setter Property="Height" Value="4"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Background" Value="#35888888"/>
-            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+        <Style Selector="ProgressBar.ios-scrubber">
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="3"/>
+            <Setter Property="Height" Value="3"/>
+            <Setter Property="CornerRadius" Value="1.5"/>
+            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="Template">
                 <ControlTemplate>
                     <Border Name="ProgressBarRoot"
@@ -34,75 +35,88 @@
                 </ControlTemplate>
             </Setter>
         </Style>
-        <Style Selector="Button.ctrl-btn">
+        <Style Selector="Button.ios-btn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector="Button.ctrl-btn:pointerover">
-            <Setter Property="Opacity" Value="0.8"/>
+        <Style Selector="Button.ios-btn:pointerover">
+            <Setter Property="Opacity" Value="0.72"/>
+        </Style>
+        <Style Selector="Button.ios-play-btn">
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.ios-play-btn:pointerover">
+            <Setter Property="Background" Value="#32FFFFFF"/>
+            <Setter Property="Opacity" Value="0.9"/>
         </Style>
     </UserControl.Styles>
 
-    <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <!-- Left: Cover Art (strictly equal left, top, and bottom margins) -->
-        <Panel Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Stretch">
-            <Border Name="CoverBorder" Width="124" Height="124" CornerRadius="18"
-                    ClipToBounds="True" Background="#18FFFFFF"
-                    HorizontalAlignment="Left" VerticalAlignment="Center">
+    <Grid Name="RootGrid" ColumnDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <!-- Left: Album Artwork -->
+        <Panel Grid.Column="0" Name="CoverContainer" VerticalAlignment="Stretch" HorizontalAlignment="Left">
+            <Border Name="CoverBorder"
+                    CornerRadius="14"
+                    ClipToBounds="True"
+                    Background="#16FFFFFF"
+                    VerticalAlignment="Center">
                 <Panel>
-                    <!-- Fallback Vinyl Disc -->
-                    <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"
-                              Width="54" Height="54"
-                              Opacity="0.4"
-                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                              IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}"/>
+                    <!-- Fallback Note / Disc -->
+                    <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
+                        <Border Background="#12FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                                  Width="38" Height="38"
+                                  Opacity="0.4"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Panel>
                     <!-- Album Artwork -->
                     <Image Source="{Binding CoverBitmap}"
                            Stretch="UniformToFill"
                            IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                    <!-- Subtle border overlay -->
+                    <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="14" IsHitTestVisible="False"/>
                 </Panel>
             </Border>
         </Panel>
 
-        <!-- Right: Info, Timeline & Controls -->
-        <!-- RightPanel margin right matches cover's left margin from widget edge -->
-        <Grid Name="RightPanel" Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-              HorizontalAlignment="Stretch" VerticalAlignment="Center"
-              Margin="0,0,16,0">
-            <!-- App Badge (Left aligned) -->
-            <Border Grid.Row="0" Background="#22888888" CornerRadius="4"
-                    Padding="6,2" HorizontalAlignment="Left" Margin="0,0,0,4">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Ellipse Width="5" Height="5" Fill="{DynamicResource SystemAccentColor}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding PlayerName}" FontSize="10" FontWeight="SemiBold"
-                               Opacity="0.9"
-                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                </StackPanel>
-            </Border>
+        <!-- Right: Info, Timeline & Controls (Flexible 5-row Grid, vertically balanced) -->
+        <Grid Name="RightPanel" Grid.Column="1"
+              RowDefinitions="*,Auto,Auto,Auto,*"
+              VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
 
-            <!-- Song Title (Left aligned) -->
-            <TextBlock Grid.Row="1" Text="{Binding TrackTitle}"
-                       FontSize="15" FontWeight="Bold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                       TextTrimming="CharacterEllipsis" MaxLines="1"
-                       HorizontalAlignment="Left" Margin="0,0,0,2"/>
+            <!-- Row 0: Elastic Spacer Top -->
 
-            <!-- Artist & Album (Left aligned) -->
-            <TextBlock Grid.Row="2" Text="{Binding Artist}"
-                       FontSize="12" FontWeight="Medium" Opacity="0.88"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                       TextTrimming="CharacterEllipsis" MaxLines="1"
-                       HorizontalAlignment="Left" Margin="0,0,0,8"/>
+            <!-- Row 1: Track Title & Artist -->
+            <StackPanel Grid.Row="1" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                <!-- Song Title -->
+                <TextBlock Name="TitleBlock"
+                           Text="{Binding TrackTitle}"
+                           FontSize="15" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                <!-- Artist Name -->
+                <TextBlock Name="ArtistBlock"
+                           Text="{Binding Artist}"
+                           FontSize="12" FontWeight="Normal" Opacity="0.72"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+            </StackPanel>
 
-            <!-- Progress Bar (Left aligned with text, stretching to the right margin) -->
-            <StackPanel Grid.Row="3" Spacing="2" HorizontalAlignment="Stretch" Margin="0,0,0,10" IsVisible="{Binding ShowProgressBar}">
+            <!-- Row 2: Progress Scrubber (iOS style) -->
+            <StackPanel Grid.Row="2" Name="ProgressSection"
+                        Spacing="3" HorizontalAlignment="Stretch" Margin="0,6,0,6"
+                        IsVisible="{Binding ShowProgressBar}">
                 <Border Name="ProgressTrack" Height="14" Background="Transparent"
+                        ClipToBounds="True"
                         Cursor="Hand" PointerPressed="OnProgressPointerPressed"
-                        HorizontalAlignment="Stretch"
                         VerticalAlignment="Center">
-                    <ProgressBar Classes="seek-bar"
+                    <ProgressBar Classes="ios-scrubber"
+                                 MinWidth="0"
                                  Minimum="0" Maximum="1" Value="{Binding ProgressPercent}"
                                  VerticalAlignment="Center"
                                  HorizontalAlignment="Stretch"
@@ -110,51 +124,57 @@
                 </Border>
 
                 <!-- Time Labels -->
-                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,-1,0,0">
-                    <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="9.5"
-                               FontWeight="Medium" Opacity="0.8"
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="1,-1,1,0">
+                    <TextBlock Grid.Column="0" Text="{Binding PositionText}"
+                               FontSize="9.5" FontWeight="Normal" Opacity="0.65"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                    <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="9.5"
-                               FontWeight="Medium" Opacity="0.8"
+                    <TextBlock Grid.Column="2" Text="{Binding DurationText}"
+                               FontSize="9.5" FontWeight="Normal" Opacity="0.65"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 </Grid>
             </StackPanel>
 
-            <!-- Playback Control Buttons (Centered) -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
-                <!-- Previous -->
-                <Button Classes="ctrl-btn" Width="28" Height="28" CornerRadius="14"
+            <!-- Row 3: Playback Controls (iOS style) -->
+            <StackPanel Grid.Row="3" Name="ControlsSection"
+                        Orientation="Horizontal" Spacing="24"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Previous: iOS backward.fill (◀◀) -->
+                <Button Name="PrevButton" Classes="ios-btn" Width="28" Height="28" CornerRadius="14"
                         Command="{Binding SkipPrevious}"
                         IsEnabled="{Binding CanSkipPrevious}">
-                    <PathIcon Data="M6 6h2v12H6zm3.5 6l8.5 6V6z" Width="12" Height="12"
+                    <PathIcon Data="M11.5 12L20.5 18.5V5.5L11.5 12zm-9 0L11.5 18.5V5.5L2.5 12z"
+                              Width="14" Height="14"
                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 </Button>
 
-                <!-- Play / Pause -->
-                <Button Classes="ctrl-btn" Width="36" Height="36" CornerRadius="18"
-                        Background="#30888888"
+                <!-- Play / Pause: iOS play.fill / pause.fill -->
+                <Button Name="PlayButton" Classes="ios-play-btn" Width="36" Height="36" CornerRadius="18"
                         Command="{Binding TogglePlayPause}"
                         IsEnabled="{Binding CanPlayPause}">
                     <Panel>
                         <!-- Play Icon -->
-                        <PathIcon Data="M8 5v14l11-7z" Width="15" Height="15"
+                        <PathIcon Data="M7 5.5v13l11-6.5-11-6.5z" Width="15" Height="15"
+                                  Margin="2,0,0,0"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   IsVisible="{Binding !IsPlaying}"/>
                         <!-- Pause Icon -->
-                        <PathIcon Data="M6 19h4V5H6v14zm8-14v14h4V5h-4z" Width="14" Height="14"
+                        <PathIcon Data="M6 5h4v14H6V5zm8 0h4v14h-4V5z" Width="13" Height="13"
                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                                   IsVisible="{Binding IsPlaying}"/>
                     </Panel>
                 </Button>
 
-                <!-- Next -->
-                <Button Classes="ctrl-btn" Width="28" Height="28" CornerRadius="14"
+                <!-- Next: iOS forward.fill (▶▶) -->
+                <Button Name="NextButton" Classes="ios-btn" Width="28" Height="28" CornerRadius="14"
                         Command="{Binding SkipNext}"
                         IsEnabled="{Binding CanSkipNext}">
-                    <PathIcon Data="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" Width="12" Height="12"
+                    <PathIcon Data="M12.5 12L3.5 5.5v13L12.5 12zm9 0L12.5 5.5v13L21.5 12z"
+                              Width="14" Height="14"
                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
                 </Button>
             </StackPanel>
+
+            <!-- Row 4: Elastic Spacer Bottom -->
         </Grid>
     </Grid>
 </UserControl>

@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Music.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="72" d:DesignHeight="72"
+             Margin="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             x:Class="Music.Views.Controls.MusicCell"
+             x:DataType="vm:MusicViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.cell-btn">
+            <Setter Property="Background" Value="#25000000"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.cell-btn:pointerover">
+            <Setter Property="Background" Value="#45000000"/>
+            <Setter Property="Opacity" Value="0.9"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <!-- Cover artwork container -->
+        <Border Name="CellBorder"
+                CornerRadius="12"
+                ClipToBounds="True"
+                Background="#16FFFFFF"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <Panel>
+                <!-- Fallback Note / Disc -->
+                <Panel IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNull}}">
+                    <Border Background="#15FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                              Width="26" Height="26"
+                              Opacity="0.5"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Panel>
+                <!-- Album Artwork -->
+                <Image Source="{Binding CoverBitmap}"
+                       Stretch="UniformToFill"
+                       IsVisible="{Binding CoverBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                <!-- Subtle inner edge -->
+                <Border BorderBrush="#20FFFFFF" BorderThickness="0.8" CornerRadius="12" IsHitTestVisible="False"/>
+
+                <!-- Center Play/Pause Pill Button -->
+                <Button Classes="cell-btn"
+                        Name="PlayPauseButton"
+                        Width="32" Height="32" CornerRadius="16"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Command="{Binding TogglePlayPause}"
+                        IsEnabled="{Binding CanPlayPause}">
+                    <Panel>
+                        <!-- Play Icon -->
+                        <PathIcon Data="M7 5.5v13l11-6.5-11-6.5z" Width="14" Height="14"
+                                  Margin="2,0,0,0"
+                                  Foreground="White"
+                                  IsVisible="{Binding !IsPlaying}"/>
+                        <!-- Pause Icon -->
+                        <PathIcon Data="M6 5h4v14H6V5zm8 0h4v14h-4V5z" Width="12" Height="12"
+                                  Foreground="White"
+                                  IsVisible="{Binding IsPlaying}"/>
+                    </Panel>
+                </Button>
+            </Panel>
+        </Border>
+    </Panel>
+</UserControl>

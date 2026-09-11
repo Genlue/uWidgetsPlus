@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Clock.Models;
 using Clock.ViewModels;
@@ -15,9 +15,9 @@ public partial class Digital : UserControl
     {
         viewModel = new DigitalClockViewModel(clockModel);
         DataContext = viewModel;
-        Unloaded += (_, _) => viewModel.Dispose();
+        Loaded += (_, _) => viewModel.Start();
+        Unloaded += (_, _) => viewModel.Stop();
         SizeChanged += OnSizeChanged;
-        Unloaded += (_, _) => SizeChanged -= OnSizeChanged;
         InitializeComponent();
     }
 

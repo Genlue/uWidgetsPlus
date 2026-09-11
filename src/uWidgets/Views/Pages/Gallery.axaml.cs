@@ -19,59 +19,65 @@ public partial class Gallery : UserControl
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly ILayoutProvider layoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
-    private readonly AssemblyInfo assemblyInfo;
+    private readonly List<AssemblyInfo> assemblyInfos;
     private readonly IWidgetFactory<Window, UserControl> widgetFactory;
     private readonly DisplayMonitorService displayMonitor;
-    public List<WidgetPreviewViewModel> Widgets => GetWidgets();
-    public int WidgetSize => 160;
+    private List<WidgetPreviewViewModel>? widgets;
+    public List<WidgetPreviewViewModel> Widgets => widgets ??= GetWidgets();
     public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (VisualRoot?.RenderScaling ?? 1.0));
 
     public Gallery(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, IAssemblyProvider assemblyProvider, 
         AssemblyInfo assemblyInfo, IWidgetFactory<Window, UserControl> widgetFactory, DisplayMonitorService displayMonitor)
+        : this(appSettingsProvider, layoutProvider, assemblyProvider, [assemblyInfo], widgetFactory, displayMonitor)
+    {
+    }
+
+    public Gallery(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, IAssemblyProvider assemblyProvider, 
+        IEnumerable<AssemblyInfo> assemblyInfos, IWidgetFactory<Window, UserControl> widgetFactory, DisplayMonitorService displayMonitor)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.assemblyProvider = assemblyProvider;
-        this.assemblyInfo = assemblyInfo;
+        this.assemblyInfos = assemblyInfos.ToList();
         this.widgetFactory = widgetFactory;
         this.displayMonitor = displayMonitor;
         DataContext = this;
-        Unloaded += OnUnloaded;
         
         InitializeComponent();
     }
 
     private List<WidgetPreviewViewModel> GetWidgets()
     {
-        var assembly = assemblyProvider
-            .LoadAssembly(assemblyInfo.AssemblyName);
+        var result = new List<WidgetPreviewViewModel>();
 
-        var locale = assemblyProvider.GetLocaleResourceManager(assembly);
-
-        var widgets =  assembly
-            .GetCustomAttributes<WidgetInfoAttribute>()
-            .Select(widgetInfo => new WidgetPreviewViewModel(
-                widgetFactory.CreateControl(widgetInfo.ViewType),
-                assemblyInfo.AssemblyName,
-                widgetInfo.ViewType.Name,
-                locale?.GetString(widgetInfo.Title ?? string.Empty),
-                locale?.GetString(widgetInfo.Subtitle ?? string.Empty),
-                widgetInfo.DefaultColumns,
-                widgetInfo.DefaultRows
-            ))
-            .ToList();
-
-        return widgets;
-    }
-    
-    private void OnUnloaded(object? sender, RoutedEventArgs e)
-    {
-        // Multi-screen layout: unload the widget assembly only when no screen has
-        // a widget of this type anymore (flattened across all per-screen layouts).
-        if (layoutProvider.Get().AllWidgets.All(x => x.Type != assemblyInfo.AssemblyName))
+        foreach (var info in assemblyInfos)
         {
-            assemblyProvider.UnloadAssembly(assemblyInfo.AssemblyName);
+            try
+            {
+                var assembly = assemblyProvider.LoadAssembly(info.AssemblyName);
+                var locale = assemblyProvider.GetLocaleResourceManager(assembly);
+
+                var items = assembly
+                    .GetCustomAttributes<WidgetInfoAttribute>()
+                    .Select(widgetInfo => new WidgetPreviewViewModel(
+                        widgetFactory.CreateControl(widgetInfo.ViewType),
+                        info.AssemblyName,
+                        widgetInfo.ViewType.Name,
+                        locale?.GetString(widgetInfo.Title ?? string.Empty) ?? widgetInfo.Title,
+                        locale?.GetString(widgetInfo.Subtitle ?? string.Empty) ?? widgetInfo.Subtitle,
+                        widgetInfo.DefaultColumns,
+                        widgetInfo.DefaultRows
+                    ));
+
+                result.AddRange(items);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Gallery] Failed to load {info.AssemblyName}: {ex.Message}");
+            }
         }
+
+        return result;
     }
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)

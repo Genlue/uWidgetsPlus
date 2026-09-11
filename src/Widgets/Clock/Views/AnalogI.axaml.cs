@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Clock.Models;
 using Clock.ViewModels;
@@ -7,14 +7,17 @@ namespace Clock.Views;
 
 public partial class AnalogI : UserControl
 {
+    private readonly AnalogClockViewModel viewModel;
+
     public AnalogI() : this(new ClockModel()) {}
     
     public AnalogI(ClockModel clockModel)
     {
-        DataContext = new AnalogClockViewModel(clockModel);
-        Unloaded += (_, _) => ((AnalogClockViewModel)DataContext).Dispose();
+        viewModel = new AnalogClockViewModel(clockModel);
+        DataContext = viewModel;
+        Loaded += (_, _) => viewModel.Start();
+        Unloaded += (_, _) => viewModel.Stop();
         SizeChanged += OnSizeChanged;
-        Unloaded += (_, _) => SizeChanged -= OnSizeChanged;
         InitializeComponent();
     }
 

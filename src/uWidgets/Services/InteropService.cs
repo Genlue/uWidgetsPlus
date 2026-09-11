@@ -81,9 +81,15 @@ public class InteropService
     public static void SetWindowRegionFromSpans(Window window, IReadOnlyList<(int Left, int Top, int Right, int Bottom)> rects)
     {
         var handle = window.TryGetPlatformHandle()?.Handle;
-        if (handle == null || rects == null || rects.Count == 0)
+        if (handle == null) return;
+        if (rects == null || rects.Count == 0)
         {
-            ClearWidgetRegion(window);
+            IntPtr emptyRgn = CreateRectRgn(0, 0, 0, 0);
+            if (emptyRgn != IntPtr.Zero)
+            {
+                if (SetWindowRgn(handle.Value, emptyRgn, true) == 0)
+                    DeleteObject(emptyRgn);
+            }
             return;
         }
 

@@ -25,19 +25,47 @@ public class AssemblyProvider : IAssemblyProvider
         this.serviceProvider = serviceProvider;
     }
 
+    private readonly Dictionary<string, ILookup<string, AssemblyInfo>> assemblyInfoCache = new(StringComparer.OrdinalIgnoreCase);
+
     /// <inheritdoc />
     public ILookup<string, AssemblyInfo> GetAssemblyInfos(string directoryPath)
     {
-        var assemblies = Directory.Exists(directoryPath)
-            ? Directory
-                .GetFiles(directoryPath, "*.dll")
-                .Select(GetAssemblyInfo)
-                .Where(info => info != null)
-                .Cast<AssemblyInfo>()
-            : [];
-        
-        return assemblies
-            .ToLookup(assembly => assembly.AssemblyName);
+        lock (assemblyInfoCache)
+        {
+            if (assemblyInfoCache.TryGetValue(directoryPath, out var cached))
+                return cached;
+
+            var assemblies = Directory.Exists(directoryPath)
+                ? Directory
+                    .GetFiles(directoryPath, "*.dll")
+                    .Where(IsPotentialWidgetAssembly)
+                    .Select(GetAssemblyInfo)
+                    .Where(info => info != null)
+                    .Cast<AssemblyInfo>()
+                    .ToList()
+                : [];
+            
+            var lookup = assemblies.ToLookup(assembly => assembly.AssemblyName);
+            assemblyInfoCache[directoryPath] = lookup;
+            return lookup;
+        }
+    }
+
+    private static bool IsPotentialWidgetAssembly(string filePath)
+    {
+        var fileName = Path.GetFileName(filePath);
+        if (fileName.StartsWith("lib", StringComparison.OrdinalIgnoreCase) ||
+            fileName.StartsWith("av_", StringComparison.OrdinalIgnoreCase) ||
+            fileName.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase) ||
+            fileName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+            fileName.StartsWith("WinRT.", StringComparison.OrdinalIgnoreCase) ||
+            fileName.StartsWith("TimeZone", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("Markdig.dll", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("uWidgets.Core.dll", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        return true;
     }
 
     private AssemblyInfo? GetAssemblyInfo(string filePath)
@@ -59,8 +87,6 @@ public class AssemblyProvider : IAssemblyProvider
             var displayName = locale?.GetString(localeAttribute?.DisplayName ?? "") ?? assemblyName;
 
             context.Unload();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
 
             return new AssemblyInfo(filePath, assemblyName, displayName, company, version, localeAttribute?.IconData ?? "");
         }
@@ -92,8 +118,6 @@ public class AssemblyProvider : IAssemblyProvider
 
         context.Unload();
         loadedContexts.Remove(name);
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
     }
 
     /// <inheritdoc />

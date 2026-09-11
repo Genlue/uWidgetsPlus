@@ -1,19 +1,30 @@
+using System;
 using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Music.Models;
 using Music.ViewModels;
 using Music.Views.Controls;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
-using uWidgets.Services;
 
 namespace Music.Views;
+
+public enum MusicTier
+{
+    Cell1x1,
+    Banner4x1,
+    Small2x2,
+    Medium4x2,
+    Large4x4
+}
 
 public partial class Music : UserControl, IWidgetSelfRefreshing
 {
     private readonly MusicViewModel viewModel;
-    private WidgetTier currentTier = (WidgetTier)(-1);
+    private MusicTier currentTier = (MusicTier)(-1);
 
     public Music() : this(new MusicModel()) { }
 
@@ -23,51 +34,100 @@ public partial class Music : UserControl, IWidgetSelfRefreshing
         DataContext = viewModel;
         InitializeComponent();
 
+        Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
-        Unloaded += OnUnloaded;
     }
 
-    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        SizeChanged -= OnSizeChanged;
-        Unloaded -= OnUnloaded;
-        viewModel.Dispose();
+        UpdateLayoutTier(Bounds.Size);
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
     {
-        var size = e.NewSize;
+        UpdateLayoutTier(e.NewSize);
+    }
+
+    public void UpdateLayoutTier(Size size)
+    {
         if (size.Width <= 0 || size.Height <= 0) return;
 
-        // Resolve tier:
-        // - Small (2×2): compact, roughly square (<= 220px in both dimensions)
-        // - Medium (4×2): wide row (width > 220 && height <= 220, or aspect ratio > 1.35)
-        // - Large (4×4): large card (> 220px in both dimensions)
-        WidgetTier tier;
-        if (size.Width > 220 && size.Height > 220)
+        var tier = ResolveTier(size);
+
+        if (tier != currentTier || TierContainer.Content == null)
         {
-            tier = WidgetTier.Large;
-        }
-        else if (size.Width > size.Height * 1.35 || (size.Width > 220 && size.Height <= 220))
-        {
-            tier = WidgetTier.Medium;
-        }
-        else
-        {
-            tier = WidgetTier.Small;
+            currentTier = tier;
+            TierContainer.Content = tier switch
+            {
+                MusicTier.Cell1x1 => new MusicCell(viewModel),
+                MusicTier.Banner4x1 => new MusicBanner(viewModel),
+                MusicTier.Small2x2 => new MusicSmall(viewModel),
+                MusicTier.Large4x4 => new MusicLarge(viewModel),
+                _ => new MusicMedium(viewModel)
+            };
         }
 
-        if (tier == currentTier && TierContainer.Content != null)
-            return;
-
-        currentTier = tier;
-
-        TierContainer.Content = tier switch
+        // Trigger adaptive layout on active content
+        switch (TierContainer.Content)
         {
-            WidgetTier.Large => new MusicLarge(viewModel),
-            WidgetTier.Medium => new MusicMedium(viewModel),
-            _ => new MusicSmall(viewModel)
-        };
+            case MusicCell cell:
+                cell.AdaptLayout(size);
+                break;
+            case MusicBanner banner:
+                banner.AdaptLayout(size);
+                break;
+            case MusicSmall small:
+                small.AdaptLayout(size);
+                break;
+            case MusicMedium medium:
+                medium.AdaptLayout(size);
+                break;
+            case MusicLarge large:
+                large.AdaptLayout(size);
+                break;
+        }
+    }
+
+    public MusicTier ResolveTier(Size size)
+    {
+        var span = FindHostSpan();
+        if (span != null)
+        {
+            var (cols, rows) = span.Value;
+            if (cols <= 1 && rows <= 1) return MusicTier.Cell1x1;
+            if (rows == 1) return MusicTier.Banner4x1;
+            if (cols <= 2 && rows <= 2) return MusicTier.Small2x2;
+            if (rows >= 3 && cols >= 3) return MusicTier.Large4x4;
+            return MusicTier.Medium4x2;
+        }
+
+        // Robust pixel-based fallback:
+        // 1x1 cell: tiny square card
+        if (size.Width <= 100 && size.Height <= 100)
+            return MusicTier.Cell1x1;
+
+        // 1-row banner: wide but height <= 95
+        if (size.Height <= 95 && size.Width >= 130)
+            return MusicTier.Banner4x1;
+
+        // 2x2 small: roughly square card <= 210
+        if (size.Width <= 210 && size.Height <= 210 && Math.Abs(size.Width - size.Height) <= 50)
+            return MusicTier.Small2x2;
+
+        // 4x4 large: both dimensions large (>= 250)
+        if (size.Width >= 250 && size.Height >= 250)
+            return MusicTier.Large4x4;
+
+        // Default to 4x2 / 3x2 medium
+        return MusicTier.Medium4x2;
+    }
+
+    private (int Columns, int Rows)? FindHostSpan()
+    {
+        for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
+            if (node is uWidgets.Views.Widget widget)
+                return widget.CurrentSpan;
+        return null;
     }
 
     public void Refresh(WidgetLayout layout)

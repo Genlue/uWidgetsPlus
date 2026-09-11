@@ -13,12 +13,16 @@ public partial class Month : UserControl
 {
     private readonly MonthCalendarModel monthCalendarModel;
 
+    private readonly MonthCalendarViewModel viewModel;
+
     public Month() : this(new MonthCalendarModel(DayOfWeek.Monday)) {}
     
     public Month(MonthCalendarModel monthCalendarModel)
     {
         this.monthCalendarModel = monthCalendarModel;
-        DataContext = new MonthCalendarViewModel(monthCalendarModel);
+        viewModel = new MonthCalendarViewModel(monthCalendarModel);
+        DataContext = viewModel;
+        Loaded += (_, _) => viewModel.Start();
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
         InitializeComponent();
@@ -29,10 +33,7 @@ public partial class Month : UserControl
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        SizeChanged -= OnSizeChanged;
-        if (Application.Current != null)
-            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
-        ((MonthCalendarViewModel)DataContext!).Dispose();
+        viewModel.Stop();
     }
 
     private void OnActualThemeVariantChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();

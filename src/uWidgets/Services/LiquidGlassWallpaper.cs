@@ -88,12 +88,11 @@ public static class LiquidGlassWallpaper
         if (captureExpiresTicks > DateTime.UtcNow.Ticks && captureBytes != null)
             return captureBytes;
 
-        for (var attempt = 0; attempt < 3; attempt++)
+        for (var attempt = 0; attempt < 2; attempt++)
         {
             var bytes = DesktopCapturer.Capture();
             if (bytes.Length == 0)
             {
-                System.Threading.Thread.Sleep(150);
                 continue;
             }
             captureBytes = bytes;

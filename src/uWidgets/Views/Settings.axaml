@@ -13,11 +13,16 @@
 
     <Window.Styles>
         <Style Selector="ListBoxItem">
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Margin" Value="2" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="Padding" Value="10,7" />
         </Style>
         <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource SystemRevealListLowColor}" />                
+        </Style>
+        <Style Selector="ListBoxItem" x:DataType="viewModels:PageViewModel">
+            <Setter Property="IsHitTestVisible" Value="{Binding IsItem}" />
+            <Setter Property="Focusable" Value="{Binding IsItem}" />
         </Style>
     </Window.Styles>
     
@@ -34,10 +39,28 @@
                         <ListBox Name="ListBox" Background="Transparent" SelectionMode="Single" ItemsSource="{Binding AllItems}" SelectionChanged="OnMenuItemChanged">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="viewModels:PageViewModel">
-                                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsNotSeparator}">
-                                        <PathIcon Data="{Binding Icon}" Height="16" />
-                                        <TextBlock Text="{Binding Text}" />
-                                    </StackPanel>
+                                    <Panel>
+                                        <!-- Header Section Title -->
+                                        <TextBlock Text="{Binding Text}" 
+                                                   FontSize="11" 
+                                                   FontWeight="SemiBold" 
+                                                   Foreground="{DynamicResource SystemAccentColor}"
+                                                   Margin="2,8,0,0"
+                                                   IsVisible="{Binding IsHeader}" />
+
+                                        <!-- Separator Line -->
+                                        <Rectangle Height="1" 
+                                                   Fill="{DynamicResource SystemControlForegroundBaseLowBrush}" 
+                                                   Opacity="0.25" 
+                                                   Margin="0,2" 
+                                                   IsVisible="{Binding IsSeparator}" />
+
+                                        <!-- Regular Nav Item -->
+                                        <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsItem}">
+                                            <PathIcon Data="{Binding Icon}" Height="16" Width="16" />
+                                            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Panel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>

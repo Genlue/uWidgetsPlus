@@ -5,10 +5,14 @@ namespace Calendar.Views;
 
 public partial class Date : UserControl
 {
+    private readonly DateCalendarViewModel viewModel;
+
     public Date()
     {
-        DataContext = new DateCalendarViewModel();
-        Unloaded += (_, _) => ((DateCalendarViewModel)DataContext).Dispose();
+        viewModel = new DateCalendarViewModel();
+        DataContext = viewModel;
+        Loaded += (_, _) => viewModel.Start();
+        Unloaded += (_, _) => viewModel.Stop();
         InitializeComponent();
     }
 }

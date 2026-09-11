@@ -482,16 +482,9 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void ApplyWidgetRegion()
     {
-        // Frameless widgets: in native blur mode, the child view manages the glyph region;
-        // in glass or solid mode, clear the region to keep full 32-bit alpha and smooth anti-aliasing.
-        if (isFrameless)
-        {
-            if (!appSettingsProvider.Get().Theme.UsesNativeBlur)
-            {
-                InteropService.ClearWidgetRegion(this);
-            }
-            return;
-        }
+        // Frameless widgets manage their own window region and glyph clipping;
+        // never clear or overwrite their region externally.
+        if (isFrameless) return;
 
         // Native frame: no custom clipping.
         if (appSettingsProvider.Get().Theme.UseNativeFrame)
@@ -593,6 +586,8 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private void ApplyTransparencyHint()
     {
+        if (isFrameless) return;
+
         TransparencyLevelHint = appSettingsProvider.Get().Theme.UsesNativeBlur
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];

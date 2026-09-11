@@ -149,6 +149,23 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     
     public static Bitmap GetWallpaperPreview(int targetHeight = 150)
     {
+        // 1. Fast path: Decode directly from the Windows wallpaper file in milliseconds
+        try
+        {
+            var wallpaperPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                @"Microsoft\Windows\Themes\TranscodedWallpaper");
+            if (!File.Exists(wallpaperPath))
+                wallpaperPath = InteropService.GetWallpaperPath();
+
+            if (File.Exists(wallpaperPath))
+            {
+                using var fileStream = File.OpenRead(wallpaperPath);
+                return Bitmap.DecodeToHeight(fileStream, targetHeight);
+            }
+        }
+        catch { }
+
+        // 2. Fallback: query wallpaper snapshot
         var snapshot = LiquidGlassWallpaper.Get();
         try
         {

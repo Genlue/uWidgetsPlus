@@ -335,6 +335,18 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().ShowDialog(this);
 
+    private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
+    public bool IsFixedWidget => FixedSizeWidget != null;
+
+    public void SetFixedSpanPreset(string spanTag)
+    {
+        if (spanTag.Split('x') is [string cStr, string rStr]
+            && int.TryParse(cStr, out var c) && int.TryParse(rStr, out var r))
+        {
+            _ = Resize(c, r);
+        }
+    }
+
     /// <summary>
     /// Context-menu stepper value: the widget's column span. Setting it resizes
     /// the widget to the new span (the 300 ms transition and the post-animation
@@ -349,6 +361,13 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (value is not { } target) return;
             var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == columns) return;
+            if (FixedSizeWidget is { } fixedWidget)
+            {
+                var snapped = fixedWidget.SnapSpan(next, rows);
+                if (snapped.Columns == columns && snapped.Rows == rows) return;
+                _ = Resize(snapped.Columns, snapped.Rows);
+                return;
+            }
             _ = Resize(next, rows);
         }
     }
@@ -363,6 +382,13 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (value is not { } target) return;
             var next = Math.Clamp((int) Math.Round(target), 1, 999);
             if (next == rows) return;
+            if (FixedSizeWidget is { } fixedWidget)
+            {
+                var snapped = fixedWidget.SnapSpan(columns, next);
+                if (snapped.Columns == columns && snapped.Rows == rows) return;
+                _ = Resize(snapped.Columns, snapped.Rows);
+                return;
+            }
             _ = Resize(columns, next);
         }
     }
@@ -783,7 +809,17 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         var appSettings = appSettingsProvider.Get();
         
-        if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapSize)
+        if (FixedSizeWidget is { } fixedWidget)
+        {
+            var (c, r) = GetSpan();
+            var (sc, sr) = fixedWidget.SnapSpan(c, r);
+            if (sc != c || sr != r)
+            {
+                manualSpan = (sc, sr);
+                gridService.SetSize(this, sc, sr);
+            }
+        }
+        else if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapSize)
             gridService.SnapSize(this);
         
         Scale();

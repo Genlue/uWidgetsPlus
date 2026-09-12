@@ -35,6 +35,14 @@
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="FontSize" Value="13" />
         </Style>
+        <Style Selector="NumericUpDown.setting-num">
+            <Setter Property="Width" Value="96" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ShowButtonSpinner" Value="True" />
+            <Setter Property="AllowSpin" Value="True" />
+        </Style>
         <Style Selector="TextBlock.group-header">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -106,8 +114,9 @@
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_RowSpacing}" />
-                <ComboBox x:Name="RowSpacingBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnRowSpacingChanged" />
+                <NumericUpDown x:Name="RowSpacingInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="0" Maximum="200" Increment="1" FormatString="F0"
+                               ValueChanged="OnRowSpacingChanged" />
             </Grid>
 
             <TextBlock Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Name}" />
@@ -117,14 +126,16 @@
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_MaxNameLines}" />
-                <ComboBox x:Name="MaxNameLinesBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnMaxNameLinesChanged" />
+                <NumericUpDown x:Name="MaxNameLinesInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="1" Maximum="50" Increment="1" FormatString="F0"
+                               ValueChanged="OnMaxNameLinesChanged" />
             </Grid>
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_MaxNameChars}" />
-                <ComboBox x:Name="MaxNameCharsBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnMaxNameCharsChanged" />
+                <NumericUpDown x:Name="MaxNameCharsInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="0" Maximum="500" Increment="1" FormatString="F0"
+                               ValueChanged="OnMaxNameCharsChanged" />
             </Grid>
 
             <CheckBox x:Name="CamelCaseWrapToggle" Content="{x:Static locales:Locale.Folders_CamelCaseWrap}"
@@ -164,20 +175,23 @@
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_IconSize}" />
-                <ComboBox x:Name="IconSizeBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnIconSizeChanged" />
+                <NumericUpDown x:Name="IconSizeInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="8" Maximum="512" Increment="2" FormatString="F0"
+                               ValueChanged="OnIconSizeChanged" />
             </Grid>
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_FontSize}" />
-                <ComboBox x:Name="FontSizeBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnFontSizeChanged" />
+                <NumericUpDown x:Name="FontSizeInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="6" Maximum="120" Increment="1" FormatString="0.#"
+                               ValueChanged="OnFontSizeChanged" />
             </Grid>
 
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="setting-label" Text="{x:Static locales:Locale.Folders_Padding}" />
-                <ComboBox x:Name="PaddingBox" Classes="setting-combo" Grid.Column="1"
-                          SelectionChanged="OnPaddingChanged" />
+                <NumericUpDown x:Name="PaddingInput" Classes="setting-num" Grid.Column="1"
+                               Minimum="0" Maximum="200" Increment="1" FormatString="F0"
+                               ValueChanged="OnPaddingChanged" />
             </Grid>
 
             <TextBlock x:Name="ItemsGroupHeader" Classes="group-header" Text="{x:Static locales:Locale.Folders_Group_Items}" />

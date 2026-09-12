@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Progress" xml:space="preserve">
+        <value>时间进度</value>
+    </data>
+    <data name="Progress_Title" xml:space="preserve">
+        <value>时间进度</value>
+    </data>
+    <data name="Progress_Subtitle" xml:space="preserve">
+        <value>以灵动点阵直观呈现年、月、周、日与时光流逝</value>
+    </data>
+    <data name="Progress_Mode" xml:space="preserve">
+        <value>进度模式</value>
+    </data>
+    <data name="Progress_Mode_Year" xml:space="preserve">
+        <value>年进度 (365/366 点)</value>
+    </data>
+    <data name="Progress_Mode_Month" xml:space="preserve">
+        <value>月进度 (28~31 点)</value>
+    </data>
+    <data name="Progress_Mode_Week" xml:space="preserve">
+        <value>周进度 (7 点)</value>
+    </data>
+    <data name="Progress_Mode_Day" xml:space="preserve">
+        <value>日进度</value>
+    </data>
+    <data name="Progress_Mode_Life" xml:space="preserve">
+        <value>人生时光 (以月为单位)</value>
+    </data>
+    <data name="Progress_DayGranularity" xml:space="preserve">
+        <value>日进度粒度</value>
+    </data>
+    <data name="Progress_DayGranularity_5Min" xml:space="preserve">
+        <value>每 5 分钟 (288 点)</value>
+    </data>
+    <data name="Progress_DayGranularity_10Min" xml:space="preserve">
+        <value>每 10 分钟 (144 点 · 12×12)</value>
+    </data>
+    <data name="Progress_DayGranularity_15Min" xml:space="preserve">
+        <value>每 15 分钟 (96 点)</value>
+    </data>
+    <data name="Progress_DayGranularity_30Min" xml:space="preserve">
+        <value>每 30 分钟 (48 点)</value>
+    </data>
+    <data name="Progress_DayGranularity_Hour" xml:space="preserve">
+        <value>每 1 小时 (24 点)</value>
+    </data>
+    <data name="Progress_DotShape" xml:space="preserve">
+        <value>圆点形状</value>
+    </data>
+    <data name="Progress_DotShape_Circle" xml:space="preserve">
+        <value>纯圆 (Circle)</value>
+    </data>
+    <data name="Progress_DotShape_Squircle" xml:space="preserve">
+        <value>圆角方糖 (Squircle)</value>
+    </data>
+    <data name="Progress_FollowAccent" xml:space="preserve">
+        <value>跟随系统强调色</value>
+    </data>
+    <data name="Progress_PassedColor" xml:space="preserve">
+        <value>已过圆点颜色</value>
+    </data>
+    <data name="Progress_CurrentColor" xml:space="preserve">
+        <value>当前圆点高亮色</value>
+    </data>
+    <data name="Progress_RemainingColor" xml:space="preserve">
+        <value>未过圆点颜色</value>
+    </data>
+    <data name="Progress_ShowHeader" xml:space="preserve">
+        <value>显示顶部信息栏</value>
+    </data>
+    <data name="Progress_CustomTitle" xml:space="preserve">
+        <value>自定义标题</value>
+    </data>
+    <data name="Progress_CustomTitle_Placeholder" xml:space="preserve">
+        <value>留空则按模式自动命名</value>
+    </data>
+    <data name="Progress_ShowPercentage" xml:space="preserve">
+        <value>显示百分比</value>
+    </data>
+    <data name="Progress_ShowCount" xml:space="preserve">
+        <value>显示计数进度</value>
+    </data>
+    <data name="Progress_BirthDate" xml:space="preserve">
+        <value>出生日期 (YYYY-MM-DD)</value>
+    </data>
+    <data name="Progress_LifeExpectancy" xml:space="preserve">
+        <value>预期寿命 (年)</value>
+    </data>
+</root>

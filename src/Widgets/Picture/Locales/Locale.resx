@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Picture" xml:space="preserve">
+        <value>Picture Frame</value>
+    </data>
+    <data name="Picture_Title" xml:space="preserve">
+        <value>Picture Frame</value>
+    </data>
+    <data name="Picture_Subtitle" xml:space="preserve">
+        <value>Desktop photo frame with slideshow and interactive custom crop</value>
+    </data>
+    <data name="Picture_AddFiles" xml:space="preserve">
+        <value>Add Images...</value>
+    </data>
+    <data name="Picture_AddFolder" xml:space="preserve">
+        <value>Add Folder...</value>
+    </data>
+    <data name="Picture_Delete" xml:space="preserve">
+        <value>Delete</value>
+    </data>
+    <data name="Picture_Clear" xml:space="preserve">
+        <value>Clear All</value>
+    </data>
+    <data name="Picture_MoveUp" xml:space="preserve">
+        <value>Move Up</value>
+    </data>
+    <data name="Picture_MoveDown" xml:space="preserve">
+        <value>Move Down</value>
+    </data>
+    <data name="Picture_Interval" xml:space="preserve">
+        <value>Slideshow Interval</value>
+    </data>
+    <data name="Picture_Interval_5s" xml:space="preserve">
+        <value>5 seconds</value>
+    </data>
+    <data name="Picture_Interval_10s" xml:space="preserve">
+        <value>10 seconds</value>
+    </data>
+    <data name="Picture_Interval_30s" xml:space="preserve">
+        <value>30 seconds</value>
+    </data>
+    <data name="Picture_Interval_1m" xml:space="preserve">
+        <value>1 minute</value>
+    </data>
+    <data name="Picture_Interval_5m" xml:space="preserve">
+        <value>5 minutes</value>
+    </data>
+    <data name="Picture_Interval_15m" xml:space="preserve">
+        <value>15 minutes</value>
+    </data>
+    <data name="Picture_Interval_30m" xml:space="preserve">
+        <value>30 minutes</value>
+    </data>
+    <data name="Picture_Interval_1h" xml:space="preserve">
+        <value>1 hour</value>
+    </data>
+    <data name="Picture_Interval_1d" xml:space="preserve">
+        <value>1 day</value>
+    </data>
+    <data name="Picture_Interval_Manual" xml:space="preserve">
+        <value>Manual (No auto-rotation)</value>
+    </data>
+    <data name="Picture_Order" xml:space="preserve">
+        <value>Play Order</value>
+    </data>
+    <data name="Picture_Order_Seq" xml:space="preserve">
+        <value>Sequential</value>
+    </data>
+    <data name="Picture_Order_Shuffle" xml:space="preserve">
+        <value>Shuffle</value>
+    </data>
+    <data name="Picture_Order_Fixed" xml:space="preserve">
+        <value>Fixed Single</value>
+    </data>
+    <data name="Picture_FitMode" xml:space="preserve">
+        <value>Fit Mode</value>
+    </data>
+    <data name="Picture_FitMode_CustomCrop" xml:space="preserve">
+        <value>Custom Manual Crop (Recommended)</value>
+    </data>
+    <data name="Picture_FitMode_Fill" xml:space="preserve">
+        <value>Fill (Center Crop)</value>
+    </data>
+    <data name="Picture_FitMode_Fit" xml:space="preserve">
+        <value>Fit (Full Image)</value>
+    </data>
+    <data name="Picture_IsFrameless" xml:space="preserve">
+        <value>Frameless Edge-to-Edge</value>
+    </data>
+    <data name="Picture_ShowCaption" xml:space="preserve">
+        <value>Show Caption Pill</value>
+    </data>
+    <data name="Picture_ClickToNext" xml:space="preserve">
+        <value>Click to Switch Next</value>
+    </data>
+    <data name="Picture_DoubleClickToOpen" xml:space="preserve">
+        <value>Double Click to Open Image</value>
+    </data>
+    <data name="Picture_CropSettings" xml:space="preserve">
+        <value>Selected Image Crop &amp; Framing</value>
+    </data>
+    <data name="Picture_CropX" xml:space="preserve">
+        <value>Horizontal Alignment (CropX)</value>
+    </data>
+    <data name="Picture_CropY" xml:space="preserve">
+        <value>Vertical Alignment (CropY)</value>
+    </data>
+    <data name="Picture_Zoom" xml:space="preserve">
+        <value>Zoom Level</value>
+    </data>
+</root>

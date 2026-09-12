@@ -100,7 +100,7 @@ if ($Msi) {
     $wxsPath = Join-Path $root "installer\Package.wxs"
     $wxsContent = Get-Content $wxsPath -Raw
     $verMatch = [regex]::Match($wxsContent, 'Version="([0-9\.]+)"')
-    $wxsVer = if ($verMatch.Success) { $verMatch.Groups[1].Value } else { "1.7.6" }
+    $wxsVer = if ($verMatch.Success) { $verMatch.Groups[1].Value } else { "1.7.7" }
     $msiDir = Join-Path $root "dist\installer"
     if (-not (Test-Path $msiDir)) { New-Item -ItemType Directory -Path $msiDir -Force | Out-Null }
     $msiOut = Join-Path $msiDir "uWidgetsPlus-$wxsVer-$Runtime.msi"

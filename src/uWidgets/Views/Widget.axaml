@@ -21,6 +21,9 @@
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
             <Separator IsVisible="{Binding ShowEditButton}"/>
             <MenuItem Header="{Binding SizeMenuTitle}">
+                <MenuItem Header="4×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixedWidget}" />
+                <MenuItem Header="8×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="8x4" IsVisible="{Binding IsFixedWidget}" />
+                <Separator IsVisible="{Binding IsFixedWidget}" />
                 <MenuItem StaysOpenOnClick="True">
                     <MenuItem.Header>
                         <Grid ColumnDefinitions="*,Auto" Width="200">

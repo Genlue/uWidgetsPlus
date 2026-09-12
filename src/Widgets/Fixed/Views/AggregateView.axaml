@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:FixedWidgets.ViewModels"
+             x:Class="FixedWidgets.Views.AggregateView"
+             x:DataType="vm:AggregateViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Ellipse.todayHighlight">
+            <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}" />
+        </Style>
+        <Style Selector="TextBlock.dayNum">
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="Opacity" Value="0.92" />
+        </Style>
+        <Style Selector="TextBlock.dayNum.today">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+        <Style Selector="TextBlock.dayNum.weekend:not(.today):not(.otherMonth)">
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.dayNum.otherMonth">
+            <Setter Property="Opacity" Value="0.22" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Perfectly proportioned 4×2 fixed card content (aspect ratio 2.3:1), uniform vector scaling -->
+    <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid Width="312" Height="136" ColumnDefinitions="136,1,175" Margin="0">
+
+            <!-- ===================== 左半侧：城市 + 天气 + 时间 (严格左对齐) ===================== -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" VerticalAlignment="Stretch" Margin="2 1 6 1">
+
+                <!-- 1. 顶部：城市名（左对齐，粗体，强调色，大字号突出） -->
+                <TextBlock Grid.Row="0"
+                           Text="{Binding CityName}"
+                           FontWeight="Bold"
+                           FontSize="22"
+                           Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Top"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="132" />
+
+                <!-- 2. 中间：温度 + 天气状况（左对齐） -->
+                <StackPanel Grid.Row="1"
+                            Orientation="Vertical"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Margin="0 3 0 3">
+                    <!-- 温度数值与天气图标横向并排 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TemperatureText}"
+                                   FontWeight="Bold"
+                                   FontSize="27"
+                                   LetterSpacing="-1"
+                                   LineHeight="28"
+                                   VerticalAlignment="Center" />
+                        <Path Data="{Binding WeatherIcon}"
+                              Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              Width="22" Height="22"
+                              Stretch="Uniform"
+                              VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 天气状况与高低温 -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 3 0 0">
+                        <TextBlock Text="{Binding ConditionText}"
+                                   FontSize="11.5"
+                                   FontWeight="Medium"
+                                   Opacity="0.85"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding HighLowText}"
+                                   FontSize="10.5"
+                                   Opacity="0.6"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 3. 下方：实时数字时钟 + 日期星期（左对齐） -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Vertical"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Left"
+                            Margin="0 0 0 1">
+                    <TextBlock Text="{Binding TimeText}"
+                               FontWeight="Bold"
+                               FontSize="22"
+                               FontFamily="Consolas, Inter, Segoe UI, sans-serif"
+                               LetterSpacing="-0.5"
+                               LineHeight="23"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <TextBlock Text="{Binding DateText}"
+                               FontSize="10.5"
+                               FontWeight="Normal"
+                               Opacity="0.68"
+                               Margin="0 2 0 0" />
+                </StackPanel>
+
+            </Grid>
+
+            <!-- ===================== 中央微光分割线 ===================== -->
+            <Rectangle Grid.Column="1"
+                       Width="1"
+                       Fill="#20FFFFFF"
+                       VerticalAlignment="Stretch"
+                       Margin="0 4" />
+
+            <!-- ===================== 右半侧：2×2 精致月历 (完整 7 列排版) ===================== -->
+            <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*" Margin="8 1 0 1" VerticalAlignment="Center">
+
+                <!-- 1. 月历标头：当前年月 -->
+                <TextBlock Grid.Row="0"
+                           Text="{Binding MonthYearText}"
+                           FontWeight="Bold"
+                           FontSize="12"
+                           Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                           Margin="2 0 0 4"
+                           HorizontalAlignment="Left" />
+
+                <!-- 2. 星期栏 (一 二 三 四 五 六 日) -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding WeekHeaders}" Margin="0 0 0 3">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" HorizontalAlignment="Stretch" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                       FontSize="9"
+                                       FontWeight="SemiBold"
+                                       Opacity="0.45"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 3. 7×5/6 日历点阵 (完整显示包括周日所有7列) -->
+                <ItemsControl Grid.Row="2" ItemsSource="{Binding DayCells}" VerticalAlignment="Stretch">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="7" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:DayCellViewModel">
+                            <Grid Width="22" Height="17" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <!-- 今日强调色圆圈 -->
+                                <Ellipse Classes="todayHighlight"
+                                         Width="16" Height="16"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                                         IsVisible="{Binding IsToday}" />
+
+                                <!-- 日期数字 -->
+                                <TextBlock Text="{Binding DayText}"
+                                           Classes="dayNum"
+                                           Classes.today="{Binding IsToday}"
+                                           Classes.otherMonth="{Binding !IsCurrentMonth}"
+                                           Classes.weekend="{Binding IsWeekend}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </Grid>
+
+        </Grid>
+    </Viewbox>
+
+</UserControl>

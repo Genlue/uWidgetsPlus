@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:FixedWidgets.Locales"
+             xmlns:models="clr-namespace:FixedWidgets.Models"
+             x:Class="FixedWidgets.Views.Settings.AggregateSettings">
+
+    <ScrollViewer Margin="0 4">
+        <StackPanel Orientation="Vertical" Spacing="6">
+
+            <!-- 城市搜索与识别（基于天气源地理编码动态匹配） -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_City}">
+                <StackPanel Orientation="Vertical" Spacing="3" HorizontalAlignment="Right">
+                    <AutoCompleteBox Name="SearchBox"
+                                     Width="175"
+                                     FilterMode="None"
+                                     Watermark="搜索城市 (中/英文)..."
+                                     ValueMemberBinding="{Binding Name, x:DataType=models:City}"
+                                     SelectionChanged="SearchBox_OnSelectionChanged"
+                                     LostFocus="SearchBox_OnLostFocus"
+                                     KeyUp="SearchBox_OnKeyUp">
+                        <AutoCompleteBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:City">
+                                <StackPanel Orientation="Vertical" Margin="2 3">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12.5" />
+                                    <TextBlock Text="{Binding SearchName}" FontSize="10.5" Opacity="0.65" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </AutoCompleteBox.ItemTemplate>
+                    </AutoCompleteBox>
+                    <TextBlock Name="CityStatusText"
+                               FontSize="10"
+                               Opacity="0.75"
+                               HorizontalAlignment="Right"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="175" />
+                </StackPanel>
+            </controls:Setting>
+
+            <!-- 温度单位 -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_TempUnit}">
+                <ComboBox Name="UnitCombo" Width="175" SelectionChanged="OnUnitChanged" />
+            </controls:Setting>
+
+            <!-- 24小时制 -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_24Hours}">
+                <ToggleSwitch Name="Use24HoursSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 显示秒数 -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_ShowSeconds}">
+                <ToggleSwitch Name="ShowSecondsSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 每周首日 -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_FirstDayOfWeek}">
+                <ComboBox Name="FirstDayCombo" Width="175" SelectionChanged="OnFirstDayChanged" />
+            </controls:Setting>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

@@ -35,14 +35,10 @@ public partial class FolderSettings : UserControl
         widgetLayoutProvider.DataChanged += OnDataChanged;
 
         SetupColumns();
-        SetupRowSpacing();
-        SetupIconSizes();
-        SetupFontSizes();
         SetupLayoutMode();
         SetupRowLayout();
-        SetupNameLimits();
         SetupWatchSort();
-        SetupPaddings();
+        SetupNumericInputs();
         ShowNamesToggle.IsChecked = model.ShowNames;
         ShowScrollbarToggle.IsChecked = model.ShowScrollbar;
         ShowTitleToggle.IsChecked = model.ShowTitle;
@@ -106,12 +102,12 @@ public partial class FolderSettings : UserControl
         TitleOffsetValue.Text = $"{model.TitleOffsetX:0}%";
         ColumnsBox.SelectedItem = model.Columns;
         RowLayoutBox.SelectedIndex = RowLayoutIndex(model.RowLayout);
-        RowSpacingBox.SelectedItem = model.RowSpacing;
-        IconSizeBox.SelectedItem = model.IconSize;
-        FontSizeBox.SelectedItem = model.FontSize;
-        MaxNameLinesBox.SelectedItem = model.MaxNameLines;
-        MaxNameCharsBox.SelectedItem = model.MaxNameChars;
-        PaddingBox.SelectedItem = model.Padding;
+        RowSpacingInput.Value = model.RowSpacing;
+        IconSizeInput.Value = (decimal)model.IconSize;
+        FontSizeInput.Value = (decimal)model.FontSize;
+        MaxNameLinesInput.Value = model.MaxNameLines;
+        MaxNameCharsInput.Value = model.MaxNameChars;
+        PaddingInput.Value = model.Padding;
         LayoutModeBox.SelectedItem = model.LayoutMode;
         UpdateColumnState();
         UpdateWatchFolderState();
@@ -125,22 +121,16 @@ public partial class FolderSettings : UserControl
         ColumnsBox.SelectedItem = model.Columns;
     }
 
-    private void SetupRowSpacing()
+    private void SetupNumericInputs()
     {
-        RowSpacingBox.ItemsSource = Enumerable.Range(0, 25).ToList();
-        RowSpacingBox.SelectedItem = model.RowSpacing;
-    }
-
-    private void SetupIconSizes()
-    {
-        IconSizeBox.ItemsSource = Enumerable.Range(6, 19).Select(i => (double)(i * 4)).ToList();
-        IconSizeBox.SelectedItem = model.IconSize;
-    }
-
-    private void SetupFontSizes()
-    {
-        FontSizeBox.ItemsSource = Enumerable.Range(8, 17).Select(i => (double)i).ToList();
-        FontSizeBox.SelectedItem = model.FontSize;
+        syncing = true;
+        RowSpacingInput.Value = model.RowSpacing;
+        IconSizeInput.Value = (decimal)model.IconSize;
+        FontSizeInput.Value = (decimal)model.FontSize;
+        MaxNameLinesInput.Value = model.MaxNameLines;
+        MaxNameCharsInput.Value = model.MaxNameChars;
+        PaddingInput.Value = model.Padding;
+        syncing = false;
     }
 
     private static readonly string[] RowLayoutKeys = { "Auto", "Fixed" };
@@ -176,14 +166,6 @@ public partial class FolderSettings : UserControl
             Save(model with { RowLayout = RowLayoutKeys[index] });
     }
 
-    private void SetupNameLimits()
-    {
-        MaxNameLinesBox.ItemsSource = Enumerable.Range(1, 4).ToList();
-        MaxNameLinesBox.SelectedItem = model.MaxNameLines;
-        MaxNameCharsBox.ItemsSource = new List<int> { 0, 8, 12, 16, 20, 24, 32 };
-        MaxNameCharsBox.SelectedItem = model.MaxNameChars;
-    }
-
     private static readonly string[] SortKeys = { "Name", "Created", "Modified" };
 
     private void SetupWatchSort()
@@ -195,12 +177,6 @@ public partial class FolderSettings : UserControl
             Locale.Folders_SortModified
         };
         WatchSortBox.SelectedIndex = Math.Max(0, Array.IndexOf(SortKeys, model.WatchSortBy));
-    }
-
-    private void SetupPaddings()
-    {
-        PaddingBox.ItemsSource = new List<int> { 0, 4, 8, 12, 16, 20, 24, 32 };
-        PaddingBox.SelectedItem = model.Padding;
     }
 
     private void UpdateColumnState()
@@ -398,24 +374,27 @@ public partial class FolderSettings : UserControl
         Save(model with { CamelCaseWrap = CamelCaseWrapToggle.IsChecked == true });
     }
 
-    private void OnMaxNameLinesChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnMaxNameLinesChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (MaxNameLinesBox.SelectedItem is int lines && lines != model.MaxNameLines)
+        if (syncing || e.NewValue is not { } val) return;
+        var lines = Math.Max(1, (int)Math.Round(val));
+        if (lines != model.MaxNameLines)
             Save(model with { MaxNameLines = lines });
     }
 
-    private void OnMaxNameCharsChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnMaxNameCharsChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (MaxNameCharsBox.SelectedItem is int chars && chars != model.MaxNameChars)
+        if (syncing || e.NewValue is not { } val) return;
+        var chars = Math.Max(0, (int)Math.Round(val));
+        if (chars != model.MaxNameChars)
             Save(model with { MaxNameChars = chars });
     }
 
-    private void OnPaddingChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnPaddingChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (PaddingBox.SelectedItem is int padding && padding != model.Padding)
+        if (syncing || e.NewValue is not { } val) return;
+        var padding = Math.Max(0, (int)Math.Round(val));
+        if (padding != model.Padding)
             Save(model with { Padding = padding });
     }
 
@@ -497,25 +476,28 @@ public partial class FolderSettings : UserControl
             Save(model with { Columns = columns });
     }
 
-    private void OnRowSpacingChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnRowSpacingChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (RowSpacingBox.SelectedItem is int spacing && spacing != model.RowSpacing)
+        if (syncing || e.NewValue is not { } val) return;
+        var spacing = Math.Max(0, (int)Math.Round(val));
+        if (spacing != model.RowSpacing)
             Save(model with { RowSpacing = spacing });
     }
 
-    private void OnIconSizeChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnIconSizeChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (IconSizeBox.SelectedItem is double value && value != model.IconSize)
-            Save(model with { IconSize = value });
+        if (syncing || e.NewValue is not { } val) return;
+        var size = (double)val;
+        if (size > 0 && Math.Abs(size - model.IconSize) > 0.001)
+            Save(model with { IconSize = size });
     }
 
-    private void OnFontSizeChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnFontSizeChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (syncing) return;
-        if (FontSizeBox.SelectedItem is double value && value != model.FontSize)
-            Save(model with { FontSize = value });
+        if (syncing || e.NewValue is not { } val) return;
+        var size = (double)val;
+        if (size > 0 && Math.Abs(size - model.FontSize) > 0.001)
+            Save(model with { FontSize = size });
     }
 
     private void RefreshList()

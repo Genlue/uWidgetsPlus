@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Fixed_Aggregate_Title" xml:space="preserve">
+        <value>聚合信息</value>
+    </data>
+    <data name="Fixed_Aggregate_Subtitle" xml:space="preserve">
+        <value>聚合城市天气、数字时钟与日历的4×2全景仪表小组件</value>
+    </data>
+    <data name="Setting_City" xml:space="preserve">
+        <value>所在城市</value>
+    </data>
+    <data name="Setting_CustomCity" xml:space="preserve">
+        <value>自定义城市名称</value>
+    </data>
+    <data name="Setting_TempUnit" xml:space="preserve">
+        <value>温度单位</value>
+    </data>
+    <data name="Setting_Unit_Celsius" xml:space="preserve">
+        <value>摄氏度 (°C)</value>
+    </data>
+    <data name="Setting_Unit_Fahrenheit" xml:space="preserve">
+        <value>华氏度 (°F)</value>
+    </data>
+    <data name="Setting_24Hours" xml:space="preserve">
+        <value>24 小时制</value>
+    </data>
+    <data name="Setting_ShowSeconds" xml:space="preserve">
+        <value>显示秒数</value>
+    </data>
+    <data name="Setting_FirstDayOfWeek" xml:space="preserve">
+        <value>每周首日</value>
+    </data>
+    <data name="Setting_FirstDay_Monday" xml:space="preserve">
+        <value>星期一</value>
+    </data>
+    <data name="Setting_FirstDay_Sunday" xml:space="preserve">
+        <value>星期日</value>
+    </data>
+</root>

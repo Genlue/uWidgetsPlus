@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Picture.Controls"
+             xmlns:viewModels="clr-namespace:Picture.ViewModels"
+             x:Class="Picture.Views.PictureView"
+             x:DataType="viewModels:PictureViewModel"
+             Margin="0"
+             Padding="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             HorizontalContentAlignment="Stretch"
+             VerticalContentAlignment="Stretch"
+             Classes="Frameless">
+
+    <Grid Margin="0">
+        <!-- Picture Canvas -->
+        <controls:PictureCanvas CurrentBitmap="{Binding CurrentBitmap}"
+                                PreviousBitmap="{Binding PreviousBitmap}"
+                                TransitionProgress="{Binding TransitionProgress}"
+                                CropX="{Binding CropX}"
+                                CropY="{Binding CropY}"
+                                Zoom="{Binding Zoom}"
+                                FitMode="{Binding FitMode}"
+                                CornerRadius="{Binding CornerRadius}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                IsVisible="{Binding HasPictures}" />
+
+        <!-- Empty Placeholder -->
+        <Border IsVisible="{Binding !HasPictures}"
+                CornerRadius="{Binding CornerRadius}"
+                Background="#20808080"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                <Path Data="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v7.5l4-3.5 4 4 4-2.5 4 3.5V6H4zm14 2a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"
+                      Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                      Width="28" Height="28" Stretch="Uniform" Opacity="0.5"
+                      HorizontalAlignment="Center" />
+                <TextBlock Text="右键小组件以添加照片"
+                           FontSize="12"
+                           Opacity="0.6"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- Caption Overlay -->
+        <Border IsVisible="{Binding ShowCaption}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="10"
+                CornerRadius="12"
+                Background="#99000000"
+                Padding="8,4">
+            <TextBlock Text="{Binding Caption}"
+                       Foreground="White"
+                       FontSize="11"
+                       FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis"
+                       MaxWidth="160" />
+        </Border>
+    </Grid>
+</UserControl>

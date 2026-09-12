@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Picture" xml:space="preserve">
+        <value>画框相册</value>
+    </data>
+    <data name="Picture_Title" xml:space="preserve">
+        <value>画框相册</value>
+    </data>
+    <data name="Picture_Subtitle" xml:space="preserve">
+        <value>桌面精选照片相册，支持多图轮播与自定义裁切取景</value>
+    </data>
+    <data name="Picture_AddFiles" xml:space="preserve">
+        <value>添加图片...</value>
+    </data>
+    <data name="Picture_AddFolder" xml:space="preserve">
+        <value>添加文件夹...</value>
+    </data>
+    <data name="Picture_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Picture_Clear" xml:space="preserve">
+        <value>清空全部</value>
+    </data>
+    <data name="Picture_MoveUp" xml:space="preserve">
+        <value>上移</value>
+    </data>
+    <data name="Picture_MoveDown" xml:space="preserve">
+        <value>下移</value>
+    </data>
+    <data name="Picture_Interval" xml:space="preserve">
+        <value>轮播时间间隔</value>
+    </data>
+    <data name="Picture_Interval_5s" xml:space="preserve">
+        <value>5 秒</value>
+    </data>
+    <data name="Picture_Interval_10s" xml:space="preserve">
+        <value>10 秒</value>
+    </data>
+    <data name="Picture_Interval_30s" xml:space="preserve">
+        <value>30 秒</value>
+    </data>
+    <data name="Picture_Interval_1m" xml:space="preserve">
+        <value>1 分钟</value>
+    </data>
+    <data name="Picture_Interval_5m" xml:space="preserve">
+        <value>5 分钟</value>
+    </data>
+    <data name="Picture_Interval_15m" xml:space="preserve">
+        <value>15 分钟</value>
+    </data>
+    <data name="Picture_Interval_30m" xml:space="preserve">
+        <value>30 分钟</value>
+    </data>
+    <data name="Picture_Interval_1h" xml:space="preserve">
+        <value>1 小时</value>
+    </data>
+    <data name="Picture_Interval_1d" xml:space="preserve">
+        <value>1 天</value>
+    </data>
+    <data name="Picture_Interval_Manual" xml:space="preserve">
+        <value>手动切换 (不自动轮播)</value>
+    </data>
+    <data name="Picture_Order" xml:space="preserve">
+        <value>播放顺序</value>
+    </data>
+    <data name="Picture_Order_Seq" xml:space="preserve">
+        <value>顺序循环</value>
+    </data>
+    <data name="Picture_Order_Shuffle" xml:space="preserve">
+        <value>随机播放</value>
+    </data>
+    <data name="Picture_Order_Fixed" xml:space="preserve">
+        <value>固定单张</value>
+    </data>
+    <data name="Picture_FitMode" xml:space="preserve">
+        <value>画面适应模式</value>
+    </data>
+    <data name="Picture_FitMode_CustomCrop" xml:space="preserve">
+        <value>自定义手动裁切 (推荐)</value>
+    </data>
+    <data name="Picture_FitMode_Fill" xml:space="preserve">
+        <value>等比充满 (居中自适应裁切)</value>
+    </data>
+    <data name="Picture_FitMode_Fit" xml:space="preserve">
+        <value>完整显示 (四周留黑/留白)</value>
+    </data>
+    <data name="Picture_IsFrameless" xml:space="preserve">
+        <value>无边框铺满桌面</value>
+    </data>
+    <data name="Picture_ShowCaption" xml:space="preserve">
+        <value>显示图片名称标签</value>
+    </data>
+    <data name="Picture_ClickToNext" xml:space="preserve">
+        <value>单击小组件切换下一张</value>
+    </data>
+    <data name="Picture_DoubleClickToOpen" xml:space="preserve">
+        <value>双击在看图软件中打开原图</value>
+    </data>
+    <data name="Picture_CropSettings" xml:space="preserve">
+        <value>当前所选图片裁切与取景</value>
+    </data>
+    <data name="Picture_CropX" xml:space="preserve">
+        <value>水平取景偏移 (左 ~ 右)</value>
+    </data>
+    <data name="Picture_CropY" xml:space="preserve">
+        <value>垂直取景偏移 (上 ~ 下)</value>
+    </data>
+    <data name="Picture_Zoom" xml:space="preserve">
+        <value>画面缩放倍率</value>
+    </data>
+</root>

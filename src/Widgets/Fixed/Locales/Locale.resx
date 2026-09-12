@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true" />
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="Fixed_Aggregate_Title" xml:space="preserve">
+        <value>Aggregate Info</value>
+    </data>
+    <data name="Fixed_Aggregate_Subtitle" xml:space="preserve">
+        <value>4x2 dashboard widget aggregating city weather, digital clock, and calendar</value>
+    </data>
+    <data name="Setting_City" xml:space="preserve">
+        <value>Location / City</value>
+    </data>
+    <data name="Setting_CustomCity" xml:space="preserve">
+        <value>Custom City Name</value>
+    </data>
+    <data name="Setting_TempUnit" xml:space="preserve">
+        <value>Temperature Unit</value>
+    </data>
+    <data name="Setting_Unit_Celsius" xml:space="preserve">
+        <value>Celsius (°C)</value>
+    </data>
+    <data name="Setting_Unit_Fahrenheit" xml:space="preserve">
+        <value>Fahrenheit (°F)</value>
+    </data>
+    <data name="Setting_24Hours" xml:space="preserve">
+        <value>24-Hour Time</value>
+    </data>
+    <data name="Setting_ShowSeconds" xml:space="preserve">
+        <value>Show Seconds</value>
+    </data>
+    <data name="Setting_FirstDayOfWeek" xml:space="preserve">
+        <value>First Day of Week</value>
+    </data>
+    <data name="Setting_FirstDay_Monday" xml:space="preserve">
+        <value>Monday</value>
+    </data>
+    <data name="Setting_FirstDay_Sunday" xml:space="preserve">
+        <value>Sunday</value>
+    </data>
+</root>

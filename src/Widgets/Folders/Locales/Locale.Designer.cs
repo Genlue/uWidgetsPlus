@@ -413,5 +413,131 @@ namespace Folders.Locales {
                 return ResourceManager.GetString("Folders_SingleFile_EmptyHint", resourceCulture);
             }
         }
+
+        public static string Folders_BigFolder_Title {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Title", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Subtitle {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Density {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Density", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Sparse {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Sparse", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Dense {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Dense", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_EmptyHint {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_EmptyHint", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Spacing {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Spacing", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_Custom {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_Custom", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_CustomColumns {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_CustomColumns", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_CustomRows {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_CustomRows", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_ViewAll {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_ViewAll", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_AllFiles {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_AllFiles", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupGroup {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupGroup", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_FolderName {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_FolderName", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_FolderName_Hint {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_FolderName_Hint", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupIconSize {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupIconSize", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupSpacing {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupSpacing", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupPadding {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupPadding", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupColumns {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupColumns", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupShowNames {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupShowNames", resourceCulture);
+            }
+        }
+
+        public static string Folders_BigFolder_PopupShowExtensions {
+            get {
+                return ResourceManager.GetString("Folders_BigFolder_PopupShowExtensions", resourceCulture);
+            }
+        }
     }
 }

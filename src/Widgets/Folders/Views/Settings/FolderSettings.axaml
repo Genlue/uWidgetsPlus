@@ -31,17 +31,20 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
         <Style Selector="ComboBox.setting-combo">
-            <Setter Property="Width" Value="80" />
+            <Setter Property="MinWidth" Value="110" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style Selector="NumericUpDown.setting-num">
-            <Setter Property="Width" Value="96" />
+            <Setter Property="MinWidth" Value="120" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="ShowButtonSpinner" Value="True" />
             <Setter Property="AllowSpin" Value="True" />
+            <Setter Property="Padding" Value="8,5,8,5" />
         </Style>
         <Style Selector="TextBlock.group-header">
             <Setter Property="FontSize" Value="13" />

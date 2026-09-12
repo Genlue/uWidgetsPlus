@@ -195,4 +195,67 @@
         <data name="Folders_SingleFile_EmptyHint" xml:space="preserve">
             <value>Drop file or folder here</value>
         </data>
+        <data name="Folders_BigFolder_Title" xml:space="preserve">
+            <value>Big Folder</value>
+        </data>
+        <data name="Folders_BigFolder_Subtitle" xml:space="preserve">
+            <value>High-density icon-only launcher without titles or names</value>
+        </data>
+        <data name="Folders_BigFolder_Density" xml:space="preserve">
+            <value>Grid Density</value>
+        </data>
+        <data name="Folders_BigFolder_Sparse" xml:space="preserve">
+            <value>Sparse Mode</value>
+        </data>
+        <data name="Folders_BigFolder_Dense" xml:space="preserve">
+            <value>Dense Mode</value>
+        </data>
+        <data name="Folders_BigFolder_EmptyHint" xml:space="preserve">
+            <value>Drop files or shortcuts here</value>
+        </data>
+        <data name="Folders_BigFolder_Spacing" xml:space="preserve">
+            <value>Icon Spacing</value>
+        </data>
+        <data name="Folders_BigFolder_Custom" xml:space="preserve">
+            <value>Custom Mode</value>
+        </data>
+        <data name="Folders_BigFolder_CustomColumns" xml:space="preserve">
+            <value>Columns (m)</value>
+        </data>
+        <data name="Folders_BigFolder_CustomRows" xml:space="preserve">
+            <value>Rows (n)</value>
+        </data>
+        <data name="Folders_BigFolder_ViewAll" xml:space="preserve">
+            <value>View all ({0} items)</value>
+        </data>
+        <data name="Folders_BigFolder_AllFiles" xml:space="preserve">
+        <value>All Items</value>
+    </data>
+    <data name="Folders_BigFolder_PopupGroup" xml:space="preserve">
+        <value>Expanded View Settings</value>
+    </data>
+    <data name="Folders_BigFolder_FolderName" xml:space="preserve">
+        <value>Folder Name</value>
+    </data>
+    <data name="Folders_BigFolder_FolderName_Hint" xml:space="preserve">
+        <value>Custom title (leave blank for All Items)</value>
+    </data>
+    <data name="Folders_BigFolder_PopupIconSize" xml:space="preserve">
+        <value>Popup Icon Size</value>
+    </data>
+    <data name="Folders_BigFolder_PopupSpacing" xml:space="preserve">
+        <value>Popup Spacing</value>
+    </data>
+    <data name="Folders_BigFolder_PopupPadding" xml:space="preserve">
+        <value>Popup Padding</value>
+    </data>
+    <data name="Folders_BigFolder_PopupColumns" xml:space="preserve">
+        <value>Popup Columns</value>
+    </data>
+    <data name="Folders_BigFolder_PopupShowNames" xml:space="preserve">
+        <value>Show Item Names</value>
+    </data>
+    <data name="Folders_BigFolder_PopupShowExtensions" xml:space="preserve">
+        <value>Show File Extensions</value>
+    </data>
 </root>

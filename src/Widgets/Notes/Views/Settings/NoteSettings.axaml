@@ -88,7 +88,7 @@
                 </controls:Setting>
             </StackPanel>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Body_Padding}">
-                <NumericUpDown Name="BodyPaddingBox" Width="128" Minimum="0" Maximum="64"
+                <NumericUpDown Name="BodyPaddingBox" MinWidth="128" Minimum="0" Maximum="64"
                                Increment="2" FormatString="F0" ParsingNumberStyle="Integer" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Color}">
@@ -98,7 +98,7 @@
                 </StackPanel>
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Header_Opacity}">
-                <NumericUpDown Name="HeaderOpacityBox" Width="128" Minimum="0" Maximum="1"
+                <NumericUpDown Name="HeaderOpacityBox" MinWidth="128" Minimum="0" Maximum="1"
                                Increment="0.05" FormatString="{}{0:0.##}" />
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Notes_Source}">
@@ -112,7 +112,7 @@
                        TextTrimming="CharacterEllipsis" IsVisible="False" />
             <StackPanel Name="FolderSection" Orientation="Vertical" Spacing="5" IsVisible="False">
                 <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Count}">
-                    <NumericUpDown Name="DocumentCountBox" Width="128" Minimum="1" Maximum="8"
+                    <NumericUpDown Name="DocumentCountBox" MinWidth="128" Minimum="1" Maximum="8"
                                    Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
                 </controls:Setting>
                 <controls:Setting Title="{x:Static locales:Locale.Notes_Documents_Order}">

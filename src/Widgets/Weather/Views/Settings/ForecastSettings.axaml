@@ -9,7 +9,7 @@
     <ScrollViewer>
         <StackPanel Orientation="Vertical" Spacing="5">
             <controls:Setting Title="{x:Static locales:Locale.Weather_Location}">
-                <AutoCompleteBox Width="130" Name="Search" FilterMode="None" 
+                <AutoCompleteBox MinWidth="150" Name="Search" FilterMode="None" 
                                  ValueMemberBinding="{Binding Name, x:DataType=geocoding:City}" 
                                  SelectedItem="{Binding Location, Mode=OneWay}"
                                  LostFocus="Search_OnLostFocus">
@@ -21,7 +21,7 @@
                 </AutoCompleteBox>
             </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Weather_Units}">
-                <ComboBox ItemsSource="{Binding TemperatureUnits}" MinWidth="130" 
+                <ComboBox ItemsSource="{Binding TemperatureUnits}" MinWidth="150" 
                           SelectedItem="{Binding TemperatureUnit}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate DataType="viewModels:TemperatureUnitViewModel">

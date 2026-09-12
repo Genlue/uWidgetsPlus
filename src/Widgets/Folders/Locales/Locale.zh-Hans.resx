@@ -238,4 +238,67 @@
     <data name="Folders_SingleFile_EmptyHint" xml:space="preserve">
         <value>拖入文件或文件夹</value>
     </data>
+    <data name="Folders_BigFolder_Title" xml:space="preserve">
+        <value>大文件夹</value>
+    </data>
+    <data name="Folders_BigFolder_Subtitle" xml:space="preserve">
+        <value>类似手机大文件夹的高密度无文字应用与文件启动器</value>
+    </data>
+    <data name="Folders_BigFolder_Density" xml:space="preserve">
+        <value>网格密度</value>
+    </data>
+    <data name="Folders_BigFolder_Sparse" xml:space="preserve">
+        <value>稀疏模式</value>
+    </data>
+    <data name="Folders_BigFolder_Dense" xml:space="preserve">
+        <value>稠密模式</value>
+    </data>
+    <data name="Folders_BigFolder_EmptyHint" xml:space="preserve">
+        <value>拖入文件或快捷方式</value>
+    </data>
+    <data name="Folders_BigFolder_Spacing" xml:space="preserve">
+        <value>图标间距</value>
+    </data>
+    <data name="Folders_BigFolder_Custom" xml:space="preserve">
+        <value>自定义模式</value>
+    </data>
+    <data name="Folders_BigFolder_CustomColumns" xml:space="preserve">
+        <value>列数 (m)</value>
+    </data>
+    <data name="Folders_BigFolder_CustomRows" xml:space="preserve">
+        <value>行数 (n)</value>
+    </data>
+    <data name="Folders_BigFolder_ViewAll" xml:space="preserve">
+        <value>查看全部 (共 {0} 项)</value>
+    </data>
+    <data name="Folders_BigFolder_AllFiles" xml:space="preserve">
+        <value>全部项目</value>
+    </data>
+    <data name="Folders_BigFolder_PopupGroup" xml:space="preserve">
+        <value>弹出全览界面设置</value>
+    </data>
+    <data name="Folders_BigFolder_FolderName" xml:space="preserve">
+        <value>文件夹名称</value>
+    </data>
+    <data name="Folders_BigFolder_FolderName_Hint" xml:space="preserve">
+        <value>自定义标题（留空显示全部项目）</value>
+    </data>
+    <data name="Folders_BigFolder_PopupIconSize" xml:space="preserve">
+        <value>弹窗图标大小</value>
+    </data>
+    <data name="Folders_BigFolder_PopupSpacing" xml:space="preserve">
+        <value>弹窗间距</value>
+    </data>
+    <data name="Folders_BigFolder_PopupPadding" xml:space="preserve">
+        <value>弹窗内边距</value>
+    </data>
+    <data name="Folders_BigFolder_PopupColumns" xml:space="preserve">
+        <value>弹窗列数</value>
+    </data>
+    <data name="Folders_BigFolder_PopupShowNames" xml:space="preserve">
+        <value>显示条目名称</value>
+    </data>
+    <data name="Folders_BigFolder_PopupShowExtensions" xml:space="preserve">
+        <value>显示文件后缀名</value>
+    </data>
 </root>

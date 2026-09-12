@@ -12,7 +12,7 @@
             <controls:Setting Title="{x:Static locales:Locale.Setting_City}">
                 <StackPanel Orientation="Vertical" Spacing="3" HorizontalAlignment="Right">
                     <AutoCompleteBox Name="SearchBox"
-                                     Width="175"
+                                     MinWidth="180"
                                      FilterMode="None"
                                      Watermark="搜索城市 (中/英文)..."
                                      ValueMemberBinding="{Binding Name, x:DataType=models:City}"
@@ -33,13 +33,13 @@
                                Opacity="0.75"
                                HorizontalAlignment="Right"
                                TextTrimming="CharacterEllipsis"
-                               MaxWidth="175" />
+                               MaxWidth="240" />
                 </StackPanel>
             </controls:Setting>
 
             <!-- 温度单位 -->
             <controls:Setting Title="{x:Static locales:Locale.Setting_TempUnit}">
-                <ComboBox Name="UnitCombo" Width="175" SelectionChanged="OnUnitChanged" />
+                <ComboBox Name="UnitCombo" MinWidth="180" SelectionChanged="OnUnitChanged" />
             </controls:Setting>
 
             <!-- 24小时制 -->
@@ -54,7 +54,7 @@
 
             <!-- 每周首日 -->
             <controls:Setting Title="{x:Static locales:Locale.Setting_FirstDayOfWeek}">
-                <ComboBox Name="FirstDayCombo" Width="175" SelectionChanged="OnFirstDayChanged" />
+                <ComboBox Name="FirstDayCombo" MinWidth="180" SelectionChanged="OnFirstDayChanged" />
             </controls:Setting>
 
         </StackPanel>

@@ -1,0 +1,216 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Folders.Locales"
+        xmlns:local="clr-namespace:Folders.Views"
+        x:Class="Folders.Views.BigFolderPopupWindow"
+        Title="Big Folder"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Topmost="True"
+        Width="440"
+        Height="480">
+
+    <Window.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#33FFFFFF" />
+        </Style>
+        <Style Selector="TextBlock.drawer-label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="NumericUpDown.drawer-num">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="ShowButtonSpinner" Value="True" />
+            <Setter Property="AllowSpin" Value="True" />
+            <Setter Property="Padding" Value="4,2" />
+        </Style>
+        <Style Selector="TextBox.drawer-text">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <!-- Main Card with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <!-- LiquidGlass Background Image (pre-rendered ahead of time) -->
+                <Image x:Name="LiquidGlassBgImage" Stretch="Fill" IsVisible="False" />
+                <Border x:Name="LiquidGlassOverlay" Background="#22000000" IsVisible="False" />
+
+                <!-- Card Content -->
+                <Grid RowDefinitions="Auto,Auto,*">
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="16,14,14,10" ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock x:Name="TitleText"
+                                   Text="{x:Static locales:Locale.Folders_BigFolder_AllFiles}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <!-- Settings Toggle Button ⚙ -->
+                        <Button Grid.Column="1"
+                                x:Name="SettingsButton"
+                                Classes="icon-btn"
+                                Content="⚙"
+                                Click="OnToggleSettingsClicked"
+                                Margin="0,0,4,0"
+                                ToolTip.Tip="{x:Static locales:Locale.Folders_BigFolder_PopupGroup}" />
+
+                        <!-- Close Button ✕ -->
+                        <Button Grid.Column="2"
+                                x:Name="CloseButton"
+                                Classes="icon-btn"
+                                Content="✕"
+                                Click="OnCloseClicked" />
+                    </Grid>
+
+                    <!-- Inline Settings Drawer -->
+                    <Border Grid.Row="1"
+                            x:Name="SettingsDrawer"
+                            IsVisible="False"
+                            Background="#1AFFFFFF"
+                            BorderBrush="#26FFFFFF"
+                            BorderThickness="0,1,0,1"
+                            Padding="16,10,16,12">
+                        <StackPanel Spacing="8">
+                            <!-- Folder Name -->
+                            <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,2">
+                                <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_FolderName}" Margin="0,0,12,0" />
+                                <TextBox Grid.Column="1" x:Name="FolderNameBox" Classes="drawer-text"
+                                         Watermark="{x:Static locales:Locale.Folders_BigFolder_FolderName_Hint}"
+                                         LostFocus="OnSettingChanged" KeyDown="OnFolderNameKeyDown" />
+                            </Grid>
+
+                            <!-- Numeric Settings (Grid of 2 columns) -->
+                            <Grid ColumnDefinitions="*,12,*">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <!-- Columns -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupColumns}" />
+                                        <NumericUpDown Grid.Column="1" x:Name="ColumnsNum" Classes="drawer-num"
+                                                       Minimum="2" Maximum="8" Increment="1" FormatString="F0"
+                                                       ValueChanged="OnNumericSettingChanged" />
+                                    </Grid>
+                                    <!-- Icon Size -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupIconSize}" />
+                                        <NumericUpDown Grid.Column="1" x:Name="IconSizeNum" Classes="drawer-num"
+                                                       Minimum="24" Maximum="80" Increment="4" FormatString="F0"
+                                                       ValueChanged="OnNumericSettingChanged" />
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="6">
+                                    <!-- Spacing -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupSpacing}" />
+                                        <NumericUpDown Grid.Column="1" x:Name="SpacingNum" Classes="drawer-num"
+                                                       Minimum="0" Maximum="32" Increment="2" FormatString="F0"
+                                                       ValueChanged="OnNumericSettingChanged" />
+                                    </Grid>
+                                    <!-- Padding -->
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Classes="drawer-label" Text="{x:Static locales:Locale.Folders_BigFolder_PopupPadding}" />
+                                        <NumericUpDown Grid.Column="1" x:Name="PaddingNum" Classes="drawer-num"
+                                                       Minimum="6" Maximum="36" Increment="2" FormatString="F0"
+                                                       ValueChanged="OnNumericSettingChanged" />
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Toggle Switches -->
+                            <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,4,0,0">
+                                <CheckBox x:Name="ShowNamesCheck" Content="{x:Static locales:Locale.Folders_BigFolder_PopupShowNames}"
+                                          FontSize="12" IsCheckedChanged="OnSettingChanged" />
+                                <CheckBox x:Name="ShowExtensionsCheck" Content="{x:Static locales:Locale.Folders_BigFolder_PopupShowExtensions}"
+                                          FontSize="12" IsCheckedChanged="OnSettingChanged" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Scrollable Grid of All Files -->
+                    <ScrollViewer Grid.Row="2"
+                                  x:Name="ItemsScrollViewer"
+                                  Margin="8,0,8,12"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="PopupItemsList">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="{Binding PopupGridColumns, RelativeSource={RelativeSource AncestorType=local:BigFolderPopupWindow}}"
+                                                 HorizontalAlignment="Stretch" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:BigFolderPopupItem">
+                                    <Border Margin="{Binding Margin}"
+                                            CornerRadius="10"
+                                            Background="Transparent"
+                                            ToolTip.Tip="{Binding Path}"
+                                            PointerPressed="OnItemClicked">
+                                        <Border.Styles>
+                                            <Style Selector="Border:pointerover">
+                                                <Setter Property="Background" Value="#26FFFFFF" />
+                                            </Style>
+                                        </Border.Styles>
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4"
+                                                    Margin="4,6">
+                                            <Image Width="{Binding IconSize}"
+                                                   Height="{Binding IconSize}"
+                                                   Source="{Binding Icon}"
+                                                   Stretch="Uniform"
+                                                   HorizontalAlignment="Center"
+                                                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       IsVisible="{Binding ShowName}"
+                                                       FontSize="11"
+                                                       Width="{Binding TextWidth}"
+                                                       TextAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="2"
+                                                       Foreground="{Binding Foreground}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

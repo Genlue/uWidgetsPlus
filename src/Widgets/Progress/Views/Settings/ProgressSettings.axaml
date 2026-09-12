@@ -29,7 +29,7 @@
             <!-- 已过圆点颜色 -->
             <controls:Setting Name="PassedColorSetting" Title="{x:Static locales:Locale.Progress_PassedColor}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="PassedColorHexBox" Width="100" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
+                    <TextBox Name="PassedColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
                     <ColorPicker Name="PassedColorPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
                 </StackPanel>
             </controls:Setting>
@@ -37,7 +37,7 @@
             <!-- 当前圆点高亮颜色 -->
             <controls:Setting Title="{x:Static locales:Locale.Progress_CurrentColor}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="CurrentColorHexBox" Width="100" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
+                    <TextBox Name="CurrentColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
                     <ColorPicker Name="CurrentColorPicker" Height="36" Width="72" IsAlphaVisible="False" ColorChanged="OnColorPickerChanged" />
                 </StackPanel>
             </controls:Setting>
@@ -45,7 +45,7 @@
             <!-- 未过圆点颜色 -->
             <controls:Setting Title="{x:Static locales:Locale.Progress_RemainingColor}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Name="RemainingColorHexBox" Width="100" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
+                    <TextBox Name="RemainingColorHexBox" MinWidth="115" VerticalAlignment="Center" LostFocus="OnColorHexLostFocus" />
                     <ColorPicker Name="RemainingColorPicker" Height="36" Width="72" IsAlphaVisible="True" ColorChanged="OnColorPickerChanged" />
                 </StackPanel>
             </controls:Setting>
@@ -57,7 +57,7 @@
 
             <!-- 自定义标题 -->
             <controls:Setting Title="{x:Static locales:Locale.Progress_CustomTitle}">
-                <TextBox Name="CustomTitleBox" Width="200" Watermark="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
+                <TextBox Name="CustomTitleBox" MinWidth="180" Watermark="{x:Static locales:Locale.Progress_CustomTitle_Placeholder}" LostFocus="OnTitleLostFocus" />
             </controls:Setting>
 
             <!-- 显示百分比 -->
@@ -72,11 +72,11 @@
 
             <!-- 人生进度相关设置 (仅在人生模式下显示) -->
             <controls:Setting Name="BirthDateSetting" Title="{x:Static locales:Locale.Progress_BirthDate}">
-                <TextBox Name="BirthDateBox" Width="140" Watermark="2000-01-01" LostFocus="OnBirthDateLostFocus" />
+                <TextBox Name="BirthDateBox" MinWidth="140" Watermark="2000-01-01" LostFocus="OnBirthDateLostFocus" />
             </controls:Setting>
 
             <controls:Setting Name="LifeExpectancySetting" Title="{x:Static locales:Locale.Progress_LifeExpectancy}">
-                <NumericUpDown Name="LifeExpectancyInput" Width="120" Minimum="10" Maximum="150" Increment="1" ValueChanged="OnLifeExpectancyChanged" />
+                <NumericUpDown Name="LifeExpectancyInput" MinWidth="120" Minimum="10" Maximum="150" Increment="1" ValueChanged="OnLifeExpectancyChanged" />
             </controls:Setting>
         </StackPanel>
     </ScrollViewer>

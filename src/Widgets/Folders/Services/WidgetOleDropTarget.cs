@@ -211,7 +211,12 @@ public static class WidgetOleDropTarget
     public static void RegisterWmDropFiles(IntPtr hwnd, Action<List<string>> onDrop, Action<bool> onDragActive)
     {
         if (hwnd == IntPtr.Zero) return;
-        if (subclassRegistrations.ContainsKey(hwnd)) return;
+        if (subclassRegistrations.TryGetValue(hwnd, out var existing))
+        {
+            existing.OnDrop = onDrop;
+            existing.OnDragActive = onDragActive;
+            return;
+        }
 
         subclassProc ??= SubclassProcImpl;
         DragAcceptFiles(hwnd, true);

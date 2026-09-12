@@ -90,7 +90,7 @@
                 <controls:Setting IsVisible="{Binding ShowCustomColor}" Title="{x:Static locales:Locale.Clock_OverlayColor}">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <ColorPicker Color="{Binding OverlayColorPickerValue}" Height="36" Width="72" IsAlphaVisible="False" />
-                        <TextBox Text="{Binding OverlayColor}" Width="100" Watermark="#400078D4" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding OverlayColor}" MinWidth="120" Watermark="#400078D4" VerticalAlignment="Center"/>
                     </StackPanel>
                 </controls:Setting>
 

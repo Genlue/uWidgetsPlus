@@ -1,17 +1,17 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls"
              x:Class="uWidgets.Views.Controls.Setting">
     <UserControl.Template>
         <ControlTemplate>
-            <Border CornerRadius="4" BorderThickness="1" Padding="18"
+            <Border CornerRadius="6" BorderThickness="1" Padding="14,10"
                     BorderBrush="{DynamicResource ToolTipBorderBrush}" 
                     Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <PathIcon Grid.RowSpan="2" Height="24" VerticalAlignment="Center" Margin="0 0 18 0"
+                    <PathIcon Grid.RowSpan="2" Height="24" VerticalAlignment="Center" Margin="0 0 14 0"
                               IsVisible="{Binding ShowIcon, RelativeSource={RelativeSource AncestorType=controls:Setting}}"
                               Data="{Binding Icon, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock VerticalAlignment="Center"
                                    Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:Setting}}" />
                         <TextBlock IsVisible="{Binding SubtitleVisible, RelativeSource={RelativeSource AncestorType=controls:Setting}}" Opacity="0.7" FontSize="12" Margin="0 4 0 0"

@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:locales="clr-namespace:Folders.Locales"
+             xmlns:local="clr-namespace:Folders.Views"
+             x:Class="Folders.Views.BigFolder"
+             x:DataType="local:BigFolder"
+             Margin="0">
+    <Border x:Name="RootBorder"
+            Background="Transparent"
+            DragDrop.AllowDrop="True"
+            Padding="{Binding PaddingThickness, RelativeSource={RelativeSource AncestorType=local:BigFolder}}">
+        <Grid Background="Transparent" DragDrop.AllowDrop="True">
+            <!-- Perfectly centered grid container -->
+            <ItemsControl x:Name="IconGrid"
+                          Width="{Binding GridWidth, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                          Height="{Binding GridHeight, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Background="Transparent"
+                          DragDrop.AllowDrop="True">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <local:SpacedGridPanel Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                                               Rows="{Binding Rows, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                                               Spacing="{Binding Spacing, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                                               ItemWidth="{Binding ItemSize, RelativeSource={RelativeSource AncestorType=local:BigFolder}}"
+                                               ItemHeight="{Binding ItemSize, RelativeSource={RelativeSource AncestorType=local:BigFolder}}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="local:BigFolderItem">
+                        <Border Width="{Binding ItemSize}"
+                                Height="{Binding ItemSize}"
+                                Background="Transparent"
+                                CornerRadius="{Binding CornerRadius}"
+                                RenderTransformOrigin="0.5,0.5"
+                                DragDrop.AllowDrop="True"
+                                PointerPressed="OnItemPointerPressed"
+                                PointerEntered="OnItemPointerEntered"
+                                PointerExited="OnItemPointerExited"
+                                ToolTip.Tip="{Binding Name}">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Border.RenderTransform>
+                            <Border.Styles>
+                                <Style Selector="Border:pointerover">
+                                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                                </Style>
+                            </Border.Styles>
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <!-- Regular Single Icon -->
+                                <Image IsVisible="{Binding !IsMoreButton}"
+                                       Width="{Binding ImageSize}"
+                                       Height="{Binding ImageSize}"
+                                       Source="{Binding Icon}"
+                                       Stretch="Uniform"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+                                <!-- Special 2x2 Mini-Grid for Overflow ("More") Tile -->
+                                <Border IsVisible="{Binding IsMoreButton}"
+                                        Width="{Binding ImageSize}"
+                                        Height="{Binding ImageSize}"
+                                        CornerRadius="{Binding CornerRadius}"
+                                        Background="#1AFFFFFF"
+                                        Padding="{Binding MiniPaddingThickness}">
+                                    <local:SpacedGridPanel Columns="2" Rows="2"
+                                                           Spacing="{Binding MiniSpacing}"
+                                                           ItemWidth="{Binding MiniIconSize}"
+                                                           ItemHeight="{Binding MiniIconSize}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                        <!-- Mini Icon 0 -->
+                                        <Border Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}"
+                                                CornerRadius="{Binding MiniItemCornerRadius}" ClipToBounds="True">
+                                            <Image Source="{Binding MiniIcon0}" Stretch="Uniform"
+                                                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        </Border>
+
+                                        <!-- Mini Icon 1 -->
+                                        <Border Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}"
+                                                CornerRadius="{Binding MiniItemCornerRadius}" ClipToBounds="True">
+                                            <Image Source="{Binding MiniIcon1}" Stretch="Uniform"
+                                                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        </Border>
+
+                                        <!-- Mini Icon 2 -->
+                                        <Border Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}"
+                                                CornerRadius="{Binding MiniItemCornerRadius}" ClipToBounds="True">
+                                            <Image Source="{Binding MiniIcon2}" Stretch="Uniform"
+                                                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                        </Border>
+
+                                        <!-- Mini Icon 3 OR +N Badge -->
+                                        <Panel Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}">
+                                            <Border IsVisible="{Binding !ShowBadge}"
+                                                    Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}"
+                                                    CornerRadius="{Binding MiniItemCornerRadius}" ClipToBounds="True">
+                                                <Image Source="{Binding MiniIcon3}" Stretch="Uniform"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+                                            </Border>
+                                            <Border IsVisible="{Binding ShowBadge}"
+                                                    Width="{Binding MiniIconSize}" Height="{Binding MiniIconSize}"
+                                                    Background="#33FFFFFF"
+                                                    CornerRadius="{Binding MiniBadgeCornerRadius}"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding BadgeText}"
+                                                           FontSize="{Binding MiniFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Panel>
+                                    </local:SpacedGridPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <StackPanel x:Name="EmptyHint"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8"
+                        IsVisible="False"
+                        Background="Transparent"
+                        DragDrop.AllowDrop="True">
+                <Path Width="36" Height="36"
+                      Stretch="Uniform"
+                      HorizontalAlignment="Center"
+                      Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                      Data="M2.5,5 C2.5,3.8954305 3.3954305,3 4.5,3 L8.256,3 C8.818,3 9.357,3.224 9.756,3.624 L11.133,5 L17.5,5 C18.6045695,5 19.5,5.8954305 19.5,7 L19.5,16.5 C19.5,17.6045695 18.6045695,18.5 17.5,18.5 L4.5,18.5 C3.3954305,18.5 2.5,17.6045695 2.5,16.5 L2.5,5 Z" />
+                <TextBlock Text="{x:Static locales:Locale.Folders_BigFolder_EmptyHint}"
+                           FontSize="12"
+                           Opacity="0.5"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </StackPanel>
+
+            <Border x:Name="DropHint" CornerRadius="12" IsHitTestVisible="False" IsVisible="False"
+                    Background="{DynamicResource SystemControlHighlightListLowBrush}" />
+        </Grid>
+    </Border>
+</UserControl>

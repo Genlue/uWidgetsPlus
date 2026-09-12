@@ -105,6 +105,31 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     }
 
     /// <summary>
+    /// Close every active widget across all screens and recreate them from the current layout.
+    /// </summary>
+    public void RecreateAll()
+    {
+        foreach (var screenId in activeWidgets.Keys.ToList())
+        {
+            if (activeWidgets.TryGetValue(screenId, out var list))
+            {
+                foreach (var widget in list.ToList())
+                {
+                    try { widget.Close(); } catch { }
+                }
+            }
+        }
+        activeWidgets.Clear();
+
+        displayMonitor.Refresh();
+
+        foreach (var win in Create())
+        {
+            win.Show();
+        }
+    }
+
+    /// <summary>
     /// React to display changes: hide widgets of unplugged screens, recreate widgets
     /// of screens that just came back (their config is still on disk).
     /// </summary>

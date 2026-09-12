@@ -13,6 +13,7 @@ public static class LiquidGlassBridge
     private static MethodInfo? renderMethod;
     private static MethodInfo? getWallpaperMethod;
     private static Type? frameType;
+    private static EventInfo? wallpaperInvalidatedEvent;
     private static bool initialized;
     private static readonly object initLock = new();
 
@@ -34,6 +35,7 @@ public static class LiquidGlassBridge
                     {
                         renderMethod = rendererType.GetMethod("Render", BindingFlags.Public | BindingFlags.Static);
                         getWallpaperMethod = wallpaperType.GetMethod("Get", BindingFlags.Public | BindingFlags.Static);
+                        wallpaperInvalidatedEvent = wallpaperType.GetEvent("WallpaperInvalidated", BindingFlags.Public | BindingFlags.Static);
                         frameType = rendererType.GetNestedType("Frame");
                     }
                 }
@@ -45,6 +47,22 @@ public static class LiquidGlassBridge
             finally
             {
                 initialized = true;
+            }
+        }
+    }
+
+    public static void SubscribeWallpaperInvalidated(Action handler)
+    {
+        EnsureInitialized();
+        if (wallpaperInvalidatedEvent != null)
+        {
+            try
+            {
+                wallpaperInvalidatedEvent.AddEventHandler(null, handler);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to subscribe to WallpaperInvalidated: {ex}");
             }
         }
     }

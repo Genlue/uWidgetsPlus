@@ -119,7 +119,7 @@ public class CropPreviewControl : Control
         double deltaY = currentPos.Y - _dragStartPoint.Y;
 
         var imgSize = PreviewBitmap.Size;
-        if (imgSize.Width <= 0 || imgSize.Height <= 0) return;
+        if (imgSize.Width <= 0 || imgSize.Height <= 0) return; // disposed / not yet realised
 
         double aspect = WidgetAspect > 0.05 ? WidgetAspect : 1.0;
         double imgAspect = imgSize.Width / imgSize.Height;
@@ -227,7 +227,7 @@ public class CropPreviewControl : Control
         }
 
         var imgSize = bitmap.Size;
-        if (imgSize.Width <= 0 || imgSize.Height <= 0) return;
+        if (imgSize.Width <= 0 || imgSize.Height <= 0) return; // disposed / not yet realised
 
         // 2. Compute viewfinder rect inside bounds preserving WidgetAspect
         double padding = 8.0;

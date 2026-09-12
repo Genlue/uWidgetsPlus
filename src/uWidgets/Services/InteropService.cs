@@ -14,6 +14,24 @@ public class InteropService
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern int SystemParametersInfo(int uAction, int uParam, StringBuilder lpvParam, int fuWinIni);
 
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minSize, IntPtr maxSize);
+
+    /// <summary>
+    /// Minimizes process working set and triggers compacting GC to drop physical memory usage.
+    /// </summary>
+    public static void TrimProcessMemory()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try
+        {
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: false, compacting: true);
+            GC.WaitForPendingFinalizers();
+            SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
+        }
+        catch { }
+    }
+
     public static string GetWallpaperPath()
     {
         StringBuilder wallpaperPath = new StringBuilder(260);

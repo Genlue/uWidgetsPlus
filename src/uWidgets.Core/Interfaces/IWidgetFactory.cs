@@ -38,4 +38,9 @@ public interface IWidgetFactory<out TWindow, out TControl>
     /// <param name="widgetLayout">Layout for the widget (relative to that screen's working area).</param>
     /// <returns>Activated window.</returns>
     public TWindow Add(ScreenLayout screen, WidgetLayout widgetLayout);
+
+    /// <summary>
+    /// Closes all active widget windows and recreates them from the current layout.
+    /// </summary>
+    public void RecreateAll();
 }

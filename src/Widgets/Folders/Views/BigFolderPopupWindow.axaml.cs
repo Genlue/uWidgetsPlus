@@ -148,9 +148,15 @@ public partial class BigFolderPopupWindow : Window
 
     private void OnPreRenderCompleted()
     {
-        if (LiquidGlassBgImage.IsVisible && LiquidGlassPreRenderService.CachedPopupBitmap is { } bmp)
+        if (LiquidGlassBgImage.IsVisible)
         {
-            LiquidGlassBgImage.Source = bmp;
+            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
+            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+            if (bmp != null)
+            {
+                LiquidGlassBgImage.Source = bmp;
+                CardBorder.Background = Brushes.Transparent;
+            }
         }
     }
 
@@ -172,17 +178,21 @@ public partial class BigFolderPopupWindow : Window
         {
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = true;
-            LiquidGlassOverlay.IsVisible = true;
+            LiquidGlassOverlay.IsVisible = false;
             CardBorder.Background = Brushes.Transparent;
             CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
 
-            if (LiquidGlassPreRenderService.CachedPopupBitmap is { } bmp)
+            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
+            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+
+            if (bmp != null)
             {
                 LiquidGlassBgImage.Source = bmp;
             }
             else
             {
-                CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(220, 28, 28, 32) : Color.FromArgb(235, 245, 245, 248));
+                CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
+                _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
             }
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
@@ -213,6 +223,32 @@ public partial class BigFolderPopupWindow : Window
         TitleText.Foreground = textBrush;
         CloseButton.Foreground = subTextBrush;
         SettingsButton.Foreground = subTextBrush;
+    }
+
+    private async Task TriggerDirectLiquidGlassRender(Theme theme, bool isDark, Screen? screen)
+    {
+        try
+        {
+            var bmp = await LiquidGlassPreRenderService.RenderDirectAsync(
+                spawnScreenCenter,
+                Width,
+                Height,
+                CardBorder.CornerRadius.TopLeft,
+                theme,
+                isDark,
+                screen,
+                Screens.All);
+
+            if (bmp != null)
+            {
+                LiquidGlassBgImage.Source = bmp;
+                CardBorder.Background = Brushes.Transparent;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[BigFolderPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
+        }
     }
 
     private void SyncSettingsControls()

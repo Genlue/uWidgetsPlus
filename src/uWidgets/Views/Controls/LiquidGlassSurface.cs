@@ -185,7 +185,8 @@ public sealed class LiquidGlassSurface : Control
             var dark = ActualThemeVariant == ThemeVariant.Dark;
             var hex = dark ? Material.EffectiveSolidBackgroundDark : Material.EffectiveSolidBackgroundLight;
             var color = Color.TryParse(hex, out var parsed) ? parsed : dark ? Colors.Black : Colors.White;
-            context.DrawRectangle(new SolidColorBrush(color, 0.88), new Pen(new SolidColorBrush(Colors.White, 0.45), 1),
+            var fallbackOpacity = double.IsFinite(Material.OpacityLevel) ? Math.Clamp(Material.OpacityLevel, 0.05, 0.4) : 0.18;
+            context.DrawRectangle(new SolidColorBrush(color, fallbackOpacity), new Pen(new SolidColorBrush(Colors.White, 0.25), 1),
                 rect.Deflate(0.5), CornerRadius.TopLeft, CornerRadius.TopLeft);
         }
     }

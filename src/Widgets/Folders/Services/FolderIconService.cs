@@ -14,8 +14,18 @@ namespace Folders.Services;
 /// </summary>
 public static class FolderIconService
 {
-    private static readonly Dictionary<string, (Bitmap? Icon, DateTime Stamp)> iconCache = new();
+    private const int MaxCacheSize = 160;
+    private static readonly Dictionary<string, (Bitmap? Icon, DateTime Stamp, long AccessOrder)> iconCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object cacheLock = new();
+    private static long accessCounter = 0;
+
+    public static void ClearCache()
+    {
+        lock (cacheLock)
+        {
+            iconCache.Clear();
+        }
+    }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct SHFILEINFO
     {
@@ -123,7 +133,10 @@ public static class FolderIconService
         lock (cacheLock)
         {
             if (iconCache.TryGetValue(path, out var cached) && cached.Stamp == stamp)
+            {
+                iconCache[path] = (cached.Icon, cached.Stamp, ++accessCounter);
                 return cached.Icon;
+            }
         }
 
         Bitmap? icon = null;
@@ -152,12 +165,21 @@ public static class FolderIconService
 
         lock (cacheLock)
         {
+            if (iconCache.Count >= MaxCacheSize)
+            {
+                var toEvict = iconCache.OrderBy(kv => kv.Value.AccessOrder).Take(30).ToList();
+                foreach (var kv in toEvict)
+                {
+                    iconCache.Remove(kv.Key);
+                }
+            }
+
             // A small result means every 256-capable source failed (often the
             // transient E_PENDING of a not-yet-loaded icon handler): cache it
             // with a stale stamp so the next rebuild retries instead of
             // freezing the blurry 32px variant forever.
             var lowQuality = icon != null && icon.PixelSize.Width < 128;
-            iconCache[path] = (icon, lowQuality ? DateTime.MinValue : stamp);
+            iconCache[path] = (icon, lowQuality ? DateTime.MinValue : stamp, ++accessCounter);
         }
         return icon;
     }

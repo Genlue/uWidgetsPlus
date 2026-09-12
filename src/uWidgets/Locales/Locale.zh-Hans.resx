@@ -741,4 +741,67 @@
     <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
         <value>刷新壁纸</value>
     </data>
+    <data name="Settings_Profiles" xml:space="preserve">
+        <value>配置方案</value>
+    </data>
+    <data name="Profiles_MenuTitle" xml:space="preserve">
+        <value>配置方案</value>
+    </data>
+    <data name="Profiles_Manage" xml:space="preserve">
+        <value>管理方案…</value>
+    </data>
+    <data name="Profiles_CurrentActive" xml:space="preserve">
+        <value>当前使用中</value>
+    </data>
+    <data name="Profiles_Switch" xml:space="preserve">
+        <value>切换</value>
+    </data>
+    <data name="Profiles_New" xml:space="preserve">
+        <value>新建方案</value>
+    </data>
+    <data name="Profiles_New_Title" xml:space="preserve">
+        <value>新建配置方案</value>
+    </data>
+    <data name="Profiles_New_Prompt" xml:space="preserve">
+        <value>请输入方案名称：</value>
+    </data>
+    <data name="Profiles_Rename" xml:space="preserve">
+        <value>重命名</value>
+    </data>
+    <data name="Profiles_Rename_Title" xml:space="preserve">
+        <value>重命名配置方案</value>
+    </data>
+    <data name="Profiles_Rename_Prompt" xml:space="preserve">
+        <value>请输入新名称：</value>
+    </data>
+    <data name="Profiles_Delete" xml:space="preserve">
+        <value>删除</value>
+    </data>
+    <data name="Profiles_Delete_Confirm" xml:space="preserve">
+        <value>确定要删除配置方案“{0}”吗？此操作无法撤销。</value>
+    </data>
+    <data name="Profiles_Duplicate" xml:space="preserve">
+        <value>复制</value>
+    </data>
+    <data name="Profiles_Export" xml:space="preserve">
+        <value>导出</value>
+    </data>
+    <data name="Profiles_Import" xml:space="preserve">
+        <value>导入</value>
+    </data>
+    <data name="Profiles_NameExists" xml:space="preserve">
+        <value>该方案名称已存在</value>
+    </data>
+    <data name="Profiles_NameInvalid" xml:space="preserve">
+        <value>方案名称包含非法字符或为空</value>
+    </data>
+    <data name="Profiles_Section_List" xml:space="preserve">
+        <value>方案列表</value>
+    </data>
+    <data name="Profiles_Section_Subtitle" xml:space="preserve">
+        <value>支持保存多套小组件排版与外观配置，随时一键切换</value>
+    </data>
+    <data name="Cancel" xml:space="preserve">
+        <value>取消</value>
+    </data>
 </root>

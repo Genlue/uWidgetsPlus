@@ -97,20 +97,19 @@ public partial class GridEditor : Window
             ? layoutProvider.Get().FindById(screenId)?.Grid ?? appSettingsProvider.Get().Grid ?? GridSettings.Default
             : appSettingsProvider.Get().Grid ?? GridSettings.Default;
 
-    /// <summary>Persist the grid: into the per-screen entry, or the global settings (legacy).</summary>
+    /// <summary>Persist the grid: into the per-screen entry and the global settings.</summary>
     private void SaveGrid(GridSettings grid)
     {
         if (screenId != null)
         {
             var screens = layoutProvider.Get();
             var screen = screens.FindById(screenId);
-            if (screen == null) return;
-            layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
+            if (screen != null)
+            {
+                layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
+            }
         }
-        else
-        {
-            appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
-        }
+        appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
     }
 
     private void OnOpened(object? sender, EventArgs e)

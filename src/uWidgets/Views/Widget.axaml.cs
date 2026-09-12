@@ -28,6 +28,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     private readonly Func<UserControl> userControl;
     private readonly Func<Settings> settingsWindow;
     private readonly Func<EditWidget>? editWidgetWindow;
+    private readonly ProfileService profileService;
     private (int Columns, int Rows)? manualSpan;
     private readonly bool isFrameless;
 
@@ -40,6 +41,7 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     public Widget(IAppSettingsProvider appSettingsProvider, IWidgetLayoutProvider widgetLayoutProvider, 
         IGridService<Widget> gridService, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor,
+        ProfileService profileService,
         Func<UserControl> userControl, Func<Settings> settingsWindow, 
         Func<EditWidget>? editWidgetWindow = null)
     {
@@ -51,6 +53,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         this.gridService = gridService;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
+        this.profileService = profileService;
         
         InitializeComponent();
 
@@ -90,6 +93,10 @@ public partial class Widget : Window, INotifyPropertyChanged
         widgetLayoutProvider.DataChanged += OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged += OnAppSettingsUpdated;
         layoutProvider.DataChanged += OnLayoutDataUpdated;
+        profileService.ActiveProfileChanged += OnProfilesChanged;
+        profileService.ProfilesListChanged += OnProfilesChanged;
+        if (ContextMenu != null)
+            ContextMenu.Opened += (_, _) => Notify(nameof(ProfileMenuItems));
         Unloaded += OnUnloaded;
     }
 
@@ -443,6 +450,59 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(ScaleMenuTitle));
     }
 
+    private void OnProfilesChanged(object? sender, EventArgs e) => Notify(nameof(ProfileMenuItems));
+
+    private static readonly StreamGeometry CheckmarkGeometry =
+        StreamGeometry.Parse("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
+
+    /// <summary>
+    /// Dynamic sub-menu items for 1-click profile switching from the context menu.
+    /// </summary>
+    public IReadOnlyList<Control> ProfileMenuItems
+    {
+        get
+        {
+            var list = new List<Control>();
+            var profiles = profileService.GetProfiles();
+            var active = profileService.GetActiveProfile();
+
+            foreach (var p in profiles)
+            {
+                var isActive = string.Equals(p, active, StringComparison.OrdinalIgnoreCase);
+                var item = new MenuItem
+                {
+                    Header = p,
+                    Icon = isActive ? new PathIcon { Data = CheckmarkGeometry, Width = 12, Height = 12 } : null
+                };
+                var targetName = p;
+                item.Click += (_, _) =>
+                {
+                    if (!isActive)
+                    {
+                        profileService.SwitchProfile(targetName);
+                    }
+                };
+                list.Add(item);
+            }
+
+            list.Add(new Separator());
+
+            var manageItem = new MenuItem
+            {
+                Header = Locale.Profiles_Manage ?? "管理方案…"
+            };
+            manageItem.Click += (_, _) =>
+            {
+                var win = settingsWindow();
+                win.Show();
+                win.Activate();
+            };
+            list.Add(manageItem);
+
+            return list;
+        }
+    }
+
     /// <summary>
     /// Size the content presenter to the card's inner area (the grid cell minus the
     /// widget margin). Without an explicit size the presenter measures the widget
@@ -657,6 +717,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged -= OnAppSettingsUpdated;
         layoutProvider.DataChanged -= OnLayoutDataUpdated;
+        profileService.ActiveProfileChanged -= OnProfilesChanged;
+        profileService.ProfilesListChanged -= OnProfilesChanged;
     }
 
     private void OnWidgetLayoutUpdated(object? sender, WidgetLayout? oldLayout, WidgetLayout newLayout)

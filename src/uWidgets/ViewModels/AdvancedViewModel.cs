@@ -38,14 +38,21 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     private readonly ILayoutProvider layoutProvider;
     private readonly DisplayMonitorService displayMonitor;
 
-    public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
+    private readonly ProfileService? profileService;
+
+    public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, ProfileService? profileService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
+        this.profileService = profileService;
 
         layoutProvider.DataChanged += OnLayoutDataChanged;
         appSettingsProvider.DataChanged += OnAppSettingsDataChanged;
+        if (profileService != null)
+        {
+            profileService.ActiveProfileChanged += OnActiveProfileChanged;
+        }
     }
 
     /// <inheritdoc />
@@ -53,18 +60,34 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     {
         layoutProvider.DataChanged -= OnLayoutDataChanged;
         appSettingsProvider.DataChanged -= OnAppSettingsDataChanged;
+        if (profileService != null)
+        {
+            profileService.ActiveProfileChanged -= OnActiveProfileChanged;
+        }
     }
 
-    private void OnLayoutDataChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => RaiseGridChanged();
-    private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData) => RaiseGridChanged();
+    private void OnActiveProfileChanged(object? sender, EventArgs e) => RaiseAllProperties();
+    private void OnLayoutDataChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => RaiseAllProperties();
+    private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData) => RaiseAllProperties();
 
-    private void RaiseGridChanged()
+    private void RaiseAllProperties()
     {
+        this.RaisePropertyChanged(nameof(GridMode));
+        this.RaisePropertyChanged(nameof(IsManualGrid));
         this.RaisePropertyChanged(nameof(GridColumns));
         this.RaisePropertyChanged(nameof(GridRows));
         this.RaisePropertyChanged(nameof(GridCellPercent));
         this.RaisePropertyChanged(nameof(GridXPercent));
         this.RaisePropertyChanged(nameof(GridYPercent));
+        this.RaisePropertyChanged(nameof(SnapSize));
+        this.RaisePropertyChanged(nameof(LockSize));
+        this.RaisePropertyChanged(nameof(SnapPosition));
+        this.RaisePropertyChanged(nameof(LockPosition));
+        this.RaisePropertyChanged(nameof(Margin));
+        this.RaisePropertyChanged(nameof(Radius));
+        this.RaisePropertyChanged(nameof(ProxyMode));
+        this.RaisePropertyChanged(nameof(ProxyCustomUrl));
+        this.RaisePropertyChanged(nameof(UpdateUrl));
     }
 
     /// <summary>
@@ -78,8 +101,8 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
     /// <summary>
     /// Persist a grid change to the SAME store the full-screen grid editor uses:
-    /// the primary screen's per-screen entry when one exists, otherwise the
-    /// global <see cref="AppSettings.Grid"/> (editor fallback: screenId = null).
+    /// the primary screen's per-screen entry when one exists, and the
+    /// global <see cref="AppSettings.Grid"/>.
     /// </summary>
     private void SaveGrid(Grid grid)
     {
@@ -88,10 +111,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         {
             layoutProvider.Save(layoutProvider.Get().WithScreen(primary.Config with { Grid = grid }));
         }
-        else
-        {
-            appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
-        }
+        appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
     }
 
     // ---------- Grid mode ----------

@@ -19,9 +19,10 @@ public partial class Settings : Window
     private readonly IAppSettingsProvider appSettingsProvider;
 
     public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider, 
-        ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory)
+        ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory,
+        ProfileService profileService)
     {
-        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory);
+        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory, profileService);
         this.appSettingsProvider = appSettingsProvider;
         DataContext = viewModel;
         Resized += OnResized;
@@ -91,6 +92,12 @@ public partial class Settings : Window
         Resized -= OnResized;
         KeyDown -= OnKeyDown;
         Unloaded -= OnUnloaded;
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+        System.Threading.Tasks.Task.Delay(500).ContinueWith(_ => InteropService.TrimProcessMemory());
     }
 
     private void OnResized(object? sender, WindowResizedEventArgs e) => 

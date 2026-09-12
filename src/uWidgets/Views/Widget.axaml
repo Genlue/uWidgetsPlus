@@ -46,6 +46,7 @@
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="{Binding ScaleMenuTitle}" Command="{Binding OpenScaleDialog}" />
+            <MenuItem Header="{x:Static locales:Locale.Profiles_MenuTitle}" ItemsSource="{Binding ProfileMenuItems}" />
             <Separator />
             <MenuItem Header="{x:Static locales:Locale.Widget_Remove}" Command="{Binding Remove}" />
             <Separator />

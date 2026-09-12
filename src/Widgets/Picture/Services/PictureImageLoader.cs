@@ -48,12 +48,24 @@ public sealed class DecodedPicture : IDisposable
 
 public static class PictureImageLoader
 {
-    private const int MaxAnimatedFrames = 240;
+    public const int DefaultMaxDimension = 1024;
+    public const int DefaultMaxAnimatedDimension = 480;
 
-    public static DecodedPicture? Load(string path)
+    /// <summary>
+    /// Total pixel budget for one animated image (BGRA8 → 4 bytes per pixel). Every frame of an
+    /// animation is kept — no frame is ever dropped — so a very long GIF is bounded by scaling
+    /// its canvas down instead of by throwing frames away. 16 MP ≈ 64 MB of decoded pixels.
+    /// </summary>
+    private const double AnimatedPixelBudget = 16.0 * 1024 * 1024;
+
+    public static DecodedPicture? Load(string path, int maxDimension = DefaultMaxDimension)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return null;
+
+        // One reusable composite/decode buffer for the whole image. Without it every frame of
+        // an animated image would allocate its own full-size buffer.
+        using var scratch = new ScratchBitmapPool();
 
         try
         {
@@ -65,7 +77,8 @@ public static class PictureImageLoader
                 int frameCount = codec.FrameCount;
                 if (frameCount > 1)
                 {
-                    var animatedFrames = DecodeAnimatedFrames(codec, frameCount);
+                    var animatedFrames = DecodeAnimatedFrames(
+                        codec, frameCount, Math.Min(maxDimension, DefaultMaxAnimatedDimension), scratch);
                     if (animatedFrames.Count > 0)
                     {
                         return new DecodedPicture(animatedFrames);
@@ -73,7 +86,7 @@ public static class PictureImageLoader
                 }
                 else
                 {
-                    var singleFrame = DecodeSingleFrame(codec, 0);
+                    var singleFrame = DecodeSingleFrame(codec, 0, maxDimension, scratch);
                     if (singleFrame != null)
                     {
                         return new DecodedPicture([new PictureFrame(singleFrame, 1000)]);
@@ -86,10 +99,11 @@ public static class PictureImageLoader
             Debug.WriteLine($"[PictureImageLoader] Skia codec failed for '{path}': {ex.Message}");
         }
 
-        // Fallback 1: Avalonia native Bitmap decoder
+        // Fallback 1: Avalonia native Bitmap decoder with downsampling
         try
         {
-            var avaloniaBmp = new Bitmap(path);
+            using var fs = File.OpenRead(path);
+            var avaloniaBmp = Bitmap.DecodeToWidth(fs, maxDimension, BitmapInterpolationMode.MediumQuality);
             return new DecodedPicture([new PictureFrame(avaloniaBmp, 1000)]);
         }
         catch (Exception ex)
@@ -97,13 +111,26 @@ public static class PictureImageLoader
             Debug.WriteLine($"[PictureImageLoader] Avalonia Bitmap fallback failed for '{path}': {ex.Message}");
         }
 
-        // Fallback 2: Skia SKBitmap decoder
+        // Fallback 2: Skia SKBitmap decoder with downsampling
         try
         {
             using var skBmp = SKBitmap.Decode(path);
             if (skBmp != null && skBmp.Width > 0 && skBmp.Height > 0)
             {
-                var converted = ConvertSkBitmapToWriteable(skBmp);
+                SKBitmap bmpToConvert = skBmp;
+                SKBitmap? resized = null;
+                if (skBmp.Width > maxDimension || skBmp.Height > maxDimension)
+                {
+                    float scale = Math.Min((float)maxDimension / skBmp.Width, (float)maxDimension / skBmp.Height);
+                    int tw = Math.Max(1, (int)Math.Round(skBmp.Width * scale));
+                    int th = Math.Max(1, (int)Math.Round(skBmp.Height * scale));
+                    var targetInfo = new SKImageInfo(tw, th, SKColorType.Bgra8888, SKAlphaType.Premul);
+                    resized = skBmp.Resize(targetInfo, SKFilterQuality.Medium);
+                    if (resized != null) bmpToConvert = resized;
+                }
+
+                var converted = ConvertSkBitmapToWriteable(bmpToConvert);
+                resized?.Dispose();
                 if (converted != null)
                 {
                     return new DecodedPicture([new PictureFrame(converted, 1000)]);
@@ -118,13 +145,55 @@ public static class PictureImageLoader
         return null;
     }
 
-    private static List<PictureFrame> DecodeAnimatedFrames(SKCodec codec, int totalFrames)
+    private static List<PictureFrame> DecodeAnimatedFrames(SKCodec codec, int totalFrames, int maxDimension, ScratchBitmapPool scratch)
     {
         var frames = new List<PictureFrame>();
-        var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-        int count = Math.Min(totalFrames, MaxAnimatedFrames);
+        int origW = codec.Info.Width;
+        int origH = codec.Info.Height;
+        if (origW <= 0 || origH <= 0) return frames;
 
-        var intermediateSkBitmaps = new List<SKBitmap>(count);
+        // Never drop frames: keep the whole animation at its native frame rate, and bound the
+        // memory a long animation can take by shrinking its canvas instead.
+        maxDimension = Math.Min(maxDimension, DimensionForFrameBudget(origW, origH, totalFrames));
+
+        int targetW = origW;
+        int targetH = origH;
+        if (origW > maxDimension || origH > maxDimension)
+        {
+            float scale = Math.Min((float)maxDimension / origW, (float)maxDimension / origH);
+            targetW = Math.Max(1, (int)Math.Round(origW * scale));
+            targetH = Math.Max(1, (int)Math.Round(origH * scale));
+        }
+
+        // Composite at the decoder's cheapest native size when it can scale (large GIF/WEBP
+        // canvases otherwise cost one full-size buffer per frame while decoding).
+        int decodeW = origW;
+        int decodeH = origH;
+        if (targetW < origW || targetH < origH)
+        {
+            var scaled = codec.GetScaledDimensions((float)targetW / origW);
+            if (scaled.Width > 0 && scaled.Height > 0 && scaled.Width <= origW && scaled.Height <= origH)
+            {
+                decodeW = scaled.Width;
+                decodeH = scaled.Height;
+            }
+        }
+
+        var info = new SKImageInfo(decodeW, decodeH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        var targetInfo = new SKImageInfo(targetW, targetH, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+        int count = totalFrames;
+
+        // Frames that later frames depend on must be retained; everything else is composited
+        // through a single scratch buffer instead of allocating per frame.
+        var lastDependentIndex = new Dictionary<int, int>();
+        for (int i = 0; i < count; i++)
+        {
+            int req = codec.FrameInfo[i].RequiredFrame;
+            if (req >= 0) lastDependentIndex[req] = i;
+        }
+
+        var retained = new List<SKBitmap?>();
 
         try
         {
@@ -132,54 +201,151 @@ public static class PictureImageLoader
             {
                 var frameInfo = codec.FrameInfo[i];
                 int duration = frameInfo.Duration;
-                if (duration <= 10) duration = 100; // Standard GIF fallback for 0 or <=10ms
-
-                var skBitmap = new SKBitmap(info);
+                if (duration <= 10) duration = 100; // standard GIF fallback for 0/<=10 ms
 
                 int req = frameInfo.RequiredFrame;
-                if (req >= 0 && req < intermediateSkBitmaps.Count)
+                SKBitmap source;
+
+                if (req >= 0 && req < retained.Count && retained[req] != null)
                 {
-                    intermediateSkBitmaps[req].CopyTo(skBitmap);
-                    var options = new SKCodecOptions(i, req);
-                    codec.GetPixels(info, skBitmap.GetPixels(), options);
+                    source = retained[req]!;
                 }
                 else
                 {
-                    skBitmap.Erase(SKColors.Transparent);
-                    var options = new SKCodecOptions(i);
-                    codec.GetPixels(info, skBitmap.GetPixels(), options);
+                    // Decode into the shared scratch buffer (no per-frame allocation).
+                    var result = scratch.DecodeFrame(codec, i, info, -1);
+                    if (!ProducedPixels(result))
+                    {
+                        continue;
+                    }
+                    source = scratch.Bitmap;
                 }
 
-                intermediateSkBitmaps.Add(skBitmap);
-
-                var wb = ConvertSkBitmapToWriteable(skBitmap);
-                if (wb != null)
+                bool neededLater = lastDependentIndex.TryGetValue(i, out var lastDep) && lastDep > i;
+                if (neededLater)
                 {
-                    frames.Add(new PictureFrame(wb, duration));
+                    // Keep a private copy so the scratch buffer stays reusable.
+                    var copy = new SKBitmap(info);
+                    source.CopyTo(copy);
+                    retained.Add(copy);
+                }
+                else
+                {
+                    while (retained.Count <= i) retained.Add(null);
+                }
+
+                SKBitmap? resizedBmp = null;
+                var bmpToConvert = source;
+                if (decodeW != targetW || decodeH != targetH)
+                {
+                    resizedBmp = source.Resize(targetInfo, SKFilterQuality.Medium);
+                    if (resizedBmp != null) bmpToConvert = resizedBmp;
+                }
+
+                var wb = ConvertSkBitmapToWriteable(bmpToConvert);
+                resizedBmp?.Dispose();
+
+                // One frame per decoded frame, each carrying its own encoded delay, so the
+                // animation plays back at exactly the speed it was authored at.
+                if (wb != null) frames.Add(new PictureFrame(wb, duration));
+
+                // Free retained frames that nothing depends on any more.
+                for (int k = 0; k < retained.Count; k++)
+                {
+                    if (retained[k] == null) continue;
+                    if (!lastDependentIndex.TryGetValue(k, out var last) || last <= i)
+                    {
+                        retained[k]!.Dispose();
+                        retained[k] = null;
+                    }
                 }
             }
         }
         finally
         {
-            foreach (var sk in intermediateSkBitmaps)
-            {
-                sk.Dispose();
-            }
+            foreach (var sk in retained) sk?.Dispose();
         }
 
         return frames;
     }
 
-    private static Bitmap? DecodeSingleFrame(SKCodec codec, int frameIndex)
+    /// <summary>
+    /// Largest long-edge size an animation may use while keeping <b>all</b> its frames inside
+    /// <see cref="AnimatedPixelBudget"/>. Frame count never changes the playback speed, only the
+    /// resolution the frames are decoded at.
+    /// </summary>
+    private static int DimensionForFrameBudget(int origW, int origH, int frameCount)
     {
-        var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
-        using var skBitmap = new SKBitmap(info);
-        skBitmap.Erase(SKColors.Transparent);
+        if (frameCount <= 1 || origW <= 0 || origH <= 0) return int.MaxValue;
 
-        var options = new SKCodecOptions(frameIndex);
-        var result = codec.GetPixels(info, skBitmap.GetPixels(), options);
+        double perFramePixelBudget = AnimatedPixelBudget / frameCount;
+        double aspect = (double)origW / origH;
 
-        return ConvertSkBitmapToWriteable(skBitmap);
+        // Per-frame budget is W*H = H*H*aspect → solve for the long edge.
+        double longEdge = aspect >= 1.0
+            ? Math.Sqrt(perFramePixelBudget * aspect)
+            : Math.Sqrt(perFramePixelBudget / aspect);
+
+        // Never shrink an animation below what a widget can actually show.
+        return (int)Math.Clamp(longEdge, 128.0, 2048.0);
+    }
+
+    /// <summary>
+    /// Whether a decode result produced (at least partially) usable pixels. Reasons that mean
+    /// "no pixels at all" must be rejected; anything else — a truncated file, for instance —
+    /// still yields an image, which is what the widget should show.
+    /// </summary>
+    private static bool ProducedPixels(SKCodecResult result) => result switch
+    {
+        SKCodecResult.InvalidParameters => false,
+        SKCodecResult.InvalidInput => false,
+        SKCodecResult.InternalError => false,
+        SKCodecResult.CouldNotRewind => false,
+        _ => true
+    };
+
+    private static Bitmap? DecodeSingleFrame(SKCodec codec, int frameIndex, int maxDimension, ScratchBitmapPool scratch)
+    {
+        int origW = codec.Info.Width;
+        int origH = codec.Info.Height;
+        if (origW <= 0 || origH <= 0) return null;
+
+        int targetW = origW;
+        int targetH = origH;
+        if (origW > maxDimension || origH > maxDimension)
+        {
+            float scale = Math.Min((float)maxDimension / origW, (float)maxDimension / origH);
+            targetW = Math.Max(1, (int)Math.Round(origW * scale));
+            targetH = Math.Max(1, (int)Math.Round(origH * scale));
+        }
+
+        // Ask the decoder for the smallest size it can produce natively (JPEG can decode
+        // straight to 1/2, 1/4, 1/8 ...), so a 4000x3000 photo never materialises in RAM.
+        int decodeW = origW;
+        int decodeH = origH;
+        if (targetW < origW || targetH < origH)
+        {
+            var scaled = codec.GetScaledDimensions((float)targetW / origW);
+            if (scaled.Width > 0 && scaled.Height > 0 && scaled.Width <= origW && scaled.Height <= origH)
+            {
+                decodeW = scaled.Width;
+                decodeH = scaled.Height;
+            }
+        }
+
+        var decodeInfo = new SKImageInfo(decodeW, decodeH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        var result = scratch.DecodeFrame(codec, frameIndex, decodeInfo, requiredFrame: -1);
+        if (!ProducedPixels(result))
+            return null;
+
+        if (decodeW == targetW && decodeH == targetH)
+        {
+            return ConvertSkBitmapToWriteable(scratch.Bitmap);
+        }
+
+        var targetInfo = new SKImageInfo(targetW, targetH, SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var resized = scratch.Bitmap.Resize(targetInfo, SKFilterQuality.Medium);
+        return resized == null ? null : ConvertSkBitmapToWriteable(resized);
     }
 
     private static WriteableBitmap? ConvertSkBitmapToWriteable(SKBitmap skBitmap)
@@ -192,8 +358,9 @@ public static class PictureImageLoader
             PixelFormat.Bgra8888,
             AlphaFormat.Premul);
 
-        using (var locked = wb.Lock())
+        try
         {
+            using var locked = wb.Lock();
             unsafe
             {
                 if (skBitmap.ColorType == SKColorType.Bgra8888 && skBitmap.AlphaType == SKAlphaType.Premul)
@@ -217,7 +384,61 @@ public static class PictureImageLoader
                 }
             }
         }
+        catch
+        {
+            // Never leave a half-initialised bitmap alive: it would keep its pixel buffer
+            // allocated but could not be rendered.
+            wb.Dispose();
+            throw;
+        }
 
         return wb;
+    }
+
+    /// <summary>
+    /// Reusable decode/composite buffer. Keeps at most one bitmap alive for the duration of a
+    /// single decode and grows (never shrinks) to the largest frame it has seen, so decoding an
+    /// animated image costs one buffer instead of one per frame.
+    /// </summary>
+    private sealed class ScratchBitmapPool : IDisposable
+    {
+        private SKBitmap? bitmap;
+        private SKImageInfo info;
+
+        public SKBitmap Bitmap => bitmap!;
+
+        /// <summary>Decodes <paramref name="frameIndex"/> into the shared buffer, compositing on
+        /// top of <paramref name="requiredFrame"/> when the format needs it.</summary>
+        public SKCodecResult DecodeFrame(SKCodec codec, int frameIndex, SKImageInfo frameInfo, int requiredFrame)
+        {
+            if (bitmap == null || bitmap.Width < frameInfo.Width || bitmap.Height < frameInfo.Height)
+            {
+                bitmap?.Dispose();
+                bitmap = new SKBitmap(frameInfo);
+                info = frameInfo;
+            }
+
+            var target = bitmap;
+            if (target.Width != frameInfo.Width || target.Height != frameInfo.Height)
+            {
+                // Buffer is larger than this frame: clear the used area and decode at its origin.
+                target.Erase(SKColors.Transparent, new SKRectI(0, 0, frameInfo.Width, frameInfo.Height));
+            }
+            else
+            {
+                target.Erase(SKColors.Transparent);
+            }
+
+            var options = requiredFrame >= 0
+                ? new SKCodecOptions(frameIndex, requiredFrame)
+                : new SKCodecOptions(frameIndex);
+            return codec.GetPixels(frameInfo, target.GetPixels(), options);
+        }
+
+        public void Dispose()
+        {
+            bitmap?.Dispose();
+            bitmap = null;
+        }
     }
 }

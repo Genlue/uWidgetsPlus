@@ -132,6 +132,30 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
         }
 
         Dispatcher.UIThread.Post(RecomputeAndPopulate);
+        SchedulePreRender(100);
+    }
+
+    private DispatcherTimer? preRenderDebounceTimer;
+
+    private void SchedulePreRender(int delayMs = 150)
+    {
+        if (preRenderDebounceTimer == null)
+        {
+            preRenderDebounceTimer = new DispatcherTimer();
+            preRenderDebounceTimer.Tick += (_, _) =>
+            {
+                preRenderDebounceTimer.Stop();
+                TriggerLiquidGlassPreRender();
+            };
+        }
+        preRenderDebounceTimer.Stop();
+        preRenderDebounceTimer.Interval = TimeSpan.FromMilliseconds(delayMs);
+        preRenderDebounceTimer.Start();
+    }
+
+    private void OnWallpaperChanged()
+    {
+        SchedulePreRender(50);
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
@@ -153,16 +177,19 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
             win.PositionChanged += OnWindowPositionChanged;
         }
 
-        Dispatcher.UIThread.Post(TriggerLiquidGlassPreRender, DispatcherPriority.Background);
+        LiquidGlassBridge.SubscribeWallpaperInvalidated(OnWallpaperChanged);
+        SchedulePreRender(200);
     }
 
     private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
     {
-        TriggerLiquidGlassPreRender();
+        SchedulePreRender(150);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        preRenderDebounceTimer?.Stop();
+
         if (VisualRoot is Window win)
         {
             win.PositionChanged -= OnWindowPositionChanged;
@@ -183,7 +210,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
                 Math.Abs(e.NewSize.Height - e.PreviousSize.Height) > 1)
             {
                 RecomputeAndPopulate();
-                TriggerLiquidGlassPreRender();
+                SchedulePreRender(150);
             }
         }
     }
@@ -344,11 +371,11 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
 
             var miniItemCornerRadius = new CornerRadius(Math.Clamp(Math.Round(miniSize * 0.22), 2, 8));
             var miniBadgeCornerRadius = miniItemCornerRadius;
-            double miniFontSize = Math.Clamp(Math.Round(miniSize * 0.38), 8, 14);
+            double miniFontSize = Math.Clamp(Math.Round(miniSize * 0.52), 9, 16);
 
             int remainingBeyondThree = overflowPaths.Count - 3;
             bool showBadge = remainingBeyondThree > 1;
-            string badgeText = $"+{remainingBeyondThree}";
+            string badgeText = "+";
 
             string viewAllTooltip = string.Format(Locale.Folders_BigFolder_ViewAll, allPaths.Count);
             items.Add(new BigFolderItem(
@@ -445,6 +472,12 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
     {
         try
         {
+            if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            {
+                Dispatcher.UIThread.Post(TriggerLiquidGlassPreRender, DispatcherPriority.Loaded);
+                return;
+            }
+
             var appSettings = new uWidgets.Core.Services.AppSettingsProvider().Get();
             if (appSettings.Theme.IsLiquidGlass)
             {

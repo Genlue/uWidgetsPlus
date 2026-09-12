@@ -109,6 +109,7 @@
                                                            FontSize="{Binding MiniFontSize}"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                           TextAlignment="Center"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                                             </Border>
                                         </Panel>

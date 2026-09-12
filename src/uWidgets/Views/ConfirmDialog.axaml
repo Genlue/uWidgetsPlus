@@ -3,6 +3,7 @@
         x:Class="uWidgets.Views.ConfirmDialog"
         SystemDecorations="None"
         Background="Transparent"
+        TransparencyLevelHint="Transparent"
         CanResize="False"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"

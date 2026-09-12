@@ -68,7 +68,7 @@
             <Panel>
                 <!-- LiquidGlass Background Image (pre-rendered ahead of time) -->
                 <Image x:Name="LiquidGlassBgImage" Stretch="Fill" IsVisible="False" />
-                <Border x:Name="LiquidGlassOverlay" Background="#22000000" IsVisible="False" />
+                <Border x:Name="LiquidGlassOverlay" Background="Transparent" IsVisible="False" />
 
                 <!-- Card Content -->
                 <Grid RowDefinitions="Auto,Auto,*">

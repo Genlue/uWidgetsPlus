@@ -42,6 +42,17 @@ public partial class PictureSettings : UserControl
         InitCombos();
         LoadFromModel();
         isInitializing = false;
+
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        CropPreview.PreviewBitmap = null;
+        selectedDecodedPicture?.Dispose();
+        selectedDecodedPicture = null;
+        selectedBitmap = null;
+        GC.Collect(1, GCCollectionMode.Optimized);
     }
 
     private void InitCombos()
@@ -124,7 +135,8 @@ public partial class PictureSettings : UserControl
         if (item == null)
         {
             CropPanel.IsVisible = false;
-            selectedBitmap?.Dispose();
+            selectedDecodedPicture?.Dispose();
+            selectedDecodedPicture = null;
             selectedBitmap = null;
             CropPreview.PreviewBitmap = null;
             return;
@@ -134,15 +146,20 @@ public partial class PictureSettings : UserControl
 
         if (File.Exists(item.Path))
         {
+            // Clear the control's reference before disposing the old decode, otherwise the
+            // preview would briefly render a freed bitmap.
+            CropPreview.PreviewBitmap = null;
             try
             {
                 selectedDecodedPicture?.Dispose();
-                selectedDecodedPicture = PictureImageLoader.Load(item.Path);
+                selectedDecodedPicture = PictureImageLoader.Load(item.Path, maxDimension: 800);
                 selectedBitmap = selectedDecodedPicture?.PrimaryBitmap;
                 CropPreview.PreviewBitmap = selectedBitmap;
             }
             catch
             {
+                selectedDecodedPicture = null;
+                selectedBitmap = null;
                 CropPreview.PreviewBitmap = null;
             }
         }

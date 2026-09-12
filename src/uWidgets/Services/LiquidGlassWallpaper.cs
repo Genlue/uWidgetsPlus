@@ -23,7 +23,6 @@ public static class LiquidGlassWallpaper
     private static readonly object Gate = new();
     private static string? cachedKey;
     private static WallpaperSnapshot? cached;
-    private static byte[]? captureBytes;
     private static long captureExpiresTicks;
 
     public static WallpaperSnapshot Get()
@@ -35,11 +34,9 @@ public static class LiquidGlassWallpaper
             try
             {
                 var live = CaptureOnce();
-                if (live.Length > 0)
+                if (live != null)
                 {
-                    // A capture is authoritative: it IS the displayed desktop,
-                    // so no registry/file parsing is needed.
-                    return new WallpaperSnapshot(live, new SKColor(32, 38, 48), LiveCapture: true);
+                    return live;
                 }
                 return FromFileFallback();
             }
@@ -58,12 +55,18 @@ public static class LiquidGlassWallpaper
     /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or wallpaper changed).</summary>
     public static void Invalidate()
     {
+        WallpaperSnapshot? old;
         lock (Gate)
         {
-            captureBytes = null;
             captureExpiresTicks = 0;
+            old = cached;
             cached = null;
             cachedKey = null;
+        }
+
+        if (old != null)
+        {
+            System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
         }
 
         try
@@ -83,24 +86,28 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    private static byte[] CaptureOnce()
+    private static WallpaperSnapshot? CaptureOnce()
     {
-        if (captureExpiresTicks > DateTime.UtcNow.Ticks && captureBytes != null)
-            return captureBytes;
+        if (captureExpiresTicks > DateTime.UtcNow.Ticks && cached != null && cached.LiveCapture)
+            return cached;
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var bytes = DesktopCapturer.Capture();
-            if (bytes.Length == 0)
+            var bmp = DesktopCapturer.CaptureBitmap();
+            if (bmp == null)
             {
                 continue;
             }
-            captureBytes = bytes;
+            var old = cached;
+            cached = new WallpaperSnapshot(null, new SKColor(32, 38, 48), LiveCapture: true, CachedBitmap: bmp);
             captureExpiresTicks = DateTime.UtcNow.Ticks + CaptureTtlTicks;
-            return bytes;
+            if (old != null && !ReferenceEquals(old, cached))
+            {
+                System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
+            }
+            return cached;
         }
-        captureBytes = null;
-        return [];
+        return null;
     }
 
     /// <summary>Static file based fallback (Windows wallpaper image + registry placement).</summary>
@@ -120,8 +127,23 @@ public static class LiquidGlassWallpaper
         var key = $"{path}|{(exists ? File.GetLastWriteTimeUtc(path).Ticks : 0)}|{style}|{tile}|{background}";
         if (cachedKey == key && cached != null && !cached.LiveCapture) return cached;
         var bytes = exists ? File.ReadAllBytes(path) : null;
-        cached = new WallpaperSnapshot(bytes, background, style, tile);
+        SKBitmap? bmp = null;
+        if (bytes != null)
+        {
+            try
+            {
+                bmp = SKBitmap.Decode(bytes);
+                bmp?.SetImmutable();
+            }
+            catch { }
+        }
+        var old = cached;
+        cached = new WallpaperSnapshot(bytes, background, style, tile, CachedBitmap: bmp);
         cachedKey = key;
+        if (old != null && !ReferenceEquals(old, cached))
+        {
+            System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
+        }
         return cached;
     }
 }
@@ -174,23 +196,23 @@ public static class DesktopCapturer
 
     [DllImport("gdi32.dll")]
     private static extern int GetDIBits(IntPtr hdc, IntPtr hbmp, uint start, uint lines,
-        byte[] bits, ref BitmapInfo info, uint usage);
+        IntPtr bits, ref BitmapInfo info, uint usage);
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr extraData);
 
     // SM_* virtual desktop metrics (physical pixels; the process is DPI aware).
     private const int SmXVirtualScreen = 76, SmYVirtualScreen = 77, SmCXVirtualScreen = 78, SmCYVirtualScreen = 79;
 
-    public static byte[] Capture()
+    public static SKBitmap? CaptureBitmap()
     {
         var left = GetSystemMetrics(SmXVirtualScreen);
         var top = GetSystemMetrics(SmYVirtualScreen);
         var width = GetSystemMetrics(SmCXVirtualScreen);
         var height = GetSystemMetrics(SmCYVirtualScreen);
-        if (width <= 0 || height <= 0) return [];
+        if (width <= 0 || height <= 0) return null;
 
         var hwnd = FindProgman();
-        if (hwnd == IntPtr.Zero) return [];
+        if (hwnd == IntPtr.Zero) return null;
 
         var screenDc = GetDC(IntPtr.Zero);
         var memDc = CreateCompatibleDC(screenDc);
@@ -199,9 +221,19 @@ public static class DesktopCapturer
         try
         {
             var ok = PrintWindow(hwnd, memDc, PwRenderFullContent);
-            if (!ok || !LooksLikeWallpaper(memDc, bitmap, width, height))
-                return [];
-            return ReadPixels(memDc, bitmap, width, height);
+            if (!ok) return null;
+
+            var skBitmap = ReadBitmap(memDc, bitmap, width, height);
+            if (skBitmap == null) return null;
+
+            if (!LooksLikeWallpaper(skBitmap))
+            {
+                skBitmap.Dispose();
+                return null;
+            }
+
+            skBitmap.SetImmutable();
+            return skBitmap;
         }
         finally
         {
@@ -210,6 +242,15 @@ public static class DesktopCapturer
             DeleteDC(memDc);
             ReleaseDC(IntPtr.Zero, screenDc);
         }
+    }
+
+    public static byte[] Capture()
+    {
+        using var bmp = CaptureBitmap();
+        if (bmp == null) return [];
+        using var img = SKImage.FromBitmap(bmp);
+        using var data = img.Encode(SKEncodedImageFormat.Png, 90);
+        return data.ToArray();
     }
 
     private static IntPtr FindProgman()
@@ -230,22 +271,19 @@ public static class DesktopCapturer
     }
 
     /// <summary>A valid wallpaper capture has meaningful content: not uniform, not black.</summary>
-    private static bool LooksLikeWallpaper(IntPtr memDc, IntPtr bitmap, int width, int height)
+    private static bool LooksLikeWallpaper(SKBitmap bmp)
     {
-        var info = CreateHeader(width, height);
-        byte[] buffer = new byte[width * height * 4];
-        if (GetDIBits(memDc, bitmap, 0, (uint)height, buffer, ref info, 0) != height)
-            return false;
-
+        var width = bmp.Width;
+        var height = bmp.Height;
         var seen = new HashSet<uint>();
         var stepX = Math.Max(1, width / 16);
         var stepY = Math.Max(1, height / 9);
+
         for (var y = stepY / 2; y < height; y += stepY)
         for (var x = stepX / 2; x < width; x += stepX)
         {
-            var index = (y * width + x) * 4;
-            var color = (uint)((buffer[index + 2] << 16) | (buffer[index + 1] << 8) | buffer[index]);
-            seen.Add(color);
+            var color = bmp.GetPixel(x, y);
+            seen.Add(((uint)color.Red << 16) | ((uint)color.Green << 8) | color.Blue);
         }
         if (seen.Count < 3) return false;
 
@@ -258,27 +296,25 @@ public static class DesktopCapturer
         return sum / seen.Count > 4; // not a pure-black capture
     }
 
-    private static byte[] ReadPixels(IntPtr memDc, IntPtr bitmap, int width, int height)
+    private static SKBitmap? ReadBitmap(IntPtr memDc, IntPtr bitmap, int width, int height)
     {
         var info = CreateHeader(width, height);
-        byte[] buffer = new byte[width * height * 4];
-        if (GetDIBits(memDc, bitmap, 0, (uint)height, buffer, ref info, 0) != height)
-            return [];
+        var skInfo = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
+        var skBitmap = new SKBitmap(skInfo);
+        var pixels = skBitmap.GetPixels();
+        if (pixels == IntPtr.Zero)
+        {
+            skBitmap.Dispose();
+            return null;
+        }
 
-        var info2 = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
-        using var skBitmap = new SKBitmap(info2);
-        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        try
+        if (GetDIBits(memDc, bitmap, 0, (uint)height, pixels, ref info, 0) != height)
         {
-            skBitmap.InstallPixels(info2, handle.AddrOfPinnedObject(), width * 4);
-            using var image = SKImage.FromBitmap(skBitmap);
-            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-            return data.ToArray();
+            skBitmap.Dispose();
+            return null;
         }
-        finally
-        {
-            handle.Free();
-        }
+
+        return skBitmap;
     }
 
     private static BitmapInfo CreateHeader(int width, int height) => new()

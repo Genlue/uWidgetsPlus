@@ -15,6 +15,7 @@ namespace uWidgets.Core.Models.Settings;
 /// <param name="HttpProxy">HTTP proxy for network requests: <c>null</c>/empty = direct connection (bypass system proxy), <c>"system"</c> = use the system proxy, otherwise a proxy URL.</param>
 /// <param name="TitleBarStyle">Title bar style of the settings window (macOS traffic lights or native system buttons); <c>null</c> uses <see cref="TitleBarStyle.Native"/> so old configurations keep their look.</param>
 /// <param name="TitleBarSize">Traffic light diameter in DIPs; <c>null</c> uses <see cref="DefaultTitleBarSize"/> (14 — a bit larger than the 12px macOS standard for high-DPI screens).</param>
+/// <param name="ActiveProfile">Active profile name; <c>null</c> or empty defaults to "默认配置".</param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -27,8 +28,18 @@ public record AppSettings(
     Grid? Grid = null,
     string? HttpProxy = null,
     TitleBarStyle? TitleBarStyle = null,
-    double? TitleBarSize = null)
+    double? TitleBarSize = null,
+    string? ActiveProfile = null)
 {
+    /// <summary>Default profile name.</summary>
+    public const string DefaultProfileName = "默认配置";
+
+    /// <summary>
+    /// The effective active configuration profile name.
+    /// </summary>
+    public string EffectiveActiveProfile =>
+        string.IsNullOrWhiteSpace(ActiveProfile) ? DefaultProfileName : ActiveProfile;
+
     /// <summary>The macOS-standard traffic light diameter (DIPs).</summary>
     public const double DefaultTitleBarSize = 14;
 

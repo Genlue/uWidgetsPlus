@@ -32,7 +32,9 @@ public class App : Application
             .AddSingleton<ILocaleService, LocaleService>()
             .AddSingleton<IGridService<Widget>, GridService>()
             .AddSingleton<DisplayMonitorService>()
-            .AddSingleton<IWidgetFactory<Window, UserControl>, WidgetFactory>()
+            .AddSingleton<WidgetFactory>()
+            .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
+            .AddSingleton<ProfileService>()
             .AddSingleton<Settings, Settings>()
             .AddSingleton<UpdateService, UpdateService>()
             .BuildServiceProvider();
@@ -49,6 +51,9 @@ public class App : Application
         localeService.SetCulture(appSettingsProvider.Get().Region.Language);
         themeService.Apply(appSettingsProvider.Get().Theme);
         services.GetRequiredService<WallpaperWatcherService>();
+
+        var profileService = services.GetRequiredService<ProfileService>();
+        profileService.EnsureSeeded();
 
         var displayMonitor = services.GetRequiredService<DisplayMonitorService>();
         var widgetFactory = (WidgetFactory) services.GetRequiredService<IWidgetFactory<Window, UserControl>>();
@@ -80,6 +85,8 @@ public class App : Application
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();
         
+        System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => InteropService.TrimProcessMemory());
+
         base.OnFrameworkInitializationCompleted();
     }
 }

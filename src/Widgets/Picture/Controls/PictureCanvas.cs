@@ -141,11 +141,19 @@ public class PictureCanvas : Control
 
     private void DrawImage(DrawingContext context, Bitmap bitmap, Rect destBounds)
     {
+        if (bitmap == null || destBounds.Width <= 0 || destBounds.Height <= 0) return;
+
+        // A disposed (or not yet realised) Bitmap reports an empty Size. Drawing it would
+        // corrupt the render pass, which Avalonia cannot recover from, so bail out first.
+        // The owning view model guarantees slots are cleared before disposal; this is the
+        // last line of defence against a stale reference reaching the compositor.
         var imgSize = bitmap.Size;
         if (imgSize.Width <= 0 || imgSize.Height <= 0) return;
+        var imgWidth = imgSize.Width;
+        var imgHeight = imgSize.Height;
 
         double targetAspect = destBounds.Width / destBounds.Height;
-        double imgAspect = imgSize.Width / imgSize.Height;
+        double imgAspect = imgWidth / imgHeight;
 
         switch (FitMode)
         {
@@ -155,15 +163,15 @@ public class PictureCanvas : Control
                 Rect bgSrc;
                 if (targetAspect > imgAspect)
                 {
-                    double srcH = imgSize.Width / targetAspect;
-                    double srcY = Math.Max(0, (imgSize.Height - srcH) / 2.0);
-                    bgSrc = new Rect(0, srcY, imgSize.Width, Math.Min(srcH, imgSize.Height));
+                    double srcH = imgWidth / targetAspect;
+                    double srcY = Math.Max(0, (imgHeight - srcH) / 2.0);
+                    bgSrc = new Rect(0, srcY, imgWidth, Math.Min(srcH, imgHeight));
                 }
                 else
                 {
-                    double srcW = imgSize.Height * targetAspect;
-                    double srcX = Math.Max(0, (imgSize.Width - srcW) / 2.0);
-                    bgSrc = new Rect(srcX, 0, Math.Min(srcW, imgSize.Width), imgSize.Height);
+                    double srcW = imgHeight * targetAspect;
+                    double srcX = Math.Max(0, (imgWidth - srcW) / 2.0);
+                    bgSrc = new Rect(srcX, 0, Math.Min(srcW, imgWidth), imgHeight);
                 }
 
                 using (context.PushOpacity(0.2))
@@ -172,12 +180,12 @@ public class PictureCanvas : Control
                 }
 
                 // 2. Draw the centered sharp image
-                double scale = Math.Min(destBounds.Width / imgSize.Width, destBounds.Height / imgSize.Height);
-                double w = imgSize.Width * scale;
-                double h = imgSize.Height * scale;
+                double scale = Math.Min(destBounds.Width / imgWidth, destBounds.Height / imgHeight);
+                double w = imgWidth * scale;
+                double h = imgHeight * scale;
                 double x = (destBounds.Width - w) / 2.0;
                 double y = (destBounds.Height - h) / 2.0;
-                context.DrawImage(bitmap, new Rect(0, 0, imgSize.Width, imgSize.Height), new Rect(x, y, w, h));
+                context.DrawImage(bitmap, new Rect(0, 0, imgWidth, imgHeight), new Rect(x, y, w, h));
                 break;
             }
 
@@ -187,15 +195,15 @@ public class PictureCanvas : Control
                 Rect srcRect;
                 if (targetAspect > imgAspect)
                 {
-                    double srcH = imgSize.Width / targetAspect;
-                    double srcY = Math.Max(0, (imgSize.Height - srcH) / 2.0);
-                    srcRect = new Rect(0, srcY, imgSize.Width, Math.Min(srcH, imgSize.Height));
+                    double srcH = imgWidth / targetAspect;
+                    double srcY = Math.Max(0, (imgHeight - srcH) / 2.0);
+                    srcRect = new Rect(0, srcY, imgWidth, Math.Min(srcH, imgHeight));
                 }
                 else
                 {
-                    double srcW = imgSize.Height * targetAspect;
-                    double srcX = Math.Max(0, (imgSize.Width - srcW) / 2.0);
-                    srcRect = new Rect(srcX, 0, Math.Min(srcW, imgSize.Width), imgSize.Height);
+                    double srcW = imgHeight * targetAspect;
+                    double srcX = Math.Max(0, (imgWidth - srcW) / 2.0);
+                    srcRect = new Rect(srcX, 0, Math.Min(srcW, imgWidth), imgHeight);
                 }
                 context.DrawImage(bitmap, srcRect, destBounds);
                 break;
@@ -209,23 +217,23 @@ public class PictureCanvas : Control
                 double baseW, baseH;
                 if (targetAspect > imgAspect)
                 {
-                    baseW = imgSize.Width;
-                    baseH = imgSize.Width / targetAspect;
+                    baseW = imgWidth;
+                    baseH = imgWidth / targetAspect;
                 }
                 else
                 {
-                    baseH = imgSize.Height;
-                    baseW = imgSize.Height * targetAspect;
+                    baseH = imgHeight;
+                    baseW = imgHeight * targetAspect;
                 }
 
                 double cropW = baseW / effectiveZoom;
                 double cropH = baseH / effectiveZoom;
 
-                if (cropW > imgSize.Width) cropW = imgSize.Width;
-                if (cropH > imgSize.Height) cropH = imgSize.Height;
+                if (cropW > imgWidth) cropW = imgWidth;
+                if (cropH > imgHeight) cropH = imgHeight;
 
-                double maxOffsetX = Math.Max(0, imgSize.Width - cropW);
-                double maxOffsetY = Math.Max(0, imgSize.Height - cropH);
+                double maxOffsetX = Math.Max(0, imgWidth - cropW);
+                double maxOffsetY = Math.Max(0, imgHeight - cropH);
 
                 double normX = Math.Clamp(CropX, 0.0, 1.0);
                 double normY = Math.Clamp(CropY, 0.0, 1.0);

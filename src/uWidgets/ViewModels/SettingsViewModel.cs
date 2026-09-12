@@ -21,6 +21,7 @@ public class SettingsViewModel : ReactiveObject
     private readonly ILayoutProvider layoutProvider;
     private readonly DisplayMonitorService displayMonitor;
     private readonly IWidgetFactory<Window, UserControl> widgetFactory;
+    private readonly ProfileService profileService;
 
     private UserControl? currentPage;
     public UserControl? CurrentPage
@@ -45,13 +46,16 @@ public class SettingsViewModel : ReactiveObject
         IAssemblyProvider assemblyProvider,
         ILayoutProvider layoutProvider,
         DisplayMonitorService displayMonitor,
-        IWidgetFactory<Window, UserControl> widgetFactory)
+        IWidgetFactory<Window, UserControl> widgetFactory,
+        ProfileService profileService)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.assemblyProvider = assemblyProvider;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
         this.widgetFactory = widgetFactory;
+        this.profileService = profileService;
+        profileService.ActiveProfileChanged += (_, _) => pageCache.Clear();
 
         // 1. Load and deduplicate widget assemblies
         var loadedAssemblies = assemblyProvider
@@ -88,6 +92,7 @@ public class SettingsViewModel : ReactiveObject
             new(null, null, "系统设置"),
             new(typeof(General), GetIcon(nameof(General)), Locale.Settings_General),
             new(typeof(Appearance), GetIcon(nameof(Appearance)), Locale.Settings_Appearance),
+            new(typeof(Profiles), SafeParseIcon("M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"), Locale.Settings_Profiles ?? "配置方案"),
             new(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
             new(typeof(MultiScreen), GetIcon(nameof(MultiScreen)), Locale.Settings_MultiScreen),
             new(typeof(About), GetIcon(nameof(About)), Locale.Settings_About),
@@ -142,7 +147,8 @@ public class SettingsViewModel : ReactiveObject
             {
                 page = value.Type switch
                 {
-                    var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor),
+                    var type when type == typeof(Profiles) => new Profiles(profileService),
+                    var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor, profileService),
                     var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),
                     _ => (UserControl?) Activator.CreateInstance(value.Type, appSettingsProvider)
                 };

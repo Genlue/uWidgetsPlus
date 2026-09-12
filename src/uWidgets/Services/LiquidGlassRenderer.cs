@@ -154,22 +154,43 @@ public static class LiquidGlassRenderer
         using var backdrop = SKSurface.Create(info);
         var canvas = backdrop.Canvas;
         canvas.Clear(wallpaper.Background);
-        using var image = wallpaper.ImageBytes == null ? null : SKBitmap.Decode(wallpaper.ImageBytes);
-        if (image != null)
+        SKBitmap? image = wallpaper.CachedBitmap;
+        bool ownsBitmap = false;
+        if (image == null && wallpaper.ImageBytes != null)
         {
-            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
-            canvas.Save();
-            canvas.Translate(pad, pad);
-            DrawWallpaper(canvas, image, paint, frame, wallpaper);
-            canvas.Restore();
+            try
+            {
+                image = SKBitmap.Decode(wallpaper.ImageBytes);
+                ownsBitmap = true;
+            }
+            catch { }
+        }
+
+        try
+        {
+            if (image != null)
+            {
+                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                canvas.Save();
+                canvas.Translate(pad, pad);
+                DrawWallpaper(canvas, image, paint, frame, wallpaper);
+                canvas.Restore();
+            }
+        }
+        finally
+        {
+            if (ownsBitmap)
+            {
+                image?.Dispose();
+            }
         }
 
         using var background = backdrop.Snapshot();
         var colorHex = frame.Dark ? frame.Theme.EffectiveSolidBackgroundDark : frame.Theme.EffectiveSolidBackgroundLight;
         if (!SKColor.TryParse(colorHex, out var coating)) coating = frame.Dark ? new SKColor(46, 46, 46) : SKColors.White;
         var opacity = double.IsFinite(frame.Theme.OpacityLevel) ? Math.Clamp(frame.Theme.OpacityLevel, 0, 1) : 0.18;
-        var tint = frame.SettingsSurface ? (float)Math.Max(0.82, opacity) : (float)opacity;
+        var tint = (float)opacity;
         var edgeTint = (float)(optics.EdgeTint / 100.0);
         var highlightFactor = (float)(optics.Highlight / HighlightReference);
 
@@ -225,7 +246,7 @@ public static class LiquidGlassRenderer
 
                 // Translucency transition: the curved meniscus edge has higher crystal clarity,
                 // smoothly transitioning into the soft frosted coating in the interior.
-                // When opacity is 1.0 (or SettingsSurface), it remains 100% solid pure color.
+                // When opacity is 1.0, it remains 100% solid pure color.
                 var clarityRamp = (opacity >= 0.99) ? 0f : (1f - SmoothStep(0f, Math.Min(lensWidth * 1.5f, Math.Min(width, height) * 0.40f), depth));
                 var localTint = tint * (1f - 0.28f * clarityRamp);
 
@@ -556,11 +577,41 @@ public static class LiquidGlassRenderer
     }
 }
 
-/// <summary>Immutable wallpaper bytes and placement settings.
-/// When <see cref="LiveCapture"/> is true, the bytes are a 1:1 capture of the
-/// virtual desktop (physical pixels) and Style/Tile are ignored.</summary>
-public record WallpaperSnapshot(byte[]? ImageBytes, SKColor Background, string Style = "10", bool Tile = false, bool LiveCapture = false)
+public record WallpaperSnapshot(
+    byte[]? ImageBytes,
+    SKColor Background,
+    string Style = "10",
+    bool Tile = false,
+    bool LiveCapture = false,
+    SKBitmap? CachedBitmap = null) : IDisposable
 {
+    private byte[]? _imageBytes = ImageBytes;
+
+    public byte[]? ImageBytes
+    {
+        get
+        {
+            if (_imageBytes != null) return _imageBytes;
+            if (CachedBitmap != null)
+            {
+                try
+                {
+                    using var img = SKImage.FromBitmap(CachedBitmap);
+                    using var data = img.Encode(SKEncodedImageFormat.Png, 90);
+                    _imageBytes = data.ToArray();
+                }
+                catch { }
+            }
+            return _imageBytes;
+        }
+        init => _imageBytes = value;
+    }
+
+    public void Dispose()
+    {
+        try { CachedBitmap?.Dispose(); } catch { }
+    }
+
     public string Describe() =>
-        $"WallpaperSnapshot(bytes={ImageBytes?.Length ?? 0}, bg=#{Background.Red:X2}{Background.Green:X2}{Background.Blue:X2}, style={Style}, tile={Tile}, live={LiveCapture})";
+        $"WallpaperSnapshot(bytes={_imageBytes?.Length ?? 0}, hasBitmap={CachedBitmap != null}, bg=#{Background.Red:X2}{Background.Green:X2}{Background.Blue:X2}, style={Style}, tile={Tile}, live={LiveCapture})";
 }

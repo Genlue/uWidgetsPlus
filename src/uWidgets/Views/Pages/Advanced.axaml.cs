@@ -16,12 +16,15 @@ public partial class Advanced : UserControl
     private readonly ILayoutProvider layoutProvider;
     private readonly DisplayMonitorService displayMonitor;
 
-    public Advanced(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
+    private readonly ProfileService? profileService;
+
+    public Advanced(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, ProfileService? profileService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
-        var viewModel = new AdvancedViewModel(appSettingsProvider, layoutProvider, displayMonitor);
+        this.profileService = profileService;
+        var viewModel = new AdvancedViewModel(appSettingsProvider, layoutProvider, displayMonitor, profileService);
         DataContext = viewModel;
         InitializeComponent();
         Unloaded += (_, _) => viewModel.Dispose();

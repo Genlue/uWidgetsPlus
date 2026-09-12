@@ -11,8 +11,11 @@
         <PublishSingleFile>true</PublishSingleFile>
         <PublishReadyToRun>true</PublishReadyToRun>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <ApplicationIcon>..\..\.github\images\icon.ico</ApplicationIcon>
+        <!-- Memory & GC optimizations: Workstation GC uses far less baseline memory and releases virtual memory -->
+        <ServerGarbageCollection>false</ServerGarbageCollection>
+        <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+        <RetainVM>false</RetainVM>
     </PropertyGroup>
 
     <ItemGroup>
@@ -31,15 +34,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\uWidgets.Core\uWidgets.Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <UpToDateCheckInput Remove="Styles\WidgetStyle.axaml" />
-      <UpToDateCheckInput Remove="Controls\Setting.axaml" />
-      <UpToDateCheckInput Remove="Styles\Transparent.axaml" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Update="app.manifest">
         <DependentUpon>App.axaml</DependentUpon>
       </None>

@@ -1673,5 +1673,131 @@ namespace uWidgets.Locales {
                 return ResourceManager.GetString("Settings_MultiScreen_WidgetCount", resourceCulture);
             }
         }
+
+        public static string Settings_Profiles {
+            get {
+                return ResourceManager.GetString("Settings_Profiles", resourceCulture);
+            }
+        }
+
+        public static string Profiles_MenuTitle {
+            get {
+                return ResourceManager.GetString("Profiles_MenuTitle", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Manage {
+            get {
+                return ResourceManager.GetString("Profiles_Manage", resourceCulture);
+            }
+        }
+
+        public static string Profiles_CurrentActive {
+            get {
+                return ResourceManager.GetString("Profiles_CurrentActive", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Switch {
+            get {
+                return ResourceManager.GetString("Profiles_Switch", resourceCulture);
+            }
+        }
+
+        public static string Profiles_New {
+            get {
+                return ResourceManager.GetString("Profiles_New", resourceCulture);
+            }
+        }
+
+        public static string Profiles_New_Title {
+            get {
+                return ResourceManager.GetString("Profiles_New_Title", resourceCulture);
+            }
+        }
+
+        public static string Profiles_New_Prompt {
+            get {
+                return ResourceManager.GetString("Profiles_New_Prompt", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Rename {
+            get {
+                return ResourceManager.GetString("Profiles_Rename", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Rename_Title {
+            get {
+                return ResourceManager.GetString("Profiles_Rename_Title", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Rename_Prompt {
+            get {
+                return ResourceManager.GetString("Profiles_Rename_Prompt", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Delete {
+            get {
+                return ResourceManager.GetString("Profiles_Delete", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Delete_Confirm {
+            get {
+                return ResourceManager.GetString("Profiles_Delete_Confirm", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Duplicate {
+            get {
+                return ResourceManager.GetString("Profiles_Duplicate", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Export {
+            get {
+                return ResourceManager.GetString("Profiles_Export", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Import {
+            get {
+                return ResourceManager.GetString("Profiles_Import", resourceCulture);
+            }
+        }
+
+        public static string Profiles_NameExists {
+            get {
+                return ResourceManager.GetString("Profiles_NameExists", resourceCulture);
+            }
+        }
+
+        public static string Profiles_NameInvalid {
+            get {
+                return ResourceManager.GetString("Profiles_NameInvalid", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Section_List {
+            get {
+                return ResourceManager.GetString("Profiles_Section_List", resourceCulture);
+            }
+        }
+
+        public static string Profiles_Section_Subtitle {
+            get {
+                return ResourceManager.GetString("Profiles_Section_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace uWidgets.Core.Models;
 
@@ -34,6 +34,30 @@ public record WidgetLayout(string Type, string SubType, int X, int Y, int Width,
     public bool SameWidgetAs(WidgetLayout other) =>
         Type == other.Type && SubType == other.SubType &&
         X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+
+    /// <summary>
+    /// Locate <paramref name="target"/> inside a stored layout list: by reference first
+    /// (the common case — the list still holds the very object the caller owns), then by
+    /// <see cref="SameWidgetAs"/> identity for entries that were re-parsed from disk.
+    /// <para>
+    /// Returns <c>-1</c> when the widget is genuinely absent, which callers must treat as
+    /// "this widget is no longer part of the layout" — never as "append a new entry".
+    /// <see cref="List{T}.IndexOf"/> / <c>!=</c> cannot be used instead: the record's value
+    /// equality compares <see cref="Settings"/> (<see cref="JsonElement"/>) by document
+    /// reference, so two entries parsed from different documents never compare equal even
+    /// with identical content.
+    /// </para>
+    /// </summary>
+    public static int IndexOfIdentity(IReadOnlyList<WidgetLayout> layout, WidgetLayout target)
+    {
+        for (var i = 0; i < layout.Count; i++)
+            if (ReferenceEquals(layout[i], target)) return i;
+
+        for (var i = 0; i < layout.Count; i++)
+            if (layout[i].SameWidgetAs(target)) return i;
+
+        return -1;
+    }
     
     /// <summary>
     /// Get the widget's model.

@@ -32,6 +32,7 @@ public class App : Application
             .AddSingleton<ILocaleService, LocaleService>()
             .AddSingleton<IGridService<Widget>, GridService>()
             .AddSingleton<DisplayMonitorService>()
+            .AddSingleton<FullscreenWatcherService>()
             .AddSingleton<WidgetFactory>()
             .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
             .AddSingleton<ProfileService>()
@@ -70,6 +71,23 @@ public class App : Application
         // Hot-plug: hide widgets of unplugged screens, recreate widgets when a
         // screen comes back (their per-screen configuration is still on disk).
         displayMonitor.ScreensChanged += (_, _) => widgetFactory.OnScreensChanged();
+
+        // Fullscreen (games, video, presentations): the widgets are invisible anyway, so
+        // hide them, pause every shared widget timer and release the material caches —
+        // that hands the memory back to the fullscreen application. Restored on exit.
+        var fullscreenWatcher = services.GetRequiredService<FullscreenWatcherService>();
+        fullscreenWatcher.FullscreenChanged += (_, isFullscreen) =>
+        {
+            if (isFullscreen)
+            {
+                widgetFactory.SuspendAll();
+            }
+            else
+            {
+                widgetFactory.ResumeAll();
+            }
+        };
+        fullscreenWatcher.Attach(anchor);
 
         var widgetsCount = widgetFactory
             .Create()

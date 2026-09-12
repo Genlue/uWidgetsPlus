@@ -85,36 +85,15 @@ public static class GlyphLiquidGlassRenderer
         var canvas = backdrop.Canvas;
         canvas.Clear(wallpaper.Background);
 
-        SKBitmap? image = wallpaper.CachedBitmap;
-        bool ownsBitmap = false;
-        if (image == null && wallpaper.ImageBytes != null)
+        using var image = wallpaper.ImageBytes == null ? null : SKBitmap.Decode(wallpaper.ImageBytes);
+        if (image != null)
         {
-            try
-            {
-                image = SKBitmap.Decode(wallpaper.ImageBytes);
-                ownsBitmap = true;
-            }
-            catch { }
-        }
-
-        try
-        {
-            if (image != null)
-            {
-                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
-                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
-                canvas.Save();
-                canvas.Translate(pad, pad);
-                LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
-                canvas.Restore();
-            }
-        }
-        finally
-        {
-            if (ownsBitmap)
-            {
-                image?.Dispose();
-            }
+            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+            canvas.Save();
+            canvas.Translate(pad, pad);
+            LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
+            canvas.Restore();
         }
 
         using var background = backdrop.Snapshot();
@@ -316,18 +295,6 @@ public static class GlyphLiquidGlassRenderer
         }
     }
 
-
-    /// <summary>
-    /// Builds the glyph distance field and its outward normals.
-    ///
-    /// The mask is an anti-aliased coverage map (0..255), i.e. it already encodes where the
-    /// outline crosses each boundary pixel. Thresholding it to 0/1 — as this used to do — snaps
-    /// the contour to whole pixels, which biases the whole depth field by up to half a pixel
-    /// (measured: 0.44 px mean error). Since the glass rim line is only ~0.6 px wide, that bias
-    /// makes the rim's inner boundary crawl in half-pixel steps along the contour, which reads as
-    /// broken / pixelated edges. Seeding the transform from the coverage value instead keeps the
-    /// field sub-pixel accurate, so the rim traces a smooth outline.
-    /// </summary>
     private static void ComputeDistanceField(byte[] mask, int width, int height,
         out float[] dist, out float[] nx, out float[] ny,
         out float maxStrokeDepth, out float avgStrokeDepth)
@@ -337,10 +304,47 @@ public static class GlyphLiquidGlassRenderer
         nx = new float[size];
         ny = new float[size];
 
-        // Exact Euclidean distance transform over unit-spaced seeds. A chamfer/pass-based
-        // approximation was used before: it overestimates distances by up to ~6% depending on
-        // the edge's angle, which is a 0.24 px bias at stroke-depths — visible on a 0.6 px rim.
-        dist = ExactDistanceTransform(width, height, mask);
+        const float INF = 1e6f;
+        for (var i = 0; i < size; i++)
+        {
+            dist[i] = (mask[i] > 128) ? INF : 0f;
+        }
+
+        // 2-pass Euclidean Distance Transform (forward pass)
+        for (var y = 1; y < height; y++)
+        {
+            var row = y * width;
+            for (var x = 1; x < width - 1; x++)
+            {
+                var idx = row + x;
+                if (dist[idx] > 0f)
+                {
+                    var d1 = dist[idx - 1] + 1f;
+                    var d2 = dist[idx - width] + 1f;
+                    var d3 = dist[idx - width - 1] + 1.414f;
+                    var d4 = dist[idx - width + 1] + 1.414f;
+                    dist[idx] = Math.Min(dist[idx], Math.Min(Math.Min(d1, d2), Math.Min(d3, d4)));
+                }
+            }
+        }
+
+        // Backward pass
+        for (var y = height - 2; y >= 0; y--)
+        {
+            var row = y * width;
+            for (var x = width - 2; x >= 1; x--)
+            {
+                var idx = row + x;
+                if (dist[idx] > 0f)
+                {
+                    var d1 = dist[idx + 1] + 1f;
+                    var d2 = dist[idx + width] + 1f;
+                    var d3 = dist[idx + width + 1] + 1.414f;
+                    var d4 = dist[idx + width - 1] + 1.414f;
+                    dist[idx] = Math.Min(dist[idx], Math.Min(Math.Min(d1, d2), Math.Min(d3, d4)));
+                }
+            }
+        }
 
         // Calculate stroke depth statistics
         var maxD = 0f;
@@ -349,7 +353,7 @@ public static class GlyphLiquidGlassRenderer
         for (var i = 0; i < size; i++)
         {
             var d = dist[i];
-            if (d > 0f && !float.IsInfinity(d))
+            if (d > 0f && d < INF / 2f)
             {
                 if (d > maxD) maxD = d;
                 sumD += d;
@@ -443,167 +447,6 @@ public static class GlyphLiquidGlassRenderer
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Exact Euclidean distance transform (Felzenszwalb &amp; Huttenlocher) over the seeds defined
-    /// by <see cref="SeedDepth"/>. Distances are interpolated linearly between neighbouring rows so
-    /// seeds sitting at different heights blend instead of producing a stretched, blocky field.
-    /// Pixels outside the shape end up at zero, which is the reference the depths are measured to.
-    /// </summary>
-    private static float[] ExactDistanceTransform(int width, int height, byte[] mask)
-    {
-        try
-        {
-            return ExactDistanceTransformCore(width, height, mask);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"EDT failed for {width}x{height} mask={mask?.Length}: {ex.Message}", ex);
-        }
-    }
-
-    private static float[] ExactDistanceTransformCore(int width, int height, byte[] mask)
-    {
-        var size = width * height;
-        if (mask == null || mask.Length < size)
-        {
-            // Defensive: a truncated mask would otherwise read past its end.
-            System.Diagnostics.Debug.WriteLine(
-                $"[GlyphLiquidGlass] mask length {mask?.Length ?? -1} < {width}x{height}");
-        }
-
-        // Pass 1: distance to the nearest seed *within the same column*.
-        var rowDist = new float[size];
-        for (var x = 0; x < width; x++)
-        {
-            var nearest = float.NaN;
-            var nearestY = 0;
-            for (var y = 0; y < height; y++)
-            {
-                var idx = y * width + x;
-                if (idx >= mask.Length) { rowDist[idx] = float.PositiveInfinity; continue; }
-                var seed = SeedDepth(mask[idx]);
-                if (seed.HasValue)
-                {
-                    nearest = seed.Value;
-                    nearestY = y;
-                    rowDist[idx] = 0f;
-                }
-                else if (float.IsNaN(nearest))
-                {
-                    rowDist[idx] = float.PositiveInfinity;
-                }
-                else
-                {
-                    var dy = y - nearestY;
-                    rowDist[idx] = dy * dy;
-                }
-            }
-        }
-
-        // Pass 2: along each row, build the lower envelope of the parabolas rooted at the columns
-        // that still have a finite candidate, then read off the minimum.
-        var result = new float[size];
-        // +2 because the envelope can hold `width` parabolas and is probed one slot past the last.
-        var v = new int[width + 2];
-        var z = new float[width + 2];
-
-        for (var y = 0; y < height; y++)
-        {
-            var row = y * width;
-            var k = 0;
-            var pushed = false;
-            v[0] = -1;
-            z[0] = float.NegativeInfinity;
-            z[1] = float.PositiveInfinity;
-
-            for (var q = 0; q < width; q++)
-            {
-                if (float.IsPositiveInfinity(rowDist[row + q])) continue;
-
-                var s = Intersection(rowDist, row, q, v[k]);
-                while (k >= 0 && s <= z[k])
-                {
-                    // v[k] must be read only after k >= 0 is known: reading it inside the call
-                    // would index -1 and throw instead of ending the envelope walk.
-                    k--;
-                    if (k < 0) { s = float.NegativeInfinity; break; }
-                    s = Intersection(rowDist, row, q, v[k]);
-                }
-
-                k++;
-                v[k] = q;
-                z[k] = s;
-                z[k + 1] = float.PositiveInfinity;
-                pushed = true;
-            }
-
-            if (!pushed)
-            {
-                // No seed anywhere in this row or in the rows above/below it.
-                for (var x = 0; x < width; x++) result[row + x] = 0f;
-                continue;
-            }
-
-            k = 0;
-            for (var x = 0; x < width; x++)
-            {
-                while (z[k + 1] < x) k++;
-                var dx = x - v[k];
-                var d2 = dx * dx + rowDist[row + v[k]];
-                var d = MathF.Sqrt(Math.Max(0f, d2));
-
-                // a = where the outline crosses this pixel relative to its centre, so the depth
-                // is the distance to the outline: d - 0.5, floored at 0.
-                var depth = d - 0.5f;
-                result[row + x] = depth > 0f ? depth : 0f;
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>First column where the parabola rooted at <paramref name="q"/> becomes lower than
-    /// the one rooted at <paramref name="u"/>.</summary>
-    private static float Intersection(float[] rowDist, int row, int q, int u)
-    {
-        if (u < 0) return float.NegativeInfinity;
-        var fq = rowDist[row + q];
-        var fu = rowDist[row + u];
-        return ((fq + (float)q * q) - (fu + (float)u * u)) / (2f * (q - u));
-    }
-
-    private static float? SeedDepth(byte coverage)
-    {
-        if (coverage == 255) return null;          // fully inside: grown by the transform
-        if (coverage == 0) return 0f;              // fully outside: the zero reference
-        if (coverage <= 5) return 0f;              // negligible sliver of coverage
-
-        // a = where the outline crosses the pixel, as an offset from its centre.
-        var a = TrackOffset(coverage / 255.0);
-
-        // Convert to a depth: positive inside the shape, clamped at the outline itself.
-        var depth = (0.5f - a) * 0.5f;
-        return depth > 0f ? depth : 0f;
-    }
-
-    /// <summary>
-    /// Exact inversion of the pixel/outline overlap: given the covered fraction <paramref name="c"/>
-    /// of a pixel cut by a straight edge, returns where that edge crosses the pixel as an offset
-    /// from the centre (negative = the centre is inside the shape).
-    /// </summary>
-    private static float TrackOffset(double c)
-    {
-        c = Math.Clamp(c, 0.0, 1.0);
-
-        // Edge between the pixel centre and one side (a <= 0.5): covered area = a^2/2.
-        var a = 0.5 - Math.Sqrt(c / 2.0);
-
-        // Edge past the centre (a >= 0.5): covered area = 1/4 - (1-a)^2/2.
-        if (a < 0.0) a = 1.0 - Math.Sqrt(Math.Max(0.0, (1.0 - c) * 2.0 - 0.5));
-
-        return (float)(a - 0.5);
     }
 
     private static float Displacement(float depth, float lensWidth, float lensShift)

@@ -23,7 +23,7 @@ using uWidgets.Services;
 
 namespace Clock.Views;
 
-public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing
+public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSelfRefreshing, IWidgetSuspendable
 {
     private FramelessClockModel model;
     private readonly IWidgetLayoutProvider? widgetLayoutProvider;
@@ -177,6 +177,30 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     {
         lastRegionKey = null;
         ClearLiquidGlassCache();
+        RequestBackdropRender();
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Release every pre-rendered liquid glass frame plus the displayed bitmap while the
+    /// desktop is covered by a fullscreen application (see <see cref="IWidgetSuspendable"/>).
+    /// The cache is the heaviest thing this widget owns — up to 70 full-window bitmaps — and
+    /// none of it is visible behind a fullscreen app, so it is rebuilt on demand on resume.
+    /// </summary>
+    public void Suspend()
+    {
+        ClearLiquidGlassCache();
+        liquidGlassBitmap?.Dispose();
+        liquidGlassBitmap = null;
+        cachedGeometry = null;
+    }
+
+    /// <summary>Rebuild the material after <see cref="Suspend"/>.</summary>
+    public void Resume()
+    {
+        lastRegionKey = null;
+        SetupTimer();
+        UpdateTransparencyLevel();
         RequestBackdropRender();
         InvalidateVisual();
     }

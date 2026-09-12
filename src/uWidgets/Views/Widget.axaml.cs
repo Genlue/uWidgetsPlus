@@ -32,12 +32,67 @@ public partial class Widget : Window, INotifyPropertyChanged
     private (int Columns, int Rows)? manualSpan;
     private readonly bool isFrameless;
 
+    /// <summary>
+    /// Set once this window is being torn down (recreate / close all). While set, the
+    /// window must not write to the stored layout any more: by then the layout may
+    /// already belong to a different configuration (profile switch), and a write would
+    /// re-add this widget to it as a duplicate.
+    /// </summary>
+    private bool tornDown;
+
+    /// <summary>True while the host suspended the widgets (fullscreen application active).</summary>
+    private bool suspended;
+
     public bool IsFrameless => isFrameless;
 
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void Notify(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    /// <summary>
+    /// Stop this window from observing or writing the stored layout. Called by the
+    /// factory right before it closes the window as part of a layout replacement.
+    /// </summary>
+    public void PrepareForTeardown()
+    {
+        tornDown = true;
+        widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
+        layoutProvider.DataChanged -= OnLayoutDataUpdated;
+        profileService.ActiveProfileChanged -= OnProfilesChanged;
+        profileService.ProfilesListChanged -= OnProfilesChanged;
+    }
+
+    /// <summary>
+    /// Release the resources the widget content opts to release (pre-rendered material
+    /// caches, decoded frames, background render queues). Widgets that do not implement
+    /// <see cref="IWidgetSuspendable"/> simply keep their state while hidden.
+    /// </summary>
+    public void SuspendContent()
+    {
+        if (suspended) return;
+        suspended = true;
+        (ContentPresenter.Content as IWidgetSuspendable)?.Suspend();
+    }
+
+    /// <summary>Rebuild whatever <see cref="SuspendContent"/> released.</summary>
+    public void ResumeContent()
+    {
+        if (!suspended) return;
+        suspended = false;
+        (ContentPresenter.Content as IWidgetSuspendable)?.Resume();
+    }
+
+    /// <summary>
+    /// Single write path for this widget's stored entry. Saves are dropped once the
+    /// window is being torn down (see <see cref="tornDown"/>) — the layout is no longer
+    /// ours to modify at that point.
+    /// </summary>
+    private void SaveLayout(WidgetLayout layout)
+    {
+        if (tornDown) return;
+        widgetLayoutProvider.Save(layout);
+    }
 
     public Widget(IAppSettingsProvider appSettingsProvider, IWidgetLayoutProvider widgetLayoutProvider, 
         IGridService<Widget> gridService, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor,
@@ -445,7 +500,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         var settings = widgetLayoutProvider.Get();
         if (settings.ContentScale == value) return;
 
-        widgetLayoutProvider.Save(settings with { ContentScale = value });
+        SaveLayout(settings with { ContentScale = value });
         Scale();
         Notify(nameof(ScaleMenuTitle));
     }
@@ -788,7 +843,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             SetMinMaxSize(true);
         }
         
-        widgetLayoutProvider.Save(StorePosition(widgetLayoutProvider.Get()));
+        SaveLayout(StorePosition(widgetLayoutProvider.Get()));
     }
 
     /// <summary>
@@ -810,19 +865,31 @@ public partial class Widget : Window, INotifyPropertyChanged
         var oldConfig = screens.FindById(widgetLayoutProvider.ScreenId);
         var widget = widgetLayoutProvider.Get();
 
+        // Removal must go through the identity index: `item != widget` relies on record
+        // value equality, which compares the Settings JsonElement by document reference
+        // and therefore never matches an entry that was re-read from disk. The stale
+        // entry then stayed behind AND a copy was appended to the target screen — one
+        // widget rendered twice.
         if (oldConfig != null)
             screens = screens.WithScreen(oldConfig with
             {
-                Layout = oldConfig.Layout.Where(item => item != widget).ToList()
+                Layout = RemoveByIdentity(oldConfig.Layout, widget)
             });
 
         screens = screens.UpsertScreen(config with
         {
-            Layout = config.Layout.Where(item => item != widget).Concat([widget]).ToList()
+            Layout = [.. RemoveByIdentity(config.Layout, widget), widget]
         });
 
         layoutProvider.Save(screens);
         widgetLayoutProvider.ScreenId = config.Id;
+    }
+
+    /// <summary>Remove this widget's entry (by reference, then by identity) from a list.</summary>
+    private static List<WidgetLayout> RemoveByIdentity(List<WidgetLayout> layout, WidgetLayout widget)
+    {
+        var index = WidgetLayout.IndexOfIdentity(layout, widget);
+        return index < 0 ? layout : [.. layout.Where((_, i) => i != index)];
     }
 
     /// <summary>
@@ -886,7 +953,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         
         Scale();
         var settings = widgetLayoutProvider.Get();
-        widgetLayoutProvider.Save(settings with { Width = (int)Width, Height = (int)Height });
+        SaveLayout(settings with { Width = (int)Width, Height = (int)Height });
         Notify(nameof(Radius));
         UpdateContentSize();
         ApplyWidgetRegion();
@@ -1037,7 +1104,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             // widgets only re-snapped on activation, so closing the editor with
             // "完成" appeared to do nothing).
             gridService.SnapPosition(this);
-            widgetLayoutProvider.Save(StorePosition(widgetLayoutProvider.Get()));
+            SaveLayout(StorePosition(widgetLayoutProvider.Get()));
         }
 
         Scale();

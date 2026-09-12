@@ -29,11 +29,19 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, string screenI
         var layout = screen.Layout;
         var index = ResolveIndex(layout);
 
-        layout = index switch
+        // The layout owns the set of widgets: a save may only UPDATE an entry that is
+        // already there. Appending when the entry is missing resurrected widgets the
+        // user had just left behind — most visibly during a profile switch, where the
+        // still-alive widgets of the outgoing profile re-added themselves to the freshly
+        // loaded layout (persisted to disk, so the duplicate sets survived a restart).
+        if (index < 0)
         {
-            -1 => [.. layout, data], // not present on disk yet (first save of a new widget)
-            _ => layout.Select((item, i) => i == index ? data : item).ToList()
-        };
+            System.Diagnostics.Debug.WriteLine(
+                $"[WidgetLayoutProvider] {data.Type}/{data.SubType} is no longer in screen '{ScreenId}' — save ignored");
+            return;
+        }
+
+        layout = layout.Select((item, i) => i == index ? data : item).ToList();
 
         layoutProvider.Save(screens.WithScreen(screen with { Layout = layout }));
         var oldData = widgetLayout;
@@ -57,29 +65,14 @@ public class WidgetLayoutProvider(ILayoutProvider layoutProvider, string screenI
     }
 
     /// <summary>
-    /// Locate this provider's widget inside the screen's layout list.
-    /// <para>
-    /// <see cref="List{T}.IndexOf"/> and <c>!=</c> on <see cref="WidgetLayout"/> are unreliable
-    /// because the record's value equality compares the <see cref="WidgetLayout.Settings"/>
-    /// <see cref="System.Text.Json.JsonElement"/> by document reference — two entries parsed
-    /// from different documents never compare equal even with identical content. When the
-    /// provider's cached instance is not the exact object living in the freshly-read list
-    /// (legacy migration, screen hot-plug, ownership transfer), that made every save append a
-    /// duplicate "ghost" entry while the original (stale) one kept rendering. Match by
-    /// reference first, then by identity (type + geometry, ignoring the settings element).
-    /// </para>
+    /// Locate this provider's widget inside the screen's layout list
+    /// (see <see cref="WidgetLayout.IndexOfIdentity"/>: reference first, then identity).
     /// </summary>
     private int ResolveIndex(System.Collections.Generic.List<WidgetLayout> layout)
     {
         var current = widgetLayout;
         if (current == null) return -1;
 
-        for (var i = 0; i < layout.Count; i++)
-            if (ReferenceEquals(layout[i], current)) return i;
-
-        for (var i = 0; i < layout.Count; i++)
-            if (layout[i].SameWidgetAs(current)) return i;
-
-        return -1;
+        return WidgetLayout.IndexOfIdentity(layout, current);
     }
 }

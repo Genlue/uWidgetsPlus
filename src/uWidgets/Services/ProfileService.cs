@@ -183,11 +183,20 @@ public class ProfileService
             var currentName = GetActiveProfile();
             SaveCurrentProfile(currentName);
 
-            // 2. Read and parse target profile
+            // 2. Tear the outgoing widgets down BEFORE the stored layout is replaced.
+            //    A live widget keeps its layout subscriptions until it is really gone;
+            //    if the layout is swapped first, that widget writes its own entry into
+            //    the incoming layout (the provider no longer finds the entry, and the
+            //    old append-on-missing path re-created it) — which showed the previous
+            //    profile's widgets on top of the new ones, persisted to disk, so the
+            //    duplicate set also survived a restart.
+            OnUi(widgetFactory.CloseAll);
+
+            // 3. Read and parse target profile
             var json = File.ReadAllText(path);
             var backup = BackupService.Parse(json);
 
-            // 3. Mark target profile as active & synchronize primary grid
+            // 4. Mark target profile as active & synchronize primary grid
             var targetScreens = backup.Screens;
             var targetGrid = targetScreens.Screens.FirstOrDefault(s => s.Id == ScreensLayout.LegacyPrimaryId || s.Key == null)?.Grid
                              ?? targetScreens.Screens.FirstOrDefault()?.Grid
@@ -199,31 +208,24 @@ public class ProfileService
                 Grid = targetGrid ?? backup.AppSettings.Grid
             };
 
-            // 4. Update data providers (persists to appSettings.json and layout.json)
+            // 5. Update data providers (persists to appSettings.json and layout.json)
             appSettingsProvider.Save(targetSettings);
             layoutProvider.Save(targetScreens);
 
-            // 5. Immediately refresh display monitor so internal screen configs match the newly loaded layout
+            // 6. Immediately refresh display monitor so internal screen configs match the newly loaded layout
             displayMonitor.Refresh();
 
-            // 6. Apply system-wide theme and locale live
+            // 7. Apply system-wide theme and locale live
             localeService.SetCulture(targetSettings.Region.Language);
             themeService.Apply(targetSettings.Theme);
 
-            // 7. Recreate all desktop widgets with the new layout
-            if (Dispatcher.UIThread.CheckAccess())
-            {
-                widgetFactory.RecreateAll();
-            }
-            else
-            {
-                Dispatcher.UIThread.Post(() => widgetFactory.RecreateAll());
-            }
+            // 8. Build the desktop widgets of the new configuration
+            OnUi(widgetFactory.CreateFromLayout);
 
-            // 8. Notify listeners
+            // 9. Notify listeners
             ActiveProfileChanged?.Invoke(this, EventArgs.Empty);
 
-            // 9. Trim working set after widgets have settled
+            // 10. Trim working set after widgets have settled
             System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ => InteropService.TrimProcessMemory());
 
             return true;
@@ -233,6 +235,16 @@ public class ProfileService
             Debug.WriteLine($"[ProfileService] SwitchProfile to '{targetProfileName}' failed: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Run a widget-window operation on the UI thread (window creation/teardown must
+    /// happen there; profile switches can also be triggered from background paths).
+    /// </summary>
+    private static void OnUi(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess()) action();
+        else Dispatcher.UIThread.Post(action);
     }
 
     /// <summary>

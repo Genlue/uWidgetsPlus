@@ -11,6 +11,9 @@ public class UpdateTimer : IDisposable
     private readonly DispatcherTimer timer;
     private readonly List<Action> subscribers = [];
 
+    /// <summary>Set while the host paused every widget (fullscreen application active).</summary>
+    private bool paused;
+
     public UpdateTimer(TimeSpan interval)
     {
         timer = new DispatcherTimer { Interval = interval };
@@ -28,7 +31,7 @@ public class UpdateTimer : IDisposable
         {
             if (subscribers.Contains(action)) return;
             subscribers.Add(action);
-            if (subscribers.Count > 0) timer.Start();
+            if (subscribers.Count > 0 && !paused) timer.Start();
         }
     }
 
@@ -42,10 +45,42 @@ public class UpdateTimer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Stop delivering ticks without dropping the subscriptions, so widget timers can be
+    /// resumed exactly as they were. Used while a fullscreen application is active.
+    /// </summary>
+    public void Pause()
+    {
+        lock (subscribers)
+        {
+            paused = true;
+            timer.Stop();
+        }
+    }
+
+    /// <summary>Resume tick delivery after <see cref="Pause"/>, refreshing immediately.</summary>
+    public void Resume()
+    {
+        bool hasSubscribers;
+        lock (subscribers)
+        {
+            paused = false;
+            hasSubscribers = subscribers.Count > 0;
+            if (hasSubscribers) timer.Start();
+        }
+
+        // Catch up right away. A paused timer restarts on its interval, so a widget hidden
+        // for minutes behind a fullscreen application would otherwise show stale content
+        // until its next tick — the clock would be up to a minute behind, the monitor
+        // readings up to a second. This mirrors the session-unlock refresh above.
+        if (hasSubscribers) OnTimerTick(this, EventArgs.Empty);
+    }
+
     private void OnTimerTick(object? sender, EventArgs e)
     {
         lock (subscribers)
         {
+            if (paused) return;
             subscribers.ToList().ForEach(action => action());
         }
     }

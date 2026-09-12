@@ -43,4 +43,32 @@ public interface IWidgetFactory<out TWindow, out TControl>
     /// Closes all active widget windows and recreates them from the current layout.
     /// </summary>
     public void RecreateAll();
+
+    /// <summary>
+    /// Closes all active widget windows <b>without</b> creating new ones.
+    /// <para>
+    /// Call this <i>before</i> replacing the stored layout (profile switch, import):
+    /// the closing windows keep their layout-change subscriptions alive until they are
+    /// actually gone, and a still-alive window would write its own entry back into the
+    /// freshly loaded layout — resurrecting the widgets of the outgoing configuration.
+    /// </para>
+    /// </summary>
+    public void CloseAll();
+
+    /// <summary>
+    /// Creates and shows widget windows for every screen in the current layout.
+    /// The counterpart of <see cref="CloseAll"/> (and the second half of
+    /// <see cref="RecreateAll"/>).
+    /// </summary>
+    public void CreateFromLayout();
+
+    /// <summary>
+    /// Hide every widget window, release the caches the widget views opt to release
+    /// (see <see cref="IWidgetSuspendable"/>) and pause the shared widget timers —
+    /// used while a fullscreen application covers the desktop.
+    /// </summary>
+    public void SuspendAll();
+
+    /// <summary>Undo <see cref="SuspendAll"/>: show the windows, resume timers and rebuild caches.</summary>
+    public void ResumeAll();
 }

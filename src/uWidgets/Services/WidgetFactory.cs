@@ -16,6 +16,9 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 {
     private readonly Dictionary<string, List<Widget>> activeWidgets = [];
 
+    /// <summary>True while <see cref="SuspendAll"/> is in effect (widgets hidden, timers paused).</summary>
+    private bool suspended;
+
     /// <summary>
     /// Create widget windows for every attached screen that has a stored configuration
     /// (widgets of screens that are currently unplugged stay in their config, hidden).
@@ -109,24 +112,113 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     /// </summary>
     public void RecreateAll()
     {
-        foreach (var screenId in activeWidgets.Keys.ToList())
+        CloseAll();
+        CreateFromLayout();
+    }
+
+    /// <summary>
+    /// Close every active widget window and forget it, without creating replacements.
+    /// <para>
+    /// Windows are hidden <b>before</b> being closed: a close request is only fully
+    /// processed once the dispatcher gets to it, so the outgoing set would otherwise
+    /// still be on screen while the incoming set is shown (the "two sets of widgets"
+    /// flash when switching profiles). Each window also stops listening to layout
+    /// changes first, so a window that is mid-teardown can never write its entry back
+    /// into the layout that is being replaced.
+    /// </para>
+    /// </summary>
+    public void CloseAll()
+    {
+        foreach (var list in activeWidgets.Values)
         {
-            if (activeWidgets.TryGetValue(screenId, out var list))
+            foreach (var widget in list.ToList())
             {
-                foreach (var widget in list.ToList())
+                try
                 {
-                    try { widget.Close(); } catch { }
+                    widget.PrepareForTeardown();
+                    widget.Hide();
+                    widget.Close();
+                }
+                catch
+                {
+                    // A window that already closed itself is not an error here.
                 }
             }
         }
-        activeWidgets.Clear();
 
+        activeWidgets.Clear();
+    }
+
+    /// <summary>
+    /// Create and show the widget windows for every screen in the current layout.
+    /// </summary>
+    public void CreateFromLayout()
+    {
         displayMonitor.Refresh();
 
         foreach (var win in Create())
         {
             win.Show();
         }
+    }
+
+    /// <summary>
+    /// Hide every widget, release the caches the widget views opt into releasing and
+    /// pause the shared timers — the desktop is covered by a fullscreen application,
+    /// so nothing here would be visible and every megabyte counts.
+    /// </summary>
+    public void SuspendAll()
+    {
+        if (suspended) return;
+        suspended = true;
+
+        // Shared widget timers (clock ticks, monitor sampling, weather refresh …) are
+        // driven by one DispatcherTimer per interval, so pausing them pauses every
+        // widget at once.
+        TimerService.PauseAll();
+
+        foreach (var list in activeWidgets.Values)
+        {
+            foreach (var widget in list.ToList())
+            {
+                try
+                {
+                    widget.SuspendContent();
+                    widget.Hide();
+                }
+                catch
+                {
+                    // Never let one misbehaving widget abort the whole suspend pass.
+                }
+            }
+        }
+
+        InteropService.TrimProcessMemory();
+    }
+
+    /// <summary>Show the widgets again, resume the timers and rebuild the released caches.</summary>
+    public void ResumeAll()
+    {
+        if (!suspended) return;
+        suspended = false;
+
+        foreach (var list in activeWidgets.Values)
+        {
+            foreach (var widget in list.ToList())
+            {
+                try
+                {
+                    widget.Show();
+                    widget.ResumeContent();
+                }
+                catch
+                {
+                    // See SuspendAll.
+                }
+            }
+        }
+
+        TimerService.ResumeAll();
     }
 
     /// <summary>

@@ -34,14 +34,19 @@ public partial class Advanced : UserControl
     {
         if (DataContext is not AdvancedViewModel vm) return;
         var target = vm.SelectedScreenTarget;
-        if (target.ScreenConfigId != null)
+        if (target.Attached != null || target.ScreenConfigId != null)
         {
-            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, target.ScreenConfigId, target.Attached?.Screen).Show();
+            var configId = target.ScreenConfigId ?? (target.Attached != null ? displayMonitor.EnsureConfig(target.Attached).Id : null);
+            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, configId, target.Attached?.Screen).Show();
         }
         else
         {
-            var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
-            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, null, primary?.Screen).Show();
+            var currentWindow = TopLevel.GetTopLevel(this) as Window;
+            var currentScreen = currentWindow != null ? displayMonitor.Find(currentWindow)?.Screen : null;
+            var targetScreen = currentScreen
+                               ?? displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary)?.Screen
+                               ?? (currentWindow != null ? currentWindow.Screens.Primary : null);
+            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, null, targetScreen).Show();
         }
     }
 

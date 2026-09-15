@@ -222,6 +222,7 @@ public class InteropService
     private static readonly IntPtr HWND_TOPMOST = new(-1);
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_SHOWWINDOW = 0x0040;
+    private const uint SWP_FRAMECHANGED = 0x0020;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -238,7 +239,7 @@ public class InteropService
         if (handle == null || handle.Value == IntPtr.Zero) return;
 
         var insertAfter = topmost ? HWND_TOPMOST : IntPtr.Zero;
-        var flags = SWP_SHOWWINDOW | (topmost ? 0u : SWP_NOZORDER);
+        var flags = SWP_SHOWWINDOW | SWP_FRAMECHANGED | (topmost ? 0u : SWP_NOZORDER);
         SetWindowPos(handle.Value, insertAfter, x, y, width, height, flags);
     }
 

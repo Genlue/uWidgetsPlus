@@ -111,11 +111,12 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
             foreach (var attached in displayMonitor.Attached)
             {
-                var name = attached.Config?.DisplayName 
+                var config = attached.Config ?? displayMonitor.EnsureConfig(attached);
+                var name = config.DisplayName 
                            ?? (attached.Identity.FriendlyName.Length > 0 ? attached.Identity.FriendlyName : "Screen");
                 var suffix = attached.Screen.Primary ? " [Primary]" : "";
                 var label = $"{name} ({attached.Screen.Bounds.Width}×{attached.Screen.Bounds.Height}{suffix})";
-                list.Add(new(label, attached.Config?.Id, attached));
+                list.Add(new(label, config.Id, attached));
             }
 
             return list;
@@ -129,7 +130,10 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
             var targets = ScreenTargets;
             if (selectedScreenTarget != null)
             {
-                var match = targets.FirstOrDefault(t => t.ScreenConfigId == selectedScreenTarget.ScreenConfigId);
+                var match = targets.FirstOrDefault(t =>
+                    (t.ScreenConfigId != null && t.ScreenConfigId == selectedScreenTarget.ScreenConfigId)
+                    || (t.Attached != null && selectedScreenTarget.Attached != null && t.Attached.Screen.Bounds == selectedScreenTarget.Attached.Screen.Bounds)
+                    || (t.ScreenConfigId == null && selectedScreenTarget.ScreenConfigId == null && t.Attached == null && selectedScreenTarget.Attached == null));
                 if (match != null) return match;
             }
             return targets[0];
@@ -154,6 +158,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         if (screen != null && screen.Grid != null)
         {
             layoutProvider.Save(screens.WithScreen(screen with { Grid = null }));
+            displayMonitor.Refresh();
             RaiseGridProperties();
         }
     }

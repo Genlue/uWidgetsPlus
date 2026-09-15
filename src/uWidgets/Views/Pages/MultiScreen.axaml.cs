@@ -266,12 +266,17 @@ public partial class MultiScreen : UserControl
         return card;
     }
 
-    private static Button Button(string text, EventHandler<RoutedEventArgs> handler) => new()
+    private static Button Button(string text, EventHandler<RoutedEventArgs> handler)
     {
-        Content = text,
-        FontSize = 12,
-        Padding = new Thickness(12, 6)
-    };
+        var btn = new Button
+        {
+            Content = text,
+            FontSize = 12,
+            Padding = new Thickness(12, 6)
+        };
+        btn.Click += handler;
+        return btn;
+    }
 
     private void SaveConfig(ScreenLayout entry, Func<ScreenLayout, ScreenLayout> update)
     {

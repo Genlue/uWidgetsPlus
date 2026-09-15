@@ -85,8 +85,20 @@ public partial class GridEditor : Window
     }
 
     /// <summary>Target screen (provided explicitly or resolved from screenId).</summary>
-    private Screen? ResolveTargetScreen() =>
-        targetScreen ?? GetTargetScreen()?.Screen ?? Screens.Primary ?? Screens.All.FirstOrDefault();
+    private Screen? ResolveTargetScreen()
+    {
+        if (targetScreen != null) return targetScreen;
+        var fromAttached = GetTargetScreen()?.Screen;
+        if (fromAttached != null) return fromAttached;
+        try
+        {
+            return Screens?.Primary ?? Screens?.All?.FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     /// <summary>DPI scale of the target screen (window and canvas work in DIPs).</summary>
     private double Scaling => ResolveTargetScreen()?.Scaling ?? 1.0;
@@ -117,7 +129,7 @@ public partial class GridEditor : Window
         }
 
         return displayMonitor.Attached.FirstOrDefault(s => s.Screen.Primary)
-               ?? (Screens.Primary is { } prim ? displayMonitor.Find(prim) : null);
+               ?? (Screens?.Primary is { } prim ? displayMonitor.Find(prim) : null);
     }
 
     /// <summary>The grid being edited: per-screen grid → global grid → default.</summary>
@@ -148,6 +160,7 @@ public partial class GridEditor : Window
     {
         ApplyScreenPlacement();
         ApplyGrid();
+        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyScreenPlacement, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>
@@ -162,11 +175,11 @@ public partial class GridEditor : Window
         var bounds = screen.Bounds;
         var scaling = screen.Scaling;
 
-        InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
-
         Position = new PixelPoint(bounds.X, bounds.Y);
         Width = bounds.Width / scaling;
         Height = bounds.Height / scaling;
+
+        InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
     }
 
     private void OnClosed(object? sender, EventArgs e)

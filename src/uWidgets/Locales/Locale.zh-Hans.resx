@@ -447,6 +447,9 @@
   <data name="TrafficLight_Restore" xml:space="preserve">
     <value>还原</value>
   </data>
+  <data name="TrafficLight_Zoom" xml:space="preserve">
+    <value>缩放</value>
+  </data>
   <data name="Settings_Appearance_OpacityLevel_Title" xml:space="preserve">
     <value>不透明度</value>
   </data>

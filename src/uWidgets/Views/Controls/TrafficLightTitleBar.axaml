@@ -5,161 +5,200 @@
              Height="36">
     <UserControl.Styles>
         <Styles>
-            <!-- Traffic-light buttons: circle (incl. 1px border), gap = 2/3 of the
-                 diameter (center distance = 5/3 × diameter), colors constant across
-                 light/dark themes. Base geometry is the 12px macOS standard; the
-                 Size property scales everything proportionally. -->
+            <!-- Traffic-light buttons: 12px circle (incl. 1px border), 8px gap (center distance 20px),
+                 macOS standard base geometry 12px; colors strictly adhere to IconForge traffic light specification. -->
             <Style Selector="Button.TrafficLight">
                 <Setter Property="Width" Value="12" />
                 <Setter Property="Height" Value="12" />
                 <Setter Property="MinWidth" Value="0" />
                 <Setter Property="MinHeight" Value="0" />
                 <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0" />
                 <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Background" Value="#FF5F57" />
-                <Setter Property="BorderBrush" Value="#E0443E" />
                 <Setter Property="BorderThickness" Value="1" />
-            </Style>
-
-            <!-- Red - close -->
-            <Style Selector="Button.TrafficLight.Close">
-                <Setter Property="Background" Value="#FF5F57" />
-                <Setter Property="BorderBrush" Value="#E0443E" />
-            </Style>
-            <Style Selector="Button.TrafficLight.Close:pressed">
-                <Setter Property="Background" Value="#D14E47" />
-                <Setter Property="BorderBrush" Value="#B73833" />
-            </Style>
-            <!-- Yellow - minimize -->
-            <Style Selector="Button.TrafficLight.Minimize">
-                <Setter Property="Background" Value="#FEBC2E" />
-                <Setter Property="BorderBrush" Value="#D89E24" />
-            </Style>
-            <Style Selector="Button.TrafficLight.Minimize:pressed">
-                <Setter Property="Background" Value="#D09A26" />
-                <Setter Property="BorderBrush" Value="#B1821E" />
-            </Style>
-            <!-- Green - maximize/restore -->
-            <Style Selector="Button.TrafficLight.Maximize">
-                <Setter Property="Background" Value="#28C840" />
-                <Setter Property="BorderBrush" Value="#1FAD30" />
-            </Style>
-            <Style Selector="Button.TrafficLight.Maximize:pressed">
-                <Setter Property="Background" Value="#21A434" />
-                <Setter Property="BorderBrush" Value="#198E27" />
-            </Style>
-
-            <!-- Glyphs are hidden by default, appear on hover/keyboard focus
-                 with a 0.08s fade (only the hovered button shows its icon). -->
-            <Style Selector="Button.TrafficLight Path.Icon">
-                <Setter Property="Opacity" Value="0" />
+                <Setter Property="Cursor" Value="Arrow" />
                 <Setter Property="Transitions">
                     <Transitions>
-                        <DoubleTransition Property="Opacity" Duration="0:0:0.08" />
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" />
                     </Transitions>
                 </Setter>
             </Style>
-            <Style Selector="Button.TrafficLight:pointerover Path.Icon, Button.TrafficLight:focus Path.Icon">
+
+            <!-- Red - Close (#FF5F56, border #E0443E) -->
+            <Style Selector="Button.TrafficLight.Close">
+                <Setter Property="Background" Value="#FF5F56" />
+                <Setter Property="BorderBrush" Value="#E0443E" />
+            </Style>
+            <Style Selector="Button.TrafficLight.Close:pressed">
+                <Setter Property="Background" Value="#D84F48" />
+                <Setter Property="BorderBrush" Value="#BE3A35" />
+                <Setter Property="RenderTransform" Value="scale(0.96)" />
+            </Style>
+
+            <!-- Yellow - Minimize (#FFBD2E, border #DEA123) -->
+            <Style Selector="Button.TrafficLight.Minimize">
+                <Setter Property="Background" Value="#FFBD2E" />
+                <Setter Property="BorderBrush" Value="#DEA123" />
+            </Style>
+            <Style Selector="Button.TrafficLight.Minimize:pressed">
+                <Setter Property="Background" Value="#DCA024" />
+                <Setter Property="BorderBrush" Value="#BA841A" />
+                <Setter Property="RenderTransform" Value="scale(0.96)" />
+            </Style>
+
+            <!-- Green - Maximize / Restore / Zoom (#27C93F, border #1AAB29) -->
+            <Style Selector="Button.TrafficLight.Maximize">
+                <Setter Property="Background" Value="#27C93F" />
+                <Setter Property="BorderBrush" Value="#1AAB29" />
+            </Style>
+            <Style Selector="Button.TrafficLight.Maximize:pressed">
+                <Setter Property="Background" Value="#1FA832" />
+                <Setter Property="BorderBrush" Value="#158C22" />
+                <Setter Property="RenderTransform" Value="scale(0.96)" />
+            </Style>
+
+            <!-- Glyphs hidden by default (opacity: 0), fade in on group hover (opacity: 1, 0.12s) -->
+            <Style Selector="Path.Icon">
+                <Setter Property="Opacity" Value="0" />
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <!-- Group Hover: when mouse hovers over Lights container or button has keyboard focus, show all icons -->
+            <Style Selector="Border.TitleBarRoot:not(.unfocused) Border.LightsBox:pointerover Path.Icon">
+                <Setter Property="Opacity" Value="1" />
+            </Style>
+            <Style Selector="Border.TitleBarRoot:not(.unfocused) Border.LightsBox:focus-within Path.Icon">
+                <Setter Property="Opacity" Value="1" />
+            </Style>
+            <Style Selector="Border.TitleBarRoot.hovered:not(.unfocused) Path.Icon">
                 <Setter Property="Opacity" Value="1" />
             </Style>
 
-            <!-- Window unfocused: grayscale(1) + 55% opacity (macOS behavior) -->
+            <!-- Unfocused state: solid gray buttons, glyphs strictly hidden even on hover -->
+            <!-- Light theme unfocused: bg #DFDFDF, border #C4C4C4 -->
+            <Style Selector="Border.TitleBarRoot.unfocused.light Button.TrafficLight">
+                <Setter Property="Background" Value="#DFDFDF" />
+                <Setter Property="BorderBrush" Value="#C4C4C4" />
+            </Style>
+            <!-- Dark theme unfocused: bg #3C3C3C, border #4A4A4A -->
+            <Style Selector="Border.TitleBarRoot.unfocused.dark Button.TrafficLight">
+                <Setter Property="Background" Value="#3C3C3C" />
+                <Setter Property="BorderBrush" Value="#4A4A4A" />
+            </Style>
+            <!-- Fallback unfocused -->
             <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight">
-                <Setter Property="Opacity" Value="0.55" />
+                <Setter Property="Background" Value="#3C3C3C" />
+                <Setter Property="BorderBrush" Value="#4A4A4A" />
             </Style>
-            <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight.Close">
-                <Setter Property="Background" Value="#808080" />
-                <Setter Property="BorderBrush" Value="#646464" />
+            <Style Selector="Border.TitleBarRoot.unfocused Path.Icon">
+                <Setter Property="Opacity" Value="0" />
             </Style>
-            <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight.Minimize">
-                <Setter Property="Background" Value="#C0C0C0" />
-                <Setter Property="BorderBrush" Value="#A2A2A2" />
+            <Style Selector="Border.TitleBarRoot.unfocused Border.LightsBox:pointerover Path.Icon">
+                <Setter Property="Opacity" Value="0" />
             </Style>
-            <Style Selector="Border.TitleBarRoot.unfocused Button.TrafficLight.Maximize">
-                <Setter Property="Background" Value="#9C9C9C" />
-                <Setter Property="BorderBrush" Value="#868686" />
+            <Style Selector="Border.TitleBarRoot.unfocused.hovered Path.Icon">
+                <Setter Property="Opacity" Value="0" />
             </Style>
         </Styles>
     </UserControl.Styles>
 
-    <!-- 36px title bar, fully transparent so the window's own (acrylic/mica-tinted)
-         background shows through: no border, no divider, no second paint layer that
-         would double the tint opacity and split the bar from the content below.
-         Pressing outside the buttons drags the window; double click toggles maximize. -->
+    <!-- 36px title bar, fully transparent so background shows through.
+         Pressing outside buttons drags window; double-click toggles maximize. -->
     <Border x:Name="Root" Classes="TitleBarRoot"
             Background="Transparent"
             PointerPressed="OnPointerPressed">
-        <StackPanel x:Name="Lights" Orientation="Horizontal" HorizontalAlignment="Left"
-                    VerticalAlignment="Center" Margin="14,0,0,0" Spacing="8">
-            <Button x:Name="CloseButton" Classes="TrafficLight Close" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Close}" Click="OnClose">
-                <Button.Template>
-                    <ControlTemplate>
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-                <!-- lucide X : 8×8 @ 12px circle, stroke-width 3 @ 24 viewBox -> 1.0px -->
-                <Viewbox x:Name="CloseIcon" Width="8" Height="8">
-                    <Path Classes="Icon" Width="24" Height="24"
-                          Data="M18,6 L6,18 M6,6 L18,18"
-                          Stroke="#8C000000" StrokeThickness="3"
-                          StrokeLineCap="Round" StrokeJoin="Round" />
-                </Viewbox>
-            </Button>
-            <Button x:Name="MinimizeButton" Classes="TrafficLight Minimize" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Minimize}" Click="OnMinimize">
-                <Button.Template>
-                    <ControlTemplate>
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-                <!-- lucide Minus : 8×8 @ 12px circle, stroke-width 3 @ 24 viewBox -> 1.0px -->
-                <Viewbox x:Name="MinimizeIcon" Width="8" Height="8">
-                    <Path Classes="Icon" Width="24" Height="24"
-                          Data="M5,12 L19,12"
-                          Stroke="#8C000000" StrokeThickness="3"
-                          StrokeLineCap="Round" StrokeJoin="Round" />
-                </Viewbox>
-            </Button>
-            <Button x:Name="MaximizeButton" Classes="TrafficLight Maximize" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Maximize}" Click="OnMaximize">
-                <Button.Template>
-                    <ControlTemplate>
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Button.Template>
-                <StackPanel>
-                    <!-- lucide Maximize2 : 7.5×7.5 @ 12px circle, stroke-width 2.75 @ 24 viewBox -> ~0.86px -->
-                    <Viewbox x:Name="MaximizeIcon" Width="7.5" Height="7.5">
-                        <Path Classes="Icon" Width="24" Height="24"
-                              Data="M15,3 L21,3 L21,9 M9,21 L3,21 L3,15 M21,3 L14,10 M3,21 L10,14"
-                              Stroke="#8C000000" StrokeThickness="2.75"
+        <!-- Safety hover hitbox: 24px height with transparent background so moving between buttons doesn't flicker -->
+        <Border x:Name="LightsHitbox" Classes="LightsBox"
+                Background="Transparent"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Height="24"
+                Margin="14,0,0,0">
+            <StackPanel x:Name="Lights" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                <!-- 1. Red - Close -->
+                <Button x:Name="CloseButton" Classes="TrafficLight Close" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Close}" Click="OnClose">
+                    <Button.Template>
+                        <ControlTemplate>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <!-- 45° centered round-cap cross X, span 3.7 to 8.3, stroke-width 1.15, stroke #4D0000 -->
+                    <Viewbox x:Name="CloseIcon" Width="12" Height="12">
+                        <Path Classes="Icon CloseIcon"
+                              Data="M 3.7,3.7 L 8.3,8.3 M 8.3,3.7 L 3.7,8.3"
+                              Stroke="#4D0000" StrokeThickness="1.15"
                               StrokeLineCap="Round" StrokeJoin="Round" />
                     </Viewbox>
-                    <!-- lucide Minimize2 : shown when the window is maximized -->
-                    <Viewbox x:Name="RestoreIcon" Width="7.5" Height="7.5" IsVisible="False">
-                        <Path Classes="Icon" Width="24" Height="24"
-                              Data="M4,14 L10,14 L10,20 M20,10 L14,10 L14,4 M14,10 L21,3 M3,21 L10,14"
-                              Stroke="#8C000000" StrokeThickness="2.75"
+                </Button>
+
+                <!-- 2. Yellow - Minimize -->
+                <Button x:Name="MinimizeButton" Classes="TrafficLight Minimize" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Minimize}" Click="OnMinimize">
+                    <Button.Template>
+                        <ControlTemplate>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <!-- Horizontal centered bar, span 2.9 to 9.1 at y=6, stroke-width 1.2, stroke #995700 -->
+                    <Viewbox x:Name="MinimizeIcon" Width="12" Height="12">
+                        <Path Classes="Icon MinimizeIcon"
+                              Data="M 2.9,6 L 9.1,6"
+                              Stroke="#995700" StrokeThickness="1.2"
                               StrokeLineCap="Round" StrokeJoin="Round" />
                     </Viewbox>
-                </StackPanel>
-            </Button>
-        </StackPanel>
+                </Button>
+
+                <!-- 3. Green - Maximize / Restore / Zoom -->
+                <Button x:Name="MaximizeButton" Classes="TrafficLight Maximize" ToolTip.Tip="{x:Static locales:Locale.TrafficLight_Maximize}" Click="OnMaximize">
+                    <Button.Template>
+                        <ControlTemplate>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}">
+                                <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Panel>
+                        <!-- Unmaximized state: outward diagonal solid right triangles (top-left & bottom-right), fill #006400 -->
+                        <Viewbox x:Name="MaximizeIcon" Width="12" Height="12">
+                            <Path Classes="Icon MaximizeIcon"
+                                  Data="M 3.8,3.1 L 7.9,3.1 L 3.1,7.9 L 3.1,3.8 Q 3.1,3.1 3.8,3.1 Z M 8.2,8.9 L 4.1,8.9 L 8.9,4.1 L 8.9,8.2 Q 8.9,8.9 8.2,8.9 Z"
+                                  Fill="#006400" />
+                        </Viewbox>
+                        <!-- Maximized state: inward pointing solid right triangles, fill #006400 -->
+                        <Viewbox x:Name="RestoreIcon" Width="12" Height="12" IsVisible="False">
+                            <Path Classes="Icon RestoreIcon"
+                                  Data="M 2.2,5.5 L 5.0,5.5 Q 5.5,5.5 5.5,5.0 L 5.5,2.2 Z M 9.8,6.5 L 7.0,6.5 Q 6.5,6.5 6.5,7.0 L 6.5,9.8 Z"
+                                  Fill="#006400" />
+                        </Viewbox>
+                        <!-- Alt/Option pressed state: centered plus sign +, stroke-width 1.15, stroke #006400 -->
+                        <Viewbox x:Name="ZoomIcon" Width="12" Height="12" IsVisible="False">
+                            <Path Classes="Icon ZoomIcon"
+                                  Data="M 6,3.4 L 6,8.6 M 3.4,6 L 8.6,6"
+                                  Stroke="#006400" StrokeThickness="1.15"
+                                  StrokeLineCap="Round" StrokeJoin="Round" />
+                        </Viewbox>
+                    </Panel>
+                </Button>
+            </StackPanel>
+        </Border>
     </Border>
 </UserControl>

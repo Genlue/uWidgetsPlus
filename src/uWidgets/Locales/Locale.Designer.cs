@@ -428,6 +428,15 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Zoom.
+        /// </summary>
+        public static string TrafficLight_Zoom {
+            get {
+                return ResourceManager.GetString("TrafficLight_Zoom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Minimal distance between widgets.
         /// </summary>
         public static string Settings_Advanced_WidgetMargin_Subtitle {

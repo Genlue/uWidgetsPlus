@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
@@ -11,24 +12,41 @@ using uWidgets.Locales;
 namespace uWidgets.Views.Controls;
 
 /// <summary>
-/// Custom macOS-style traffic-light title bar (close / minimize / maximize)
+/// Custom macOS-style traffic-light title bar (close / minimize / maximize / zoom)
 /// for the settings window. Replicates the IconForge "红绿灯" design:
-/// 36px bar, circles with 1px border and a gap of 2/3 of the diameter
-/// (center distance 5/3 × diameter), glyphs hidden by default and fading in
-/// on hover, brightness press feedback and grayscale + 55% opacity when the
-/// window loses focus. The <see cref="Size"/> property scales the whole group
-/// proportionally (12px is the macOS standard).
+/// 36px bar, 12px circles with 1px border and 8px gap (center distance 20px, coordinates (20,18), (40,18), (60,18)).
+/// Group hover: all three semantic glyphs (#4D0000, #995700, #006400) fade in simultaneously (0.12s) when hovering over the group.
+/// Press feedback: scale(0.96) and brightness(0.85).
+/// Alt key: switches the green button to a centered "+" zoom icon.
+/// Window state: maximized shows inward restore triangles, unmaximized shows outward diagonal triangles.
+/// Inactive window: solid middle gray (#DFDFDF in light mode, #3C3C3C in dark mode) with glyphs strictly hidden.
 /// </summary>
 public partial class TrafficLightTitleBar : UserControl
 {
     private Window? window;
     private IDisposable? windowStateSubscription;
     private double size = AppSettings.DefaultTitleBarSize;
+    private bool isAltPressed;
 
     public TrafficLightTitleBar()
     {
         InitializeComponent();
+        LightsHitbox.PointerEntered += OnLightsPointerEntered;
+        LightsHitbox.PointerExited += OnLightsPointerExited;
+        ActualThemeVariantChanged += (_, _) => UpdateThemeState();
         ApplyGeometry();
+        UpdateThemeState();
+    }
+
+    private void OnLightsPointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (!Root.Classes.Contains("unfocused"))
+            Root.Classes.Add("hovered");
+    }
+
+    private void OnLightsPointerExited(object? sender, PointerEventArgs e)
+    {
+        Root.Classes.Remove("hovered");
     }
 
     /// <summary>
@@ -47,23 +65,24 @@ public partial class TrafficLightTitleBar : UserControl
 
     /// <summary>
     /// Proportionally scale the whole traffic-light group from the 12px base
-    /// geometry: diameter, corner radius, gap (2/3 d), left offset (7/6 d) and
-    /// glyph sizes (8/7.5 @ 12px). The 36px bar and the colors stay unchanged.
+    /// geometry: diameter, corner radius, gap (8px @ 12px), left offset (14px @ 12px)
+    /// and glyph sizes. The 36px bar and colors stay unchanged.
     /// </summary>
     private void ApplyGeometry()
     {
-        var k = size / 12;
+        var k = size / 12.0;
         foreach (var button in new[] { CloseButton, MinimizeButton, MaximizeButton })
         {
             button.Width = button.Height = size;
-            button.CornerRadius = new CornerRadius(size / 2);
+            button.CornerRadius = new CornerRadius(size / 2.0);
         }
-        Lights.Spacing = size * (8.0 / 12);
-        Lights.Margin = new Thickness(size * (14.0 / 12), 0, 0, 0);
-        CloseIcon.Width = CloseIcon.Height = size * (8.0 / 12);
-        MinimizeIcon.Width = MinimizeIcon.Height = size * (8.0 / 12);
-        MaximizeIcon.Width = MaximizeIcon.Height = size * (7.5 / 12);
-        RestoreIcon.Width = RestoreIcon.Height = size * (7.5 / 12);
+        Lights.Spacing = size * (8.0 / 12.0);
+        LightsHitbox.Margin = new Thickness(size * (14.0 / 12.0), 0, 0, 0);
+        CloseIcon.Width = CloseIcon.Height = size;
+        MinimizeIcon.Width = MinimizeIcon.Height = size;
+        MaximizeIcon.Width = MaximizeIcon.Height = size;
+        RestoreIcon.Width = RestoreIcon.Height = size;
+        ZoomIcon.Width = ZoomIcon.Height = size;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -74,8 +93,11 @@ public partial class TrafficLightTitleBar : UserControl
         window = w;
         window.Activated += OnWindowActivated;
         window.Deactivated += OnWindowDeactivated;
+        window.AddHandler(InputElement.KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+        window.AddHandler(InputElement.KeyUpEvent, OnWindowKeyUp, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
         windowStateSubscription = window.GetObservable(Window.WindowStateProperty)
             .Subscribe(_ => UpdateMaximizeState());
+        UpdateThemeState();
         UpdateMaximizeState();
     }
 
@@ -86,14 +108,66 @@ public partial class TrafficLightTitleBar : UserControl
 
         window.Activated -= OnWindowActivated;
         window.Deactivated -= OnWindowDeactivated;
+        window.RemoveHandler(InputElement.KeyDownEvent, OnWindowKeyDown);
+        window.RemoveHandler(InputElement.KeyUpEvent, OnWindowKeyUp);
         windowStateSubscription?.Dispose();
         windowStateSubscription = null;
         window = null;
     }
 
-    private void OnWindowActivated(object? sender, EventArgs e) => Root.Classes.Remove("unfocused");
+    private void UpdateThemeState()
+    {
+        var isDark = ActualThemeVariant == ThemeVariant.Dark;
+        if (isDark)
+        {
+            Root.Classes.Add("dark");
+            Root.Classes.Remove("light");
+        }
+        else
+        {
+            Root.Classes.Add("light");
+            Root.Classes.Remove("dark");
+        }
+    }
 
-    private void OnWindowDeactivated(object? sender, EventArgs e) => Root.Classes.Add("unfocused");
+    private void OnWindowActivated(object? sender, EventArgs e)
+    {
+        Root.Classes.Remove("unfocused");
+        UpdateThemeState();
+        UpdateMaximizeState();
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        isAltPressed = false;
+        Root.Classes.Add("unfocused");
+        Root.Classes.Remove("hovered");
+        UpdateMaximizeState();
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.LeftAlt or Key.RightAlt || (e.KeyModifiers & KeyModifiers.Alt) != 0)
+        {
+            if (!isAltPressed)
+            {
+                isAltPressed = true;
+                UpdateMaximizeState();
+            }
+        }
+    }
+
+    private void OnWindowKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is Key.LeftAlt or Key.RightAlt || (e.KeyModifiers & KeyModifiers.Alt) == 0)
+        {
+            if (isAltPressed)
+            {
+                isAltPressed = false;
+                UpdateMaximizeState();
+            }
+        }
+    }
 
     private void OnClose(object? sender, RoutedEventArgs e) => window?.Close();
 
@@ -133,14 +207,27 @@ public partial class TrafficLightTitleBar : UserControl
     }
 
     /// <summary>
-    /// The green button icon follows the real window state (maximized via any
-    /// path — button, double click, Win+Up, drag to top edge, taskbar shortcut).
+    /// Update the green button state:
+    /// - Alt pressed: ZoomIcon (+)
+    /// - Maximized: RestoreIcon (inward triangles)
+    /// - Normal: MaximizeIcon (outward triangles)
     /// </summary>
     private void UpdateMaximizeState()
     {
         var maximized = window?.WindowState == WindowState.Maximized;
-        MaximizeIcon.IsVisible = !maximized;
-        RestoreIcon.IsVisible = maximized;
-        ToolTip.SetTip(MaximizeButton, maximized ? Locale.TrafficLight_Restore : Locale.TrafficLight_Maximize);
+        if (isAltPressed)
+        {
+            ZoomIcon.IsVisible = true;
+            MaximizeIcon.IsVisible = false;
+            RestoreIcon.IsVisible = false;
+            ToolTip.SetTip(MaximizeButton, Locale.TrafficLight_Zoom);
+        }
+        else
+        {
+            ZoomIcon.IsVisible = false;
+            MaximizeIcon.IsVisible = !maximized;
+            RestoreIcon.IsVisible = maximized;
+            ToolTip.SetTip(MaximizeButton, maximized ? Locale.TrafficLight_Restore : Locale.TrafficLight_Maximize);
+        }
     }
 }

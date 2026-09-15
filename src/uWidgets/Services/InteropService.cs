@@ -18,15 +18,22 @@ public class InteropService
     private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minSize, IntPtr maxSize);
 
     /// <summary>
-    /// Minimizes process working set and triggers compacting GC to drop physical memory usage.
+    /// Give memory back to the OS: a full, compacting collection (so free managed segments are
+    /// decommitted) followed by a working-set trim.
+    /// <para>
+    /// The collection is <b>blocking</b> on purpose. A non-blocking one returns immediately, so the
+    /// working-set trim used to run before the collection had even finished — which is why pausing
+    /// the widgets behind a fullscreen game visibly freed nothing.
+    /// </para>
     /// </summary>
     public static void TrimProcessMemory()
     {
         if (!OperatingSystem.IsWindows()) return;
         try
         {
-            GC.Collect(2, GCCollectionMode.Aggressive, blocking: false, compacting: true);
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
             SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, new IntPtr(-1), new IntPtr(-1));
         }
         catch { }

@@ -158,6 +158,12 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
         SchedulePreRender(50);
     }
 
+    /// <summary>
+    /// Single stable delegate instance for the static <c>WallpaperInvalidated</c> event, so a
+    /// load/unload cycle can always detach exactly what it attached.
+    /// </summary>
+    private Action? wallpaperInvalidatedHandler;
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         RecomputeAndPopulate();
@@ -177,7 +183,9 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
             win.PositionChanged += OnWindowPositionChanged;
         }
 
-        LiquidGlassBridge.SubscribeWallpaperInvalidated(OnWallpaperChanged);
+        wallpaperInvalidatedHandler ??= OnWallpaperChanged;
+        LiquidGlassBridge.UnsubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
+        LiquidGlassBridge.SubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
         SchedulePreRender(200);
     }
 
@@ -189,6 +197,11 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         preRenderDebounceTimer?.Stop();
+
+        // WallpaperInvalidated is a static event: without this detach the view (and its whole
+        // item/icon graph) stays rooted for the lifetime of the process.
+        if (wallpaperInvalidatedHandler != null)
+            LiquidGlassBridge.UnsubscribeWallpaperInvalidated(wallpaperInvalidatedHandler);
 
         if (VisualRoot is Window win)
         {

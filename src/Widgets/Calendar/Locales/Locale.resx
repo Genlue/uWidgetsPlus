@@ -51,4 +51,10 @@
     <data name="Calendar_TodayColor_Dark" xml:space="preserve">
         <value>Dark theme</value>
     </data>
+    <data name="Calendar_HollowToday" xml:space="preserve">
+        <value>Hollow today number</value>
+    </data>
+    <data name="Calendar_HollowToday_Subtitle" xml:space="preserve">
+        <value>Punches today's day number out of the marker disc (the numeral shows what is behind the card). Turn off to paint the number on the disc in white instead</value>
+    </data>
 </root>

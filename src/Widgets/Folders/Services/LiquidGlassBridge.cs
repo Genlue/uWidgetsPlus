@@ -67,6 +67,30 @@ public static class LiquidGlassBridge
         }
     }
 
+    /// <summary>
+    /// Detach a handler added by <see cref="SubscribeWallpaperInvalidated"/>.
+    /// <para>
+    /// <c>WallpaperInvalidated</c> is a <b>static</b> event: a widget that subscribes it and never
+    /// detaches stays rooted for the lifetime of the process, together with its visual tree and
+    /// every icon bitmap it holds. Since the host re-creates widget content on each settings save,
+    /// a missing detach leaks one whole widget per save.
+    /// </para>
+    /// </summary>
+    public static void UnsubscribeWallpaperInvalidated(Action handler)
+    {
+        EnsureInitialized();
+        if (wallpaperInvalidatedEvent == null) return;
+
+        try
+        {
+            wallpaperInvalidatedEvent.RemoveEventHandler(null, handler);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to unsubscribe from WallpaperInvalidated: {ex}");
+        }
+    }
+
     public static bool IsAvailable
     {
         get

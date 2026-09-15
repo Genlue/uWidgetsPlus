@@ -204,21 +204,25 @@ public static class ClipboardNative
                 int offBits = 14 + biSize + paletteSize;
                 int totalFileSize = 14 + size;
 
-                // Construct a complete BMP in memory
+                // Construct a complete BMP in memory. The header is written with the BinaryWriter and
+                // the DIB body is then copied straight into the MemoryStream's own backing buffer, so a
+                // full-resolution capture costs one 8–33 MB array instead of two (the second copy used
+                // to land on the LOH on every image copy).
                 using var ms = new MemoryStream(totalFileSize);
-                using var bw = new BinaryWriter(ms);
+                using (var bw = new BinaryWriter(ms, Encoding.UTF8, leaveOpen: true))
+                {
+                    // BITMAPFILEHEADER
+                    bw.Write((ushort)0x4D42); // 'BM'
+                    bw.Write(totalFileSize);
+                    bw.Write((ushort)0);
+                    bw.Write((ushort)0);
+                    bw.Write(offBits);
+                }
 
-                // BITMAPFILEHEADER
-                bw.Write((ushort)0x4D42); // 'BM'
-                bw.Write(totalFileSize);
-                bw.Write((ushort)0);
-                bw.Write((ushort)0);
-                bw.Write(offBits);
-
-                // DIB body
-                byte[] dibBytes = new byte[size];
-                Marshal.Copy(ptr, dibBytes, 0, size);
-                bw.Write(dibBytes);
+                // Marshal.Copy cannot resize the stream itself, so the logical length is set up front
+                // (the extra bytes stay zero-initialised).
+                ms.SetLength(totalFileSize);
+                Marshal.Copy(ptr, ms.GetBuffer()!, 14, size);
 
                 ms.Position = 0;
                 return SKBitmap.Decode(ms);

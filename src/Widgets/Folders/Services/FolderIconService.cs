@@ -14,7 +14,13 @@ namespace Folders.Services;
 /// </summary>
 public static class FolderIconService
 {
-    private const int MaxCacheSize = 160;
+    /// <summary>
+    /// Icon cache bound. Every entry is a decoded 256 px bitmap (~256 KB of unmanaged pixels),
+    /// so this is really a memory budget: 64 icons ≈ 16 MB, which still covers a full desktop
+    /// folder plus the big-folder popup without letting the cache grow with the whole disk.
+    /// </summary>
+    private const int MaxCacheSize = 64;
+
     private static readonly Dictionary<string, (Bitmap? Icon, DateTime Stamp, long AccessOrder)> iconCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object cacheLock = new();
     private static long accessCounter = 0;
@@ -23,6 +29,14 @@ public static class FolderIconService
     {
         lock (cacheLock)
         {
+            // Dropping the entries without disposing them left every bitmap to the finalizer:
+            // a 256 px icon is ~256 KB of unmanaged pixels, so a folder refresh could park
+            // tens of megabytes outside the GC's reach until it got around to running them.
+            foreach (var entry in iconCache.Values)
+            {
+                entry.Icon?.Dispose();
+            }
+
             iconCache.Clear();
         }
     }
@@ -167,6 +181,12 @@ public static class FolderIconService
         {
             if (iconCache.Count >= MaxCacheSize)
             {
+                // Evicting by access order is deliberately a *cache* eviction only: the bitmap
+                // that is handed out here is assigned to item view models and drawn by the
+                // folder view, so it may still be on screen. Disposing an evicted entry could
+                // free the surface of a bitmap that is being rendered; dropping the reference
+                // instead lets the GC (and the bitmap's own finalizer) reclaim it once the
+                // visual tree has let go of it.
                 var toEvict = iconCache.OrderBy(kv => kv.Value.AccessOrder).Take(30).ToList();
                 foreach (var kv in toEvict)
                 {

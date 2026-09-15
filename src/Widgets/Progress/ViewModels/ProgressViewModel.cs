@@ -15,6 +15,9 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     private readonly UpdateTimer timer;
     private bool isRunning;
 
+    /// <summary>Set once <see cref="Dispose"/> ran; a disposed view model must not restart.</summary>
+    private bool disposed;
+
     public ProgressViewModel(ProgressModel model, IAppSettingsProvider? appSettingsProvider = null)
     {
         this.model = model;
@@ -45,7 +48,7 @@ public class ProgressViewModel : ReactiveObject, IDisposable
 
     public void Start()
     {
-        if (isRunning) return;
+        if (isRunning || disposed) return;
         isRunning = true;
         timer.Subscribe(OnTimerTick);
         UpdateProgress();
@@ -58,8 +61,16 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         timer.Unsubscribe(OnTimerTick);
     }
 
+    /// <summary>
+    /// Stop the five-second tick and detach from the process-lifetime app-settings event,
+    /// which otherwise keeps every abandoned view model (each settings save re-creates the
+    /// view) alive until the process ends. The view must build a fresh view model before
+    /// using this one again. Idempotent.
+    /// </summary>
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
         Stop();
         if (appSettingsProvider != null)
         {

@@ -53,6 +53,13 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        // OnUnloaded drops this subscription (it roots the view through the process-lifetime monitor
+        // singleton), so a cached page that comes back must re-attach or the history stops updating.
+        monitor.HistoryChanged -= OnHistoryChanged;
+        monitor.HistoryChanged += OnHistoryChanged;
+        SizeChanged -= OnSizeChanged;
+        SizeChanged += OnSizeChanged;
+
         RefreshDisplay();
     }
 

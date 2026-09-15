@@ -163,9 +163,16 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     }
 
     /// <summary>
-    /// Hide every widget, release the caches the widget views opt into releasing and
-    /// pause the shared timers — the desktop is covered by a fullscreen application,
-    /// so nothing here would be visible and every megabyte counts.
+    /// Release the caches the widget views opt into releasing and pause the shared timers —
+    /// every attached screen is covered by a fullscreen or maximized application, so nothing
+    /// here would be visible and every megabyte counts.
+    /// <para>
+    /// The windows are deliberately <b>not</b> hidden: they already sit at the bottom of the
+    /// z-order behind whatever covers the screen, and hiding then re-showing every window on
+    /// each transition was what made the widgets come back late (and flicker) after leaving a
+    /// game. Only invisible memory is given up — the material caches, which are rebuilt in the
+    /// background on resume.
+    /// </para>
     /// </summary>
     public void SuspendAll()
     {
@@ -184,7 +191,6 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
                 try
                 {
                     widget.SuspendContent();
-                    widget.Hide();
                 }
                 catch
                 {
@@ -193,10 +199,15 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             }
         }
 
+        // The desktop capture is the largest single allocation in the process and nothing is
+        // sampling glass behind a fullscreen application, so it is given up as well (it is
+        // re-captured on demand the moment a widget renders again).
+        LiquidGlassWallpaper.Release();
+
         InteropService.TrimProcessMemory();
     }
 
-    /// <summary>Show the widgets again, resume the timers and rebuild the released caches.</summary>
+    /// <summary>Resume the timers and let the widgets rebuild the released caches.</summary>
     public void ResumeAll()
     {
         if (!suspended) return;
@@ -208,7 +219,6 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             {
                 try
                 {
-                    widget.Show();
                     widget.ResumeContent();
                 }
                 catch

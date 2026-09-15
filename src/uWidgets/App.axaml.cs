@@ -36,6 +36,7 @@ public class App : Application
             .AddSingleton<WidgetFactory>()
             .AddSingleton<IWidgetFactory<Window, UserControl>>(sp => sp.GetRequiredService<WidgetFactory>())
             .AddSingleton<ProfileService>()
+            .AddSingleton<MemoryTrimmerService>()
             .AddSingleton<Settings, Settings>()
             .AddSingleton<UpdateService, UpdateService>()
             .BuildServiceProvider();
@@ -102,7 +103,12 @@ public class App : Application
             services.GetRequiredService<Settings>().Show();
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();
-        
+
+        // Long sessions creep upwards on the native side (Skia surfaces, shell icons, DWM
+        // buffers) because a mostly-idle process rarely runs the finalizers that would release
+        // them; this sweeps back down whenever the process is holding more than its budget.
+        services.GetRequiredService<MemoryTrimmerService>().Start();
+
         System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => InteropService.TrimProcessMemory());
 
         base.OnFrameworkInitializationCompleted();

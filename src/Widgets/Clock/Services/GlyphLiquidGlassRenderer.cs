@@ -20,6 +20,9 @@ public static class GlyphLiquidGlassRenderer
     private const float Saturation = 1.22f;
     private const float HighlightReference = 65.0f;
 
+    /// <summary>7-tap separable smoothing kernel (radius 3) for the normal field.</summary>
+    private static readonly float[] Weights = [1f, 3f, 6f, 8f, 6f, 3f, 1f];
+
     public static byte[] Render(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask, double? refractionWidth = null)
     {
         var optics = frame.Theme.EffectiveLiquidGlass;
@@ -28,8 +31,27 @@ public static class GlyphLiquidGlassRenderer
         var height = frame.Height;
         var sigma = (float)optics.Blur * scale / 8f;
 
+        // Distance field + result buffers come from the pool (see Scratch): one frame needs ~29
+        // bytes per pixel in eight arrays, and the clock draws a frame every minute/second.
+        var scratch = RentScratch(width * height);
+        try
+        {
+            return RenderCore(frame, wallpaper, glyphMask, refractionWidth, scratch, optics, scale, width, height, sigma);
+        }
+        finally
+        {
+            ReturnScratch(scratch);
+        }
+    }
+
+    private static byte[] RenderCore(LiquidGlassRenderer.Frame frame, WallpaperSnapshot wallpaper, byte[] glyphMask,
+        double? refractionWidth, Scratch scratch, LiquidGlassSettings optics, float scale, int width, int height, float sigma)
+    {
         // Compute Euclidean Distance Field and Outward Normals for the glyph mask
-        ComputeDistanceField(glyphMask, width, height, out var distField, out var nxField, out var nyField, out var maxStrokeDepth, out var avgStrokeDepth);
+        ComputeDistanceField(glyphMask, width, height, scratch, out var maxStrokeDepth, out var avgStrokeDepth);
+        var distField = scratch.Dist;
+        var nxField = scratch.Nx;
+        var nyField = scratch.Ny;
 
         // Adaptive optics scaling for compact 1x1 widgets and 1-grid strips
         var is1x1 = (frame.Columns == 1 && frame.Rows == 1) || (frame.Columns == 0 && Math.Min(width / scale, height / scale) <= 110f && Math.Max(width / scale, height / scale) <= 115f);
@@ -43,37 +65,19 @@ public static class GlyphLiquidGlassRenderer
         var estimatedRadius = Math.Max(avgStrokeDepth * 1.85f, maxStrokeDepth * 0.82f);
         var strokeRadius = Math.Clamp(estimatedRadius, 2.0f * scale, Math.Min(width, height) * 0.25f);
 
-        // Refraction width calculation:
-        // When explicitly specified by widget configuration (e.g. Frameless Clock RefractionWidth):
-        // 0 means no refraction lens distortion (flat crystal-clear backdrop).
-        // >0 scales up to stroke half-thickness.
-        // When null, falls back to adaptive calculation based on global optics.EdgeWidth.
-        float lensWidth;
-        float lensShift;
-        float dispStrength;
+        // Refraction width calculation — see ResolveLens.
+        var lens = ResolveLens(optics, scale, strokeRadius, glyphEdgeScale, glyphShiftScale, refractionWidth);
+        var lensWidth = lens.LensWidth;
+        var lensShift = lens.LensShift;
+        var dispStrength = lens.Dispersion;
 
-        if (refractionWidth.HasValue)
+        // Numeral strokes are thin: a blur wider than the lens ring erases the very detail
+        // the lens bends, which flattens the refraction into a frosted wash. Keep the
+        // sampling blur subordinate to the lens width (the card renderer keeps the full
+        // user blur — a card is large enough for it not to matter there).
+        if (lensWidth > 0.001f)
         {
-            var rw = (float)Math.Max(0.0, refractionWidth.Value);
-            if (rw <= 0.001f)
-            {
-                lensWidth = 0f;
-                lensShift = 0f;
-                dispStrength = 0f;
-            }
-            else
-            {
-                lensWidth = Math.Clamp(rw * scale * glyphEdgeScale, 0.5f * scale, strokeRadius * 0.46f);
-                lensShift = Math.Clamp((float)(optics.Refraction / 100.0) * lensWidth * 1.85f * glyphShiftScale, 0.5f * scale, lensWidth * 2.5f);
-                dispStrength = (float)(optics.Dispersion / 100.0);
-            }
-        }
-        else
-        {
-            var edgeFrac = (float)Math.Clamp((optics.EdgeWidth / 24.0) * 0.38f * glyphEdgeScale, 0.18f, 0.46f);
-            lensWidth = Math.Clamp(strokeRadius * edgeFrac, 1.2f * scale, strokeRadius * 0.46f);
-            lensShift = Math.Clamp((float)(optics.Refraction / 100.0) * lensWidth * 1.85f * glyphShiftScale, 0.8f * scale, lensWidth * 2.5f);
-            dispStrength = (float)(optics.Dispersion / 100.0);
+            sigma = Math.Min(sigma, Math.Max(0.75f * scale, lensWidth * 0.55f));
         }
 
         var dyeWidth = Math.Max(Math.Clamp(strokeRadius * 0.32f, 2.5f * scale, 12f * scale), lensWidth);
@@ -85,15 +89,44 @@ public static class GlyphLiquidGlassRenderer
         var canvas = backdrop.Canvas;
         canvas.Clear(wallpaper.Background);
 
-        using var image = wallpaper.ImageBytes == null ? null : SKBitmap.Decode(wallpaper.ImageBytes);
-        if (image != null)
+        // Sample the wallpaper from the decoded bitmap the snapshot already owns. Going
+        // through WallpaperSnapshot.ImageBytes would PNG-encode (and then re-decode) the
+        // whole virtual desktop on every single frame: ~40 MB of transient bitmaps plus a
+        // multi-megabyte compressed copy per tick, and it silently drops the live desktop
+        // capture (which has no ImageBytes of its own, only CachedBitmap).
+        SKBitmap? image = wallpaper.CachedBitmap;
+        var ownsBitmap = false;
+        if (image == null && wallpaper.ImageBytes != null)
         {
-            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
-            canvas.Save();
-            canvas.Translate(pad, pad);
-            LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
-            canvas.Restore();
+            try
+            {
+                image = SKBitmap.Decode(wallpaper.ImageBytes);
+                ownsBitmap = true;
+            }
+            catch
+            {
+                image = null;
+            }
+        }
+
+        try
+        {
+            if (image != null)
+            {
+                using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+                using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+                canvas.Save();
+                canvas.Translate(pad, pad);
+                LiquidGlassRenderer.DrawWallpaper(canvas, image, paint, frame, wallpaper);
+                canvas.Restore();
+            }
+        }
+        finally
+        {
+            if (ownsBitmap)
+            {
+                image?.Dispose();
+            }
         }
 
         using var background = backdrop.Snapshot();
@@ -116,7 +149,7 @@ public static class GlyphLiquidGlassRenderer
         var sourceW = source.Width;
         var sourceH = source.Height;
 
-        var pixels = new SKColor[width * height];
+        var pixels = scratch.Pixels;
         var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 8) };
 
         Parallel.For(0, height, parallel, y =>
@@ -295,14 +328,144 @@ public static class GlyphLiquidGlassRenderer
         }
     }
 
-    private static void ComputeDistanceField(byte[] mask, int width, int height,
-        out float[] dist, out float[] nx, out float[] ny,
+    /// <summary>
+    /// Resolves the glyph lens geometry for one frame.
+    ///
+    /// The meniscus is the whole point of the material: without it the numerals are only a
+    /// blurred, tinted fill, so they read as 毛玻璃 (frosted) even when the global theme is
+    /// 液态玻璃. The per-widget setting is therefore an <b>optional manual override</b>:
+    /// <list type="bullet">
+    /// <item><c>&gt; 0</c>: explicit lens width in DIPs, for a user who tuned the numerals
+    /// separately from the rest of the desktop.</item>
+    /// <item><c>null</c> or <c>&lt;= 0</c> (the default): the lens is derived from the global
+    /// liquid glass optics (<see cref="LiquidGlassSettings.EdgeWidth"/> for the ring width and
+    /// <see cref="LiquidGlassSettings.Refraction"/> for the bending strength), which is what
+    /// "跟随全局主题" has to reproduce.</item>
+    /// </list>
+    /// Exposed (rather than inlined) so the optics can be asserted numerically in
+    /// <c>tests/ClockThemeChecks</c>.
+    /// </summary>
+    /// <param name="optics">Effective global liquid glass parameters.</param>
+    /// <param name="scale">Render scaling (physical px per DIP).</param>
+    /// <param name="strokeRadius">Half-thickness of the numeral strokes, in render px.</param>
+    /// <param name="glyphEdgeScale">Adaptive edge scale for compact layouts.</param>
+    /// <param name="glyphShiftScale">Adaptive displacement scale for compact layouts.</param>
+    /// <param name="refractionWidth">Manual lens width from the widget settings (DIPs), if any.</param>
+    public static (float LensWidth, float LensShift, float Dispersion) ResolveLens(
+        LiquidGlassSettings optics,
+        float scale,
+        float strokeRadius,
+        float glyphEdgeScale,
+        float glyphShiftScale,
+        double? refractionWidth)
+    {
+        var manualWidth = refractionWidth.HasValue
+            ? (float)Math.Max(0.0, refractionWidth.Value)
+            : 0f;
+
+        if (manualWidth > 0.001f)
+        {
+            var width = SoftClamp(manualWidth * scale * glyphEdgeScale, 0.5f * scale, strokeRadius * 0.46f);
+            var shift = SoftClamp((float)(optics.Refraction / 100.0) * width * 1.85f * glyphShiftScale, 0.5f * scale, width * 2.5f);
+            return (width, shift, (float)(optics.Dispersion / 100.0));
+        }
+
+        var edgeFrac = (float)Math.Clamp((optics.EdgeWidth / 24.0) * 0.38f * glyphEdgeScale, 0.18f, 0.46f);
+        var adaptiveWidth = SoftClamp(strokeRadius * edgeFrac, 1.2f * scale, strokeRadius * 0.46f);
+        var adaptiveShift = SoftClamp((float)(optics.Refraction / 100.0) * adaptiveWidth * 1.85f * glyphShiftScale, 0.8f * scale, adaptiveWidth * 2.5f);
+        return (adaptiveWidth, adaptiveShift, (float)(optics.Dispersion / 100.0));
+    }
+
+    /// <summary>
+    /// Clamp that tolerates an inverted range. A degenerate glyph mask (hairline strokes, or a
+    /// mask with no interior pixels at all) bottoms out <c>strokeRadius</c> at its floor, where
+    /// the hard lower bound exceeds <c>strokeRadius * 0.46</c> and <see cref="Math.Clamp(float,float,float)"/>
+    /// would throw — which silently aborted the whole background render and left the numerals
+    /// with the flat fallback wash.
+    /// </summary>
+    private static float SoftClamp(float value, float min, float max)
+        => Math.Clamp(value, min, Math.Max(min, max));
+
+    /// <summary>
+    /// Per-frame compute buffers, reused across frames.
+    ///
+    /// One frame needs eight arrays of <c>width × height</c> entries — seven <c>float[]</c> for the
+    /// distance field and its gradients plus the <c>SKColor[]</c> result — which is ~29 bytes per
+    /// pixel (≈8 MB for a 4×2 clock at 2×, all of it on the large object heap). Allocating that
+    /// per tick churned gigabytes a day through the LOH and fragmented the heap for no reason: the
+    /// clock renders one frame at a time, and every pixel of these arrays is written before it is
+    /// read. Buffers are pooled by pixel count and handed back when the frame is done.
+    /// </summary>
+    private sealed class Scratch
+    {
+        public int Capacity;
+        public float[] Dist = [];
+        public float[] Nx = [];
+        public float[] Ny = [];
+        public float[] RawGx = [];
+        public float[] RawGy = [];
+        public float[] TempGx = [];
+        public float[] TempGy = [];
+        public SKColor[] Pixels = [];
+
+        /// <summary>Grow the buffers to hold <paramref name="size"/> pixels.</summary>
+        public void EnsureCapacity(int size)
+        {
+            if (Capacity >= size) return;
+
+            Dist = new float[size];
+            Nx = new float[size];
+            Ny = new float[size];
+            RawGx = new float[size];
+            RawGy = new float[size];
+            TempGx = new float[size];
+            TempGy = new float[size];
+            Pixels = new SKColor[size];
+            Capacity = size;
+        }
+    }
+
+    private static readonly object scratchGate = new();
+    private static readonly Stack<Scratch> scratchPool = new();
+
+    /// <summary>Take a set of buffers sized for <paramref name="size"/> pixels (never blocks a frame).</summary>
+    private static Scratch RentScratch(int size)
+    {
+        Scratch scratch;
+        lock (scratchGate)
+        {
+            scratch = scratchPool.Count > 0 ? scratchPool.Pop() : new Scratch();
+        }
+
+        scratch.EnsureCapacity(size);
+        return scratch;
+    }
+
+    /// <summary>Hand the buffers back. Only a couple are kept: more would just be resident memory.</summary>
+    private static void ReturnScratch(Scratch scratch)
+    {
+        lock (scratchGate)
+        {
+            if (scratchPool.Count < 2) scratchPool.Push(scratch);
+        }
+    }
+
+    private static void ComputeDistanceField(byte[] mask, int width, int height, Scratch scratch,
         out float maxStrokeDepth, out float avgStrokeDepth)
     {
         var size = width * height;
-        dist = new float[size];
-        nx = new float[size];
-        ny = new float[size];
+        var dist = scratch.Dist;
+        var nx = scratch.Nx;
+        var ny = scratch.Ny;
+
+        // Reused buffers carry the previous frame's field: the normals and the raw gradients are
+        // only written where the mask is set, so anything stale would leak into this frame.
+        Array.Clear(nx, 0, size);
+        Array.Clear(ny, 0, size);
+        Array.Clear(scratch.RawGx, 0, size);
+        Array.Clear(scratch.RawGy, 0, size);
+        Array.Clear(scratch.TempGx, 0, size);
+        Array.Clear(scratch.TempGy, 0, size);
 
         const float INF = 1e6f;
         for (var i = 0; i < size; i++)
@@ -364,8 +527,8 @@ public static class GlyphLiquidGlassRenderer
         avgStrokeDepth = (count > 0) ? (float)(sumD / count) : 1f;
 
         // Raw distance gradient
-        var rawGx = new float[size];
-        var rawGy = new float[size];
+        var rawGx = scratch.RawGx;
+        var rawGy = scratch.RawGy;
         for (var y = 1; y < height - 1; y++)
         {
             var row = y * width;
@@ -382,9 +545,9 @@ public static class GlyphLiquidGlassRenderer
 
         // Smooth continuous normal field: 7-tap separable filter over glyph mask
         // Eliminates corner medial-axis creases and triangular seams
-        var tempGx = new float[size];
-        var tempGy = new float[size];
-        var weights = new[] { 1f, 3f, 6f, 8f, 6f, 3f, 1f }; // radius 3
+        var tempGx = scratch.TempGx;
+        var tempGy = scratch.TempGy;
+        var weights = Weights;
 
         for (var y = 0; y < height; y++)
         {

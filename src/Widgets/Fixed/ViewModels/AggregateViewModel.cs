@@ -12,8 +12,18 @@ namespace FixedWidgets.ViewModels;
 
 public class AggregateViewModel : ReactiveObject, IDisposable
 {
+    /// <summary>
+    /// The weekday name is formatted on every one-second tick, so the culture is resolved
+    /// once here: <see cref="CultureInfo.GetCultureInfo(string)"/> hands back a cached,
+    /// read-only instance instead of building (and unifying) a new one per tick.
+    /// </summary>
+    private static readonly CultureInfo ChineseCulture = CultureInfo.GetCultureInfo("zh-CN");
+
     private readonly OpenMeteoWeatherService weatherService = new();
     private AggregateModel model;
+
+    /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
+    private bool disposed;
 
     private string cityName = "北京";
     private string temperatureText = "24°";
@@ -103,7 +113,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
 
         UpdateClock();
         UpdateCalendar();
-        UpdateWeather();
+        _ = UpdateWeather();
     }
 
     public void UpdateModel(AggregateModel newModel)
@@ -112,7 +122,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         ApplyModel(newModel);
         UpdateClock();
         UpdateCalendar();
-        UpdateWeather();
+        _ = UpdateWeather();
     }
 
     private void ApplyModel(AggregateModel m)
@@ -146,7 +156,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     private void OnHourTick()
     {
         UpdateCalendar();
-        UpdateWeather();
+        _ = UpdateWeather();
     }
 
     public void UpdateClock()
@@ -166,7 +176,7 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         }
 
         // Chinese Date & Weekday: e.g. "9月12日 星期六"
-        string weekday = now.ToString("dddd", new CultureInfo("zh-CN"));
+        string weekday = now.ToString("dddd", ChineseCulture);
         DateText = $"{now.Month}月{now.Day}日 {weekday}";
     }
 
@@ -219,30 +229,59 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         DayCells = cells;
     }
 
-    public async void UpdateWeather()
+    /// <summary>
+    /// Refresh the weather block. Called from the constructor, from model updates and from the
+    /// hourly tick (never as an event handler), so it returns a task the callers may discard —
+    /// and it catches everything itself: an unhandled exception from an <c>async void</c>
+    /// method would otherwise reach the dispatcher and take the whole process down.
+    /// </summary>
+    public async Task UpdateWeather()
     {
-        var info = await weatherService.GetWeatherAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
-        if (info == null)
+        try
         {
-            if (TemperatureText == "--°")
-            {
-                TemperatureText = "24°";
-                ConditionText = "晴朗";
-                HighLowText = "↑26°  ↓18°";
-                WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
-            }
-            return;
-        }
+            var info = await weatherService.GetWeatherAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
 
-        TemperatureText = $"{Math.Round(info.Temperature):0}°";
-        ConditionText = info.ConditionText;
-        HighLowText = $"↑{Math.Round(info.MaxTemp):0}°  ↓{Math.Round(info.MinTemp):0}°";
-        WeatherIcon = info.Icon;
+            // A reply that arrives after disposal (the view was unloaded mid-request) must not
+            // touch this view model any more, and must not revive it through its bindings.
+            if (disposed) return;
+
+            if (info == null)
+            {
+                if (TemperatureText == "--°")
+                {
+                    TemperatureText = "24°";
+                    ConditionText = "晴朗";
+                    HighLowText = "↑26°  ↓18°";
+                    WeatherIcon = OpenMeteoWeatherService.GetWeatherIcon(0);
+                }
+                return;
+            }
+
+            TemperatureText = $"{Math.Round(info.Temperature):0}°";
+            ConditionText = info.ConditionText;
+            HighLowText = $"↑{Math.Round(info.MaxTemp):0}°  ↓{Math.Round(info.MinTemp):0}°";
+            WeatherIcon = info.Icon;
+        }
+        catch
+        {
+            // Offline or a service error: keep the values that are already on screen.
+        }
     }
 
+    /// <summary>
+    /// Release the process-lifetime timer subscriptions and the weather service's
+    /// <see cref="HttpClient"/>. Without this every abandoned view (each settings save
+    /// re-creates the widget, each Gallery visit creates a preview) would keep ticking and
+    /// holding a client alive forever. The view must build a fresh view model before using
+    /// this one again. Idempotent.
+    /// </summary>
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
         TimerService.Timer1Second.Unsubscribe(OnSecondTick);
         TimerService.Timer1Hour.Unsubscribe(OnHourTick);
+        weatherService.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

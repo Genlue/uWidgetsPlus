@@ -20,6 +20,13 @@ public static class LiquidGlassWallpaper
 {
     private const long CaptureTtlTicks = TimeSpan.TicksPerSecond * 2;
 
+    /// <summary>
+    /// How long a replaced capture is kept alive before its bitmap is disposed: long enough for
+    /// an in-flight background render to finish sampling it, short enough that a full-size
+    /// desktop bitmap is never doubled up for long.
+    /// </summary>
+    private const int RetireDelayMs = 3000;
+
     private static readonly object Gate = new();
     private static string? cachedKey;
     private static WallpaperSnapshot? cached;
@@ -66,7 +73,7 @@ public static class LiquidGlassWallpaper
 
         if (old != null)
         {
-            System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
+            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
         }
 
         try
@@ -83,6 +90,33 @@ public static class LiquidGlassWallpaper
         catch
         {
             try { WallpaperInvalidated?.Invoke(); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Drop the cached desktop capture and its decoded bitmap.
+    /// <para>
+    /// Called while every attached screen is covered by a fullscreen application: the capture is
+    /// a full virtual desktop at physical resolution — the single largest allocation in the
+    /// process (tens of megabytes with several monitors) — nothing can be looking at glass right
+    /// then, and the next <see cref="Get"/> re-captures on demand. The snapshot is retired rather
+    /// than disposed inline so a render that is already sampling it cannot hit a disposed bitmap.
+    /// </para>
+    /// </summary>
+    public static void Release()
+    {
+        WallpaperSnapshot? old;
+        lock (Gate)
+        {
+            captureExpiresTicks = 0;
+            old = cached;
+            cached = null;
+            cachedKey = null;
+        }
+
+        if (old != null)
+        {
+            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
         }
     }
 
@@ -103,7 +137,7 @@ public static class LiquidGlassWallpaper
             captureExpiresTicks = DateTime.UtcNow.Ticks + CaptureTtlTicks;
             if (old != null && !ReferenceEquals(old, cached))
             {
-                System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
+                System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
             }
             return cached;
         }
@@ -142,7 +176,7 @@ public static class LiquidGlassWallpaper
         cachedKey = key;
         if (old != null && !ReferenceEquals(old, cached))
         {
-            System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => old.Dispose());
+            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
         }
         return cached;
     }

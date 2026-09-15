@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using Avalonia;
@@ -14,7 +15,7 @@ using uWidgets.ViewModels;
 
 namespace uWidgets.Views.Pages;
 
-public partial class Gallery : UserControl
+public partial class Gallery : UserControl, INotifyPropertyChanged
 {
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly ILayoutProvider layoutProvider;
@@ -25,6 +26,9 @@ public partial class Gallery : UserControl
     private List<WidgetPreviewViewModel>? widgets;
     public List<WidgetPreviewViewModel> Widgets => widgets ??= GetWidgets();
     public CornerRadius Radius => new(appSettingsProvider.Get().Dimensions.Radius / (VisualRoot?.RenderScaling ?? 1.0));
+
+    /// <inheritdoc />
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public Gallery(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, IAssemblyProvider assemblyProvider, 
         AssemblyInfo assemblyInfo, IWidgetFactory<Window, UserControl> widgetFactory, DisplayMonitorService displayMonitor)
@@ -44,6 +48,49 @@ public partial class Gallery : UserControl
         DataContext = this;
         
         InitializeComponent();
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    /// <summary>
+    /// Every card hosts a real, live widget control — that is what makes the preview look exactly
+    /// like the desktop widget — so the card list owns timers, WMI/SMTC subscriptions and decoded
+    /// bitmaps for all ~28 widget types at once.
+    /// <para>
+    /// The settings window caches its pages, so a gallery that is navigated away from comes back
+    /// later: the previews are released when the page leaves the tree (each control cleans itself
+    /// up when it unloads) and rebuilt on the next visit. Keeping the disposed controls in the
+    /// card list would show dead previews, and keeping the live ones alive would leak a whole
+    /// widget set per visit.
+    /// </para>
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (widgets != null) return;
+        widgets = GetWidgets();
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Widgets)));
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e) => ReleasePreviews();
+
+    private void ReleasePreviews()
+    {
+        if (widgets == null) return;
+
+        var released = widgets;
+        widgets = null;
+        foreach (var preview in released)
+        {
+            try
+            {
+                (preview.Control as IDisposable)?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Gallery] Failed to release {preview.Type}/{preview.Subtype}: {ex.Message}");
+            }
+        }
     }
 
     private List<WidgetPreviewViewModel> GetWidgets()

@@ -4,12 +4,14 @@ using Avalonia.Media.Imaging;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using Clock.Models;
+using Clock.Services;
 using Clock.Views;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Settings;
+using uWidgets.Services;
 
 namespace ClockThemeChecks;
 
@@ -93,9 +95,174 @@ class Program
             Check("both liquid glass renders produced pixels", false);
         }
 
+        // ---- Part 3: glyph optics — the meniscus must exist at the default 0 ----
+        // Regression: refractionWidth 0 used to mean "no lens", so the numerals were only a
+        // blurred, tinted fill and read as 毛玻璃 while the rest of the desktop was 液态玻璃.
+        Console.WriteLine();
+        Console.WriteLine("--- glyph lens optics ---");
+
+        var globalOptics = new LiquidGlassSettings(
+            Blur: 30, Refraction: 60, EdgeWidth: 7, Highlight: 50, Dispersion: 100, LightAngle: 225, EdgeTint: 10);
+        const float probeScale = 2f, probeStrokeRadius = 26f;
+
+        var auto = GlyphLiquidGlassRenderer.ResolveLens(globalOptics, probeScale, probeStrokeRadius, 1f, 1f, 0.0);
+        Console.WriteLine($"  refractionWidth = 0 (default) → lens {auto.LensWidth:F2}px, bend {auto.LensShift:F2}px, dispersion {auto.Dispersion:F2}");
+        Check("default refractionWidth=0 still produces a real lens", auto.LensWidth > 2f && auto.LensShift > 0.5f);
+
+        var fromNull = GlyphLiquidGlassRenderer.ResolveLens(globalOptics, probeScale, probeStrokeRadius, 1f, 1f, null);
+        Check("null refractionWidth resolves the same adaptive lens as 0",
+            Math.Abs(fromNull.LensWidth - auto.LensWidth) < 0.001f);
+
+        var manual = GlyphLiquidGlassRenderer.ResolveLens(globalOptics, probeScale, probeStrokeRadius, 1f, 1f, 12.0);
+        Console.WriteLine($"  refractionWidth = 12 (manual)  → lens {manual.LensWidth:F2}px, bend {manual.LensShift:F2}px");
+        Check("an explicit refractionWidth still overrides the adaptive lens", manual.LensWidth > auto.LensWidth + 1f);
+
+        var strong = GlyphLiquidGlassRenderer.ResolveLens(globalOptics with { Refraction = 100 }, probeScale, probeStrokeRadius, 1f, 1f, 0.0);
+        Check("the global refraction slider drives the glyph bend", strong.LensShift > auto.LensShift);
+
+        // A mask with no interior pixels used to invert a Math.Clamp range and throw, which
+        // silently killed the background render (the widget then kept its flat fallback wash).
+        var degenerate = GlyphLiquidGlassRenderer.ResolveLens(globalOptics, probeScale, 2.0f * probeScale, 1f, 1f, 0.0);
+        Check("a hairline glyph mask cannot abort the render", degenerate.LensWidth >= 0f);
+
+        // ---- Part 4: the live desktop capture must actually be sampled ----
+        // A live capture carries only CachedBitmap (ImageBytes is null). Reading ImageBytes
+        // instead — as the 1.8.0 build did — dropped the capture entirely and painted the
+        // numerals over a flat colour, losing both the wallpaper and the refraction.
+        Console.WriteLine();
+        Console.WriteLine("--- live desktop capture sampling ---");
+
+        var glassTheme = new Theme(
+            DarkMode: true, AccentColor: null, OpacityLevel: 0.18, Monochrome: false, UseNativeFrame: false,
+            FontFamily: "Segoe UI", Surface: SurfaceStyle.LiquidGlass, LiquidGlass: globalOptics);
+
+        using var syntheticWallpaper = new SKBitmap(new SKImageInfo(64, 64, SKColorType.Bgra8888, SKAlphaType.Opaque));
+        using (var canvas = new SKCanvas(syntheticWallpaper))
+        {
+            canvas.Clear(new SKColor(220, 40, 40));
+            using var blue = new SKPaint { Color = new SKColor(40, 80, 220) };
+            canvas.DrawRect(new SKRect(32, 0, 64, 64), blue);
+        }
+        syntheticWallpaper.SetImmutable();
+
+        var liveWallpaper = new WallpaperSnapshot(null, new SKColor(0, 0, 0), LiveCapture: true, CachedBitmap: syntheticWallpaper);
+        var liveFrame = new LiquidGlassRenderer.Frame(
+            64, 64, 1f, 0f, 0, 0, 64, 64, 0, 0, 64, 64, glassTheme, Dark: true);
+
+        // A filled numeral bar with real interior depth (a glyph-like mask).
+        var barMask = new byte[64 * 64];
+        for (var y = 12; y < 52; y++)
+        for (var x = 12; x < 52; x++)
+            barMask[y * 64 + x] = 255;
+
+        var livePng = GlyphLiquidGlassRenderer.Render(liveFrame, liveWallpaper, barMask, 0.0);
+        var livePixels = DecodePixels(livePng);
+        var (red, blue2) = CountDominant(livePixels);
+        Console.WriteLine($"  numeral pixels: {red} wallpaper-red, {blue2} wallpaper-blue");
+        Check("live capture reaches the numerals (wallpaper colours survive)",
+            livePixels != null && red > 100 && blue2 > 100);
+        liveWallpaper.Dispose();
+
+        // ---- Part 5: visual preview against a synthetic wallpaper ----
+        // The harness has no real desktop capture, so the lens is previewed against generated
+        // vertical stripes: the displacement shows up as bent, locally compressed lines near
+        // the stroke edges (a plain frosted fill leaves them uniformly blurred instead).
+        Console.WriteLine();
+        Console.WriteLine("--- optical preview ---");
+
+        const int pw = 736, ph = 368;
+        using var stripes = new SKBitmap(new SKImageInfo(pw, ph, SKColorType.Bgra8888, SKAlphaType.Opaque));
+        using (var canvas = new SKCanvas(stripes))
+        {
+            canvas.Clear(new SKColor(16, 22, 36));
+            // Wide stripes (32 px period) so the displacement stays readable after the blur.
+            for (var i = 0; i < 24; i++)
+            {
+                using var paint = new SKPaint { Color = SKColor.FromHsl(i * 15f, 78f, 55f) };
+                canvas.DrawRect(new SKRect(i * 32, 0, i * 32 + 18, ph), paint);
+            }
+        }
+        stripes.SetImmutable();
+
+        var previewWallpaper = new WallpaperSnapshot(null, new SKColor(16, 22, 36), LiveCapture: true, CachedBitmap: stripes);
+        var previewFrame = new LiquidGlassRenderer.Frame(
+            pw, ph, 2f, 0f, 0, 0, pw, ph, 0, 0, pw, ph, glassTheme, Dark: true, Columns: 4, Rows: 2);
+
+        var previewMask = new byte[pw * ph];
+        for (var y = 60; y < ph - 60; y++)
+        for (var x = 90; x < pw - 90; x++)
+            previewMask[y * pw + x] = 255;
+
+        var lensPng = GlyphLiquidGlassRenderer.Render(previewFrame, previewWallpaper, previewMask, 0.0);
+        var flatPng = GlyphLiquidGlassRenderer.Render(previewFrame, previewWallpaper, previewMask, 0.1);
+        var lensPixels = DecodePixels(lensPng);
+        var flatPixels = DecodePixels(flatPng);
+        var lensDelta = lensPixels != null && flatPixels != null
+            ? MeanAbsoluteDifference(lensPixels, flatPixels)
+            : 0.0;
+        Console.WriteLine($"  mean |delta| lens (auto) vs hairline lens: {lensDelta:F2}/255");
+        Check("the default lens visibly bends the backdrop", lensDelta > 2.0);
+
+        var previewPath = Path.Combine(outputDir, "glyph-lens-preview.png");
+        File.WriteAllBytes(previewPath, lensPng);
+        Console.WriteLine($"  lensed numerals: saved {previewPath}");
+        previewWallpaper.Dispose();
+
+        // ---- Part 6: live theme switch on one running instance ----
+        // The user changes 外观 → 应用主题 while the clock is already on the desktop: the same
+        // widget instance has to follow the new global material without being recreated. This
+        // pins that path (settings change → resolve → re-render), which a fresh start does not
+        // exercise.
+        Console.WriteLine();
+        Console.WriteLine("--- live theme switch (acrylic → liquid glass) ---");
+
+        var switchSettings = new StubSettings(BuildSettings(SurfaceStyle.Acrylic));
+        var switchServices = new ServiceCollection();
+        switchServices.AddSingleton<IAppSettingsProvider>(switchSettings);
+        var switchProvider = switchServices.BuildServiceProvider();
+
+        var switched = (FramelessDigital)ActivatorUtilities.CreateInstance(
+            switchProvider, typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 0));
+        switched.Width = 368;
+        switched.Height = 184;
+        switched.Measure(new Size(368, 184));
+        switched.Arrange(new Rect(0, 0, 368, 184));
+        switched.UpdateLayout();
+
+        Console.WriteLine($"  before: {Describe(ResolveTheme(switched))}");
+        Check("a follow-global clock starts on the acrylic global theme", ResolveTheme(switched) == (true, false, false));
+
+        switchSettings.Save(BuildSettings(SurfaceStyle.LiquidGlass));
+
+        Console.WriteLine($"  after : {Describe(ResolveTheme(switched))}");
+        Check("the same instance follows the switch to liquid glass", ResolveTheme(switched) == (false, true, false));
+        Check("and it renders a liquid glass frame afterwards", WaitForFrame(switched));
+
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
+    }
+
+    private static string Describe((bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) theme) =>
+        theme switch
+        {
+            (true, _, _) => "acrylic",
+            (_, true, _) => "liquid glass",
+            _ => "solid"
+        };
+
+    /// <summary>Pump the dispatcher until the widget produced a liquid glass frame.</summary>
+    private static bool WaitForFrame(FramelessDigital view)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        while (DateTime.UtcNow < deadline && ReadField(view, "liquidGlassBitmap") == null)
+        {
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(50);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        return ReadField(view, "liquidGlassBitmap") != null;
     }
 
     /// <summary>
@@ -149,6 +316,30 @@ class Program
         var pixels = new byte[decoded.ByteCount];
         System.Runtime.InteropServices.Marshal.Copy(decoded.GetPixels(), pixels, 0, pixels.Length);
         return pixels;
+    }
+
+    /// <summary>Decode a PNG byte buffer into BGRA bytes.</summary>
+    private static byte[]? DecodePixels(byte[] png)
+    {
+        using var decoded = SKBitmap.Decode(png);
+        if (decoded == null) return null;
+        var pixels = new byte[decoded.ByteCount];
+        System.Runtime.InteropServices.Marshal.Copy(decoded.GetPixels(), pixels, 0, pixels.Length);
+        return pixels;
+    }
+
+    /// <summary>Count pixels whose red / blue channel dominates (BGRA order).</summary>
+    private static (int Red, int Blue) CountDominant(byte[]? bgra)
+    {
+        if (bgra == null) return (0, 0);
+        int red = 0, blue = 0;
+        for (var i = 0; i + 3 < bgra.Length; i += 4)
+        {
+            int b = bgra[i], g = bgra[i + 1], r = bgra[i + 2];
+            if (r > g + 40 && r > b + 40) red++;
+            else if (b > g + 40 && b > r + 40) blue++;
+        }
+        return (red, blue);
     }
 
     private static double MeanAbsoluteDifference(byte[] a, byte[] b)

@@ -30,6 +30,21 @@ public class MonthCalendarSettingsViewModel(IWidgetLayoutProvider widgetLayoutPr
 
     public bool IsCustomTodayColor => Model.TodayColorMode == "Custom";
 
+    /// <summary>
+    /// Punch today's number out of the marker disc (镂空). On by default; turning it off paints
+    /// the number on top of the disc in white, which is the historic look.
+    /// </summary>
+    public bool HollowTodayNumber
+    {
+        get => Model.HollowTodayNumber;
+        set
+        {
+            if (value == Model.HollowTodayNumber) return;
+            Save(Model with { HollowTodayNumber = value });
+            this.RaisePropertyChanged();
+        }
+    }
+
     /// <summary>0 = follow accent, 1 = custom. Drives the mode ComboBox.</summary>
     public int TodayColorModeIndex
     {
@@ -38,7 +53,20 @@ public class MonthCalendarSettingsViewModel(IWidgetLayoutProvider widgetLayoutPr
         {
             var mode = value == 1 ? "Custom" : "Accent";
             if (mode == Model.TodayColorMode) return;
-            Save(Model with { TodayColorMode = mode });
+
+            // Switching to custom seeds BOTH theme colors with the current accent, so the two
+            // pickers are immediately usable and light/dark can be tuned independently without
+            // one of them silently falling back to the accent.
+            var updated = mode == "Custom"
+                ? Model with
+                {
+                    TodayColorMode = mode,
+                    TodayColorLight = Model.TodayColorLight ?? ToHex(AccentColor()),
+                    TodayColorDark = Model.TodayColorDark ?? ToHex(AccentColor(dark: true))
+                }
+                : Model with { TodayColorMode = mode };
+
+            Save(updated);
             this.RaisePropertyChanged();
             this.RaisePropertyChanged(nameof(IsCustomTodayColor));
             this.RaisePropertyChanged(nameof(TodayColorLight));

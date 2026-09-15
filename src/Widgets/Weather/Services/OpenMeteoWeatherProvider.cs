@@ -6,12 +6,15 @@ using Weather.Models.Geocoding;
 
 namespace Weather.Services;
 
-public class OpenMeteoWeatherProvider
+public class OpenMeteoWeatherProvider : IDisposable
 {
     // Follows the configurable proxy setting (default: direct connection, bypassing
     // the system proxy — a stale proxy from a shut-down proxy client used to break
     // weather updates). See ProxySettings.
     private readonly HttpClient httpClient = ProxySettings.CreateHttpClient();
+
+    /// <summary>Set once <see cref="Dispose"/> ran; makes disposal idempotent.</summary>
+    private bool disposed;
 
     public async Task<ForecastResponse?> GetForecastAsync(double latitude, double longitude, string temperatureUnit)
     {
@@ -40,7 +43,7 @@ public class OpenMeteoWeatherProvider
         }
         catch (Exception e)
         {
-            await File.WriteAllTextAsync("weather_crash_log.txt", $"{e.Message}{Environment.NewLine}{e.StackTrace}");
+            await LogCrashAsync(e);
             return null;
         }
     }
@@ -68,7 +71,7 @@ public class OpenMeteoWeatherProvider
         }
         catch (Exception e)
         {
-            await File.WriteAllTextAsync("weather_crash_log.txt", $"{e.Message}{Environment.NewLine}{e.StackTrace}");
+            await LogCrashAsync(e);
             return null;
         }
     } 
@@ -94,8 +97,41 @@ public class OpenMeteoWeatherProvider
         }
         catch (Exception e)
         {
-            await File.WriteAllTextAsync("weather_crash_log.txt", $"{e.Message}{Environment.NewLine}{e.StackTrace}");
+            await LogCrashAsync(e);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Release the provider's own <see cref="HttpClient"/> (and through it the socket pool
+    /// of its handler). The widget drops its provider when the view is unloaded, so without
+    /// this every view instance — each settings save, each Gallery visit — would keep a
+    /// client and its connections alive for the lifetime of the process. Idempotent.
+    /// </summary>
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        httpClient.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Write a failed request to the diagnostic file. A request still in flight when the
+    /// widget is unloaded fails with an <see cref="ObjectDisposedException"/> from the
+    /// disposal above — that is ordinary teardown, not a crash, so it is not logged.
+    /// </summary>
+    private async Task LogCrashAsync(Exception e)
+    {
+        if (disposed) return;
+
+        try
+        {
+            await File.WriteAllTextAsync("weather_crash_log.txt", $"{e.Message}{Environment.NewLine}{e.StackTrace}");
+        }
+        catch
+        {
+            // A diagnostic write must never take the caller down.
         }
     }
 }

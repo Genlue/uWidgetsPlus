@@ -11,6 +11,15 @@ public class UpdateTimer : IDisposable
     private readonly DispatcherTimer timer;
     private readonly List<Action> subscribers = [];
 
+    /// <summary>
+    /// Snapshot the ticks are delivered from. A subscriber may (un)subscribe from inside its own
+    /// callback — the lock is re-entrant on that thread — so the tick cannot iterate the live
+    /// list; the snapshot is rebuilt only when the subscription set actually changes instead of
+    /// allocating a fresh list on every tick (this runs 10×/s just for the 100 ms timer).
+    /// </summary>
+    private Action[] tickSnapshot = [];
+    private bool snapshotDirty = true;
+
     /// <summary>Set while the host paused every widget (fullscreen application active).</summary>
     private bool paused;
 
@@ -31,6 +40,7 @@ public class UpdateTimer : IDisposable
         {
             if (subscribers.Contains(action)) return;
             subscribers.Add(action);
+            snapshotDirty = true;
             if (subscribers.Count > 0 && !paused) timer.Start();
         }
     }
@@ -41,6 +51,7 @@ public class UpdateTimer : IDisposable
         {
             if (!subscribers.Contains(action)) return;
             subscribers.Remove(action);
+            snapshotDirty = true;
             if (subscribers.Count == 0) timer.Stop();
         }
     }
@@ -81,7 +92,24 @@ public class UpdateTimer : IDisposable
         lock (subscribers)
         {
             if (paused) return;
-            subscribers.ToList().ForEach(action => action());
+            if (snapshotDirty)
+            {
+                tickSnapshot = subscribers.ToArray();
+                snapshotDirty = false;
+            }
+
+            foreach (var action in tickSnapshot)
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    // One misbehaving widget must not stop every other widget's tick.
+                    System.Diagnostics.Debug.WriteLine($"[UpdateTimer] subscriber failed: {ex.Message}");
+                }
+            }
         }
     }
     

@@ -8,21 +8,48 @@ namespace Monitor.Views;
 
 public partial class SingleMetric : UserControl
 {
+    private readonly SingleMetricModel model;
+    private SingleMetricViewModel? viewModel;
+
     public SingleMetric() :
         this(new SingleMetricModel(MetricType.CpuUsage)) {}
     
     public SingleMetric(SingleMetricModel model)
     {
-        DataContext = new SingleMetricViewModel(model);
+        this.model = model;
+        viewModel = new SingleMetricViewModel(model);
+        DataContext = viewModel;
         SizeChanged += OnSizeChanged;
+        Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         InitializeComponent();
     }
 
+    /// <summary>
+    /// The view can be detached and re-added later (the settings window caches pages and the
+    /// Gallery keeps a live preview control), so everything <see cref="OnUnloaded"/> released
+    /// is restarted here — on a *new* view model, because the released one was disposed.
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        SizeChanged -= OnSizeChanged;
+        SizeChanged += OnSizeChanged;
+
+        if (viewModel != null) return;
+        viewModel = new SingleMetricViewModel(model);
+        DataContext = viewModel;
+    }
+
+    /// <summary>
+    /// Release the view model (its one-second timer subscription, which otherwise keeps the
+    /// WMI polling alive forever) without detaching this handler: the control stays usable
+    /// and is unloaded again on every later removal from the visual tree.
+    /// </summary>
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         SizeChanged -= OnSizeChanged;
-        Unloaded -= OnUnloaded;
+        viewModel?.Dispose();
+        viewModel = null;
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)

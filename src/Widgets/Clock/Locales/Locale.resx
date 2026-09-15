@@ -157,6 +157,6 @@
         <value>Edge Refraction Width</value>
     </data>
     <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
-        <value>Adjusts the refraction bending width for numeral edges (default 0 px)</value>
+        <value>Refraction lens width on the numeral edges (0 = automatic, follows the global liquid glass optics; above 0 sets an explicit width in px)</value>
     </data>
 </root>

@@ -22,25 +22,77 @@ public partial class Month : UserControl
         this.monthCalendarModel = monthCalendarModel;
         viewModel = new MonthCalendarViewModel(monthCalendarModel);
         DataContext = viewModel;
-        Loaded += (_, _) => viewModel.Start();
+        Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
         InitializeComponent();
+        HollowToday = monthCalendarModel.HollowTodayNumber;
         UpdateTodayBrush();
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
     }
 
+    /// <summary>
+    /// The view can be detached and re-added later (the settings window caches pages and the
+    /// Gallery keeps a live preview control), so the five-minute tick and the
+    /// process-lifetime theme event released by <see cref="OnUnloaded"/> are re-attached here.
+    /// The view model is only stopped on unload — never disposed — so it can be reused.
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        viewModel.Start();
+
+        // The accent resource only resolves once the control is attached to a themed tree.
+        UpdateTodayBrush();
+
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
+    }
+
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         viewModel.Stop();
+
+        // Application.Current is process-lifetime: leaving the handler attached would keep
+        // every abandoned Month view (and its view model) alive forever.
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
     }
 
     private void OnActualThemeVariantChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
 
     /// <summary>
-    /// True when the today-marker ellipse should use a fixed color instead of the
-    /// (theme-reactive) accent resource. Drives the Ellipse's customColor class.
+    /// True when today's number is punched out of the marker disc (镂空) instead of being painted
+    /// on top of it. Drives the marker control and hides the day text block for today.
+    /// </summary>
+    public static readonly StyledProperty<bool> HollowTodayProperty =
+        AvaloniaProperty.Register<Month, bool>(nameof(HollowToday), true);
+
+    public bool HollowToday
+    {
+        get => GetValue(HollowTodayProperty);
+        set => SetValue(HollowTodayProperty, value);
+    }
+
+    /// <summary>
+    /// Color the today marker is filled with, resolved for the current theme: the custom color
+    /// when the model asks for one, otherwise the theme accent.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> TodayDotBrushProperty =
+        AvaloniaProperty.Register<Month, IBrush?>(nameof(TodayDotBrush));
+
+    public IBrush? TodayDotBrush
+    {
+        get => GetValue(TodayDotBrushProperty);
+        set => SetValue(TodayDotBrushProperty, value);
+    }
+
+    /// <summary>
+    /// True when the today-marker should use a fixed color instead of the
+    /// (theme-reactive) accent resource.
     /// </summary>
     public static readonly StyledProperty<bool> IsCustomTodayColorProperty =
         AvaloniaProperty.Register<Month, bool>(nameof(IsCustomTodayColor));
@@ -69,6 +121,7 @@ public partial class Month : UserControl
         {
             IsCustomTodayColor = false;
             TodayCustomBrush = null;
+            TodayDotBrush = ResolveAccentBrush();
             return;
         }
 
@@ -84,7 +137,17 @@ public partial class Month : UserControl
 
         IsCustomTodayColor = brush != null;
         TodayCustomBrush = brush;
+
+        // The custom color is per theme (light/dark are tuned independently); when the current
+        // theme has none configured the marker keeps following the accent instead of vanishing.
+        TodayDotBrush = brush ?? ResolveAccentBrush();
     }
+
+    /// <summary>The theme accent as a brush, or null while the resource is not resolvable yet.</summary>
+    private IBrush? ResolveAccentBrush() =>
+        this.TryFindResource("SystemAccentColor", out var value) && value is Color accent
+            ? new SolidColorBrush(accent)
+            : null;
 
     public static readonly StyledProperty<double> TextSizeProperty = 
         AvaloniaProperty.Register<Month, double>(nameof(TextSize), 12);

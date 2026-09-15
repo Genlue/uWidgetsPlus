@@ -16,6 +16,10 @@ public class ClipboardMonitorService
     private static ClipboardMonitorService? instance;
     public static ClipboardMonitorService Instance => instance ??= new ClipboardMonitorService();
 
+    /// <summary>Width (px) each history thumbnail is decoded at. The card renders it ~100 px tall, so
+    /// a 320 px wide decode is ~97 % smaller than the full-resolution capture while still looking sharp.</summary>
+    private const int ThumbnailWidth = 320;
+
     private readonly DispatcherTimer timer;
     private uint lastSequence;
     private uint lastSelfSequence;
@@ -126,11 +130,7 @@ public class ClipboardMonitorService
                         Timestamp = DateTime.Now
                     };
 
-                    try
-                    {
-                        item.Thumbnail = new Bitmap(filePath);
-                    }
-                    catch { }
+                    item.Thumbnail = CreateThumbnail(filePath);
 
                     AddItem(item);
                     return;
@@ -166,6 +166,55 @@ public class ClipboardMonitorService
         }
     }
 
+    /// <summary>
+    /// Decodes a history thumbnail scaled down to <see cref="ThumbnailWidth"/> px wide (aspect kept).
+    /// A full-resolution decode would keep one unmanaged 8–33 MB pixel block per history item alive
+    /// (20 items × 4K = 633 MB), and unmanaged bitmaps create no GC pressure, so nothing would ever
+    /// reclaim them without an explicit Dispose.
+    /// </summary>
+    private static Bitmap? CreateThumbnail(string filePath)
+    {
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            return Bitmap.DecodeToWidth(stream, ThumbnailWidth, BitmapInterpolationMode.LowQuality);
+        }
+        catch
+        {
+            // A thumbnail is cosmetic; a broken source image must not abort the capture.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Releases the unmanaged pixel block behind a history item's thumbnail before it leaves the
+    /// history — otherwise the memory is only reclaimed by a finalizer/GC that the managed heap
+    /// has no reason to trigger.
+    /// </summary>
+    private static void DisposeThumbnail(ClipboardItem item)
+    {
+        item.Thumbnail?.Dispose();
+        item.Thumbnail = null;
+    }
+
+    /// <summary>
+    /// Queues <see cref="DisposeThumbnail"/> for the values the history no longer holds. The delay is
+    /// deliberate: <see cref="HistoryChanged"/> only *posts* the view's refresh, so disposing on the
+    /// spot could destroy a bitmap that a visual still shows for one more render pass.
+    /// </summary>
+    private static void DisposeThumbnails(IEnumerable<ClipboardItem> removed)
+    {
+        var orphans = removed.ToList();
+        if (orphans.Count == 0) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var item in orphans)
+            {
+                DisposeThumbnail(item);
+            }
+        }, DispatcherPriority.Background);
+    }
+
     private void AddItem(ClipboardItem item)
     {
         History.Insert(0, item);
@@ -178,6 +227,7 @@ public class ClipboardMonitorService
     {
         if (History.Remove(item))
         {
+            DisposeThumbnails([item]);
             if (item.Type == ClipboardType.Image && !string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
             {
                 try { File.Delete(item.ImagePath); } catch { }
@@ -189,6 +239,7 @@ public class ClipboardMonitorService
 
     public void ClearAll()
     {
+        DisposeThumbnails(History.ToList());
         History.Clear();
         try
         {
@@ -255,6 +306,7 @@ public class ClipboardMonitorService
         {
             var last = History[^1];
             History.RemoveAt(History.Count - 1);
+            DisposeThumbnails([last]);
             if (last.Type == ClipboardType.Image && !string.IsNullOrEmpty(last.ImagePath) && File.Exists(last.ImagePath))
             {
                 try { File.Delete(last.ImagePath); } catch { }
@@ -272,16 +324,13 @@ public class ClipboardMonitorService
             var list = JsonSerializer.Deserialize<List<ClipboardItem>>(json);
             if (list == null) return;
 
+            DisposeThumbnails(History.ToList());
             History.Clear();
             foreach (var item in list)
             {
                 if (item.Type == ClipboardType.Image && !string.IsNullOrEmpty(item.ImagePath) && File.Exists(item.ImagePath))
                 {
-                    try
-                    {
-                        item.Thumbnail = new Bitmap(item.ImagePath);
-                    }
-                    catch { }
+                    item.Thumbnail = CreateThumbnail(item.ImagePath);
                 }
                 History.Add(item);
             }

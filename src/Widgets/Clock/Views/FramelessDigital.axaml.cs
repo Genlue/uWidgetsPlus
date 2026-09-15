@@ -39,9 +39,19 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private readonly HashSet<string> inFlightRenders = new();
     private CancellationTokenSource? preRenderCts;
 
+    /// <summary>
+    /// Memory budget for the pre-rendered frame cache (see <c>EvictExpiredCacheEntries</c>).
+    /// 48 MB comfortably holds the current frame plus the whole seconds lookahead at any normal
+    /// widget size while bounding a full-screen one.
+    /// </summary>
+    private const long CacheBudgetBytes = 48L * 1024 * 1024;
+
     private Geometry? cachedGeometry;
     private string? lastRegionKey;
     private bool hasRegionSet;
+
+    /// <summary>True while every screen is covered by a fullscreen application (host suspended).</summary>
+    private bool suspended;
 
     public FramelessDigital() : this(new FramelessClockModel(), null, null) { }
 
@@ -182,22 +192,33 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     /// <summary>
-    /// Release every pre-rendered liquid glass frame plus the displayed bitmap while the
-    /// desktop is covered by a fullscreen application (see <see cref="IWidgetSuspendable"/>).
-    /// The cache is the heaviest thing this widget owns — up to 70 full-window bitmaps — and
-    /// none of it is visible behind a fullscreen app, so it is rebuilt on demand on resume.
+    /// Release the pre-rendered liquid glass frames while every attached screen is covered by a
+    /// fullscreen or maximized application (see <see cref="IWidgetSuspendable"/>). The cache is
+    /// the heaviest thing this widget owns, and none of it is visible behind a fullscreen app, so
+    /// it is rebuilt on demand on resume.
+    /// <para>
+    /// The frame that is currently on screen is <b>kept</b>: the widget is no longer hidden while
+    /// suspended, so dropping it would flash a bare fallback for the length of a full optical
+    /// re-render the moment the user returns to the desktop.
+    /// </para>
     /// </summary>
     public void Suspend()
     {
+        suspended = true;
         ClearLiquidGlassCache();
-        liquidGlassBitmap?.Dispose();
-        liquidGlassBitmap = null;
         cachedGeometry = null;
+
+        // A widget that has not produced a frame yet (its first render was cancelled by the clear
+        // above, or had not started) would otherwise sit on the flat fallback wash for as long as
+        // the desktop stays covered — which reads as "the clock never became liquid glass". While
+        // suspended the cache is allowed to hold exactly this one frame.
+        if (liquidGlassBitmap == null) RequestBackdropRender();
     }
 
     /// <summary>Rebuild the material after <see cref="Suspend"/>.</summary>
     public void Resume()
     {
+        suspended = false;
         lastRegionKey = null;
         SetupTimer();
         UpdateTransparencyLevel();
@@ -348,6 +369,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private void ScheduleUpcomingPreRenders(DateTime now)
     {
         if (!IsDesktopWidget) return;
+
+        // Lookahead is the only thing the suspend actually gives up: while the desktop is covered
+        // the widget keeps the single frame it is showing, so there is nothing to pre-render for.
+        if (suspended) return;
 
         if (model.ShowSeconds)
         {
@@ -542,8 +567,15 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             }
         }
 
-        // Capacity safeguard
-        while (liquidGlassCache.Count > 70)
+        // Capacity safeguard. Every entry is a full-window bitmap, so the cap is a memory budget
+        // rather than a frame count: 6 frames cover the current minute plus the rolling lookahead,
+        // and the hard ceiling keeps a full-screen frameless clock from parking hundreds of
+        // megabytes of pre-rendered frames (the old flat cap of 70 allowed ~580 MB at 1080p).
+        var scaling = window?.RenderScaling ?? 1.0;
+        var frameBytes = Math.Max(1L, (long)(Math.Ceiling(Bounds.Width * scaling) * Math.Ceiling(Bounds.Height * scaling) * 4));
+        var maxFrames = Math.Clamp(CacheBudgetBytes / frameBytes, 6, 12);
+
+        while (liquidGlassCache.Count > maxFrames)
         {
             var oldest = liquidGlassCache.OrderBy(kv => kv.Value.ValidTime).FirstOrDefault();
             if (oldest.Key != null && liquidGlassCache.Remove(oldest.Key, out var entry))

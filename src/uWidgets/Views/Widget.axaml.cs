@@ -151,7 +151,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ActiveProfileChanged += OnProfilesChanged;
         profileService.ProfilesListChanged += OnProfilesChanged;
         if (ContextMenu != null)
-            ContextMenu.Opened += (_, _) => Notify(nameof(ProfileMenuItems));
+            ContextMenu.Opened += OnContextMenuOpened;
         Unloaded += OnUnloaded;
     }
 
@@ -761,6 +761,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         MaxHeight = lockSize ? Height : double.PositiveInfinity;
     }
 
+    /// <summary>
+    /// Refresh the profile entries of the context menu right before it opens. Wired as a named
+    /// handler (not a lambda) so it can be detached on unload — a lambda subscribed to the
+    /// window's own context menu would root the closed window through it.
+    /// </summary>
+    private void OnContextMenuOpened(object? sender, RoutedEventArgs e) => Notify(nameof(ProfileMenuItems));
+
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         PointerPressed -= OnPointerPressed;
@@ -769,6 +776,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         Activated -= OnActivated;
         Opened -= OnOpened;
         Unloaded -= OnUnloaded;
+        if (ContextMenu != null)
+            ContextMenu.Opened -= OnContextMenuOpened;
         widgetLayoutProvider.DataChanged -= OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged -= OnAppSettingsUpdated;
         layoutProvider.DataChanged -= OnLayoutDataUpdated;

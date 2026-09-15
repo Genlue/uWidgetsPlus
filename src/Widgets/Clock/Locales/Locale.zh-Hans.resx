@@ -256,6 +256,6 @@
     <value>边缘折射宽度</value>
   </data>
   <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
-    <value>调节数字边缘折射区域的宽度（默认 0 px）</value>
+    <value>调节数字边缘折射透镜的宽度（0 = 自动跟随全局液态玻璃折射参数；大于 0 时为手动指定的 px 宽度）</value>
   </data>
 </root>

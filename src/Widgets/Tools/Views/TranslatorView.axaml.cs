@@ -103,6 +103,16 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        // A cached page (settings window) or a Gallery preview can be unloaded and then re-added to
+        // the visual tree, so the handlers dropped in OnUnloaded must come back — otherwise a
+        // re-added view stops reacting to resize and to the mouse wheel.
+        SizeChanged -= OnSizeChanged;
+        SizeChanged += OnSizeChanged;
+        InputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
+        InputTextBox.AddHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel, RoutingStrategies.Bubble, true);
+        OutputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
+        OutputTextBox.AddHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel, RoutingStrategies.Bubble, true);
+
         var size = Bounds.Size;
         var tier = (size.Width > 0 && size.Height > 0) ? ResolveTier(size) : ResolveTierFromSpan();
         ApplyTier(tier, force: true);
@@ -116,7 +126,16 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
     {
         debounceTimer.Stop();
         toastTimer.Stop();
+
+        // Cancel *and* dispose: the CTS is replaced on every translation attempt, so leaving it
+        // alive would keep its registration handles (and the request they cancel) unreclaimable.
         cts?.Cancel();
+        cts?.Dispose();
+        cts = null;
+
+        SizeChanged -= OnSizeChanged;
+        InputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
+        OutputTextBox.RemoveHandler(PointerWheelChangedEvent, OnTextBoxPointerWheel);
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -500,8 +519,12 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         if (string.IsNullOrWhiteSpace(text)) return;
 
         cts?.Cancel();
-        cts = new CancellationTokenSource();
-        var token = cts.Token;
+        // Every debounced attempt replaces the previous source; disposing it releases the timer/registration
+        // handles it owns. A CancellationTokenSource is not reclaimable until it is disposed.
+        cts?.Dispose();
+        var requestCts = new CancellationTokenSource();
+        cts = requestCts;
+        var token = requestCts.Token;
 
         bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
         LoadingText.IsVisible = !isSmall;
@@ -534,6 +557,11 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
             {
                 LoadingText.IsVisible = false;
             }
+
+            // This attempt is over, so its source is released here as well — otherwise the last source
+            // of a view that never unloads again would stay alive for the lifetime of the widget.
+            requestCts.Dispose();
+            if (ReferenceEquals(cts, requestCts)) cts = null;
         }
     }
 

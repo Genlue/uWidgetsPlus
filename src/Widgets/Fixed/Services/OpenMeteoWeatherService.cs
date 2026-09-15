@@ -20,9 +20,12 @@ public record WeatherInfo(
     double MinTemp,
     StreamGeometry Icon);
 
-public class OpenMeteoWeatherService
+public class OpenMeteoWeatherService : IDisposable
 {
     private readonly HttpClient httpClient = ProxySettings.CreateHttpClient();
+
+    /// <summary>Set once <see cref="Dispose"/> ran; makes disposal idempotent.</summary>
+    private bool disposed;
 
     public async Task<List<City>?> SearchCitiesAsync(string query, CancellationToken cancellationToken = default)
     {
@@ -81,6 +84,20 @@ public class OpenMeteoWeatherService
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Release the service's own <see cref="HttpClient"/> (and through it the socket pool of
+    /// its handler). The widget drops its service when the view is unloaded, so without this
+    /// every view instance — each settings save, each Gallery visit — would keep a client and
+    /// its connections alive for the lifetime of the process. Idempotent.
+    /// </summary>
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        httpClient.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public static string GetConditionText(int code) => code switch

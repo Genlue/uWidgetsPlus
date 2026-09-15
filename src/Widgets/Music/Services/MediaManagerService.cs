@@ -40,9 +40,22 @@ public class MediaManagerService : IDisposable
             sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             if (sessionManager != null)
             {
+                // Dispose() can run while this await is in flight (the widget unloads during startup).
+                // Subscribing then would leak the session manager and the poll timer, so bail out and
+                // release what this task already created.
+                if (disposed)
+                {
+                    sessionManager = null;
+                    return;
+                }
+
                 sessionManager.SessionsChanged += OnSessionsChanged;
                 sessionManager.CurrentSessionChanged += OnCurrentSessionChanged;
                 await RefreshActiveSessionAsync();
+
+                // Same race as above, one await later: a dispose that slipped in while the refresh was
+                // running must not leave a live 1.5 s poll timer behind.
+                if (disposed) return;
 
                 // Poll every 1.5s as WinRT SMTC events often do not fire for Win32 apps like QQMusic
                 pollTimer = new Timer(async _ =>
@@ -442,6 +455,10 @@ public class MediaManagerService : IDisposable
         return Path.GetFileNameWithoutExtension(appId);
     }
 
+    /// <summary>
+    /// Stops the 1.5 s SMTC poll timer and unsubscribes every manager and session event this service
+    /// added, so no callback can keep the service (or its listeners) alive. Idempotent.
+    /// </summary>
     public void Dispose()
     {
         if (disposed) return;
@@ -456,4 +473,11 @@ public class MediaManagerService : IDisposable
             sessionManager = null;
         }
     }
+
+    /// <summary>
+    /// True once <see cref="Dispose"/> ran. Consumers whose control can be unloaded and re-added to
+    /// the visual tree (cached settings pages) check this to build a replacement service instead of
+    /// using a torn-down one.
+    /// </summary>
+    public bool IsDisposed => disposed;
 }

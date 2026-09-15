@@ -23,24 +23,57 @@ public enum MusicTier
 
 public partial class Music : UserControl, IWidgetSelfRefreshing
 {
-    private readonly MusicViewModel viewModel;
+    /// <summary>The layout model is kept outside the view model so a fresh view model can be built
+    /// with the same settings when the view is re-added to the visual tree after an unload.</summary>
+    private readonly MusicModel model;
+
+    // Not readonly: the view model is disposed on Unloaded and re-created on the next Loaded, because
+    // a widget view may legitimately be unloaded and re-added (cached settings pages, Gallery previews).
+    private MusicViewModel viewModel;
     private MusicTier currentTier = (MusicTier)(-1);
 
     public Music() : this(new MusicModel()) { }
 
     public Music(MusicModel model)
     {
+        this.model = model;
         viewModel = new MusicViewModel(model);
         DataContext = viewModel;
         InitializeComponent();
 
         Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
+        Unloaded += OnUnloaded;
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        // The view model was torn down on the previous Unloaded (its DispatcherTimer, the SMTC media
+        // service and the cover bitmap all have to be released); rebuild and rebind it so the widget
+        // still works after being re-added to the visual tree.
+        if (viewModel.IsDisposed)
+        {
+            viewModel = new MusicViewModel(model);
+            DataContext = viewModel;
+
+            // The tier controls render from the view model instance passed to their constructors, so
+            // drop the previous ones (and reset the tier cache) to force a rebuild against the new one.
+            TierContainer.Content = null;
+            currentTier = (MusicTier)(-1);
+        }
+
         UpdateLayoutTier(Bounds.Size);
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        SizeChanged -= OnSizeChanged;
+        Loaded -= OnLoaded;
+        Unloaded -= OnUnloaded;
+
+        // Disposing here (not in the finalizer) is what stops the 250 ms DispatcherTimer, the 1.5 s
+        // SMTC poll timer and the media-service event subscriptions from outliving the widget.
+        viewModel.Dispose();
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)

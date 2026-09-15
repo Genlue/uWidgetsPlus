@@ -10,9 +10,14 @@ namespace Music.ViewModels;
 
 public class MusicViewModel : INotifyPropertyChanged, IDisposable
 {
+    /// <summary>Max width (px) the album art is decoded at. Covers can be 3000×3000 (36 MB decoded),
+    /// while the largest the widget ever draws is a thumbnail — so the decode is capped here.</summary>
+    private const int CoverWidth = 256;
+
     private readonly MediaManagerService mediaService;
     private readonly DispatcherTimer timer;
     private MusicModel model;
+    private bool isDisposed;
 
     // High-resolution clock & smooth timeline synchronization
     private TimeSpan basePosition = TimeSpan.Zero;
@@ -66,7 +71,15 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     public Bitmap? CoverBitmap
     {
         get => coverBitmap;
-        set => SetField(ref coverBitmap, value);
+        set
+        {
+            var previous = coverBitmap;
+            if (!SetField(ref coverBitmap, value)) return;
+
+            // The outgoing cover owns an unmanaged pixel block (up to 36 MB for a full-size decode)
+            // that the GC has no reason to reclaim, so it is released as soon as it is replaced.
+            previous?.Dispose();
+        }
     }
 
     public bool IsPlaying
@@ -174,7 +187,7 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
 
     private void OnTimerTick(object? sender, EventArgs e)
     {
-        if (!IsPlaying || Duration <= TimeSpan.Zero) return;
+        if (isDisposed || !IsPlaying || Duration <= TimeSpan.Zero) return;
 
         var elapsedTicks = Stopwatch.GetTimestamp() - lastSyncTimestamp;
         var elapsedSeconds = (double)elapsedTicks / Stopwatch.Frequency;
@@ -194,6 +207,10 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
+            // The service can raise this just before Dispose() unsubscribes; the posted work then runs
+            // after teardown and must not touch a disposed view model or allocate a new cover bitmap.
+            if (isDisposed) return;
+
             HasTrack = track.HasTrack;
             TrackTitle = track.HasTrack ? track.Title : "未在播放";
             Artist = track.HasTrack ? (string.IsNullOrWhiteSpace(track.Artist) ? "未知艺术家" : track.Artist) : "启动音乐软件开始聆听";
@@ -215,7 +232,9 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
                 try
                 {
                     using var ms = new MemoryStream(track.ThumbnailData);
-                    CoverBitmap = new Bitmap(ms);
+                    // Scaled decode: the raw cover is up to 3000×3000, which would cost 36 MB of
+                    // unmanaged pixels per track change for an image drawn at a few hundred px.
+                    CoverBitmap = Bitmap.DecodeToWidth(ms, CoverWidth, BitmapInterpolationMode.LowQuality);
                 }
                 catch
                 {
@@ -233,6 +252,8 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
+            if (isDisposed) return;
+
             Duration = dur;
 
             // 1. Seek cooldown protection: ignore stale SMTC timeline updates
@@ -344,11 +365,28 @@ public class MusicViewModel : INotifyPropertyChanged, IDisposable
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
+    /// <summary>
+    /// Tears the view model down: the 250 ms UI timer, the media service (1.5 s SMTC poll timer plus
+    /// its manager/session event subscriptions) and the cover bitmap's unmanaged pixels. Idempotent —
+    /// the view can unload twice while a cached settings page holds it.
+    /// </summary>
     public void Dispose()
     {
+        if (isDisposed) return;
+        isDisposed = true;
+
         timer.Stop();
+        timer.Tick -= OnTimerTick;
+
         mediaService.TrackChanged -= OnTrackChanged;
         mediaService.TimelineChanged -= OnTimelineChanged;
+        mediaService.Dispose();
+
+        // Assigning null routes the previous bitmap through the setter, which disposes it.
         CoverBitmap = null;
     }
+
+    /// <summary>True once <see cref="Dispose"/> ran; the view uses this to know it must rebuild and
+    /// rebind a fresh view model when it is loaded again.</summary>
+    public bool IsDisposed => isDisposed;
 }

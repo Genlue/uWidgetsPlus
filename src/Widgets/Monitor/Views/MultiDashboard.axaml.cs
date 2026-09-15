@@ -11,32 +11,65 @@ namespace Monitor.Views;
 
 public partial class MultiDashboard : UserControl
 {
-    private readonly MultiDashboardViewModel viewModel;
+    private readonly MultiDashboardModel model;
+    private MultiDashboardViewModel? viewModel;
 
     public MultiDashboard() :
         this(new MultiDashboardModel(MultiDashboardModel.DefaultMetrics)) {}
 
     public MultiDashboard(MultiDashboardModel model)
     {
-        viewModel = new MultiDashboardViewModel(model);
-        DataContext = viewModel;
+        this.model = model;
+        var vm = new MultiDashboardViewModel(model);
+        viewModel = vm;
+        DataContext = vm;
         InitializeComponent();
 
-        Item0.DataContext = viewModel.Items[0];
-        Item1.DataContext = viewModel.Items[1];
-        Item2.DataContext = viewModel.Items[2];
-        Item3.DataContext = viewModel.Items[3];
+        BindItems(vm);
 
         SizeChanged += OnSizeChanged;
+        Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         ApplyLayout();
     }
 
+    /// <summary>
+    /// The view can be detached and re-added later (the settings window caches pages and the
+    /// Gallery keeps a live preview control), so everything <see cref="OnUnloaded"/> released
+    /// is restarted here — on a *new* view model, because the released one was disposed.
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        SizeChanged -= OnSizeChanged;
+        SizeChanged += OnSizeChanged;
+
+        if (viewModel != null) return;
+        var vm = new MultiDashboardViewModel(model);
+        viewModel = vm;
+        DataContext = vm;
+        BindItems(vm);
+        ApplyLayout();
+    }
+
+    /// <summary>
+    /// Release the view model (its one-second timer subscription, which otherwise keeps the
+    /// WMI polling alive forever) without detaching this handler: the control stays usable
+    /// and is unloaded again on every later removal from the visual tree.
+    /// </summary>
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
-        viewModel.Dispose();
         SizeChanged -= OnSizeChanged;
-        Unloaded -= OnUnloaded;
+        viewModel?.Dispose();
+        viewModel = null;
+    }
+
+    /// <summary>Bind the four fixed item slots to the rings of the given view model.</summary>
+    private void BindItems(MultiDashboardViewModel viewModel)
+    {
+        Item0.DataContext = viewModel.Items[0];
+        Item1.DataContext = viewModel.Items[1];
+        Item2.DataContext = viewModel.Items[2];
+        Item3.DataContext = viewModel.Items[3];
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyLayout();

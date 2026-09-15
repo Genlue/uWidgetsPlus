@@ -17,7 +17,7 @@ namespace FixedWidgets.Views.Settings;
 public partial class AggregateSettings : UserControl
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
-    private readonly OpenMeteoWeatherService weatherService = new();
+    private OpenMeteoWeatherService? weatherService = new();
     private AggregateModel model;
     private bool isInitializing = true;
 
@@ -35,6 +35,29 @@ public partial class AggregateSettings : UserControl
         InitOptions();
         LoadFromModel();
         isInitializing = false;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    /// <summary>
+    /// The settings window caches its pages, so this page is unloaded when it is navigated away
+    /// from and added back later: the geocoding service released by <see cref="OnUnloaded"/> is
+    /// rebuilt here so the city search keeps working.
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        weatherService ??= new OpenMeteoWeatherService();
+    }
+
+    /// <summary>
+    /// Release the service's HTTP client — one per page instance would otherwise stay alive for
+    /// the lifetime of the process. A disposed service is never used again; the next load builds
+    /// a fresh one. Idempotent.
+    /// </summary>
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        weatherService?.Dispose();
+        weatherService = null;
     }
 
     private void InitOptions()
@@ -67,7 +90,10 @@ public partial class AggregateSettings : UserControl
     private async Task<IEnumerable<object>> SearchCity(string? query, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(query)) return [];
-        var list = await weatherService.SearchCitiesAsync(query, token);
+        var current = weatherService;
+        if (current == null) return [];
+
+        var list = await current.SearchCitiesAsync(query, token);
         return list ?? [];
     }
 
@@ -125,9 +151,13 @@ public partial class AggregateSettings : UserControl
     private async Task ResolveCityAsync(string query)
     {
         if (string.IsNullOrWhiteSpace(query)) return;
+
+        var current = weatherService;
+        if (current == null) return;
+
         CityStatusText.Text = "正在从天气源识别...";
 
-        var results = await weatherService.SearchCitiesAsync(query);
+        var results = await current.SearchCitiesAsync(query);
         if (results != null && results.Count > 0)
         {
             var matched = results[0];

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:viewModels="clr-namespace:Calendar.ViewModels"
+             xmlns:controls="clr-namespace:Calendar.Views.Controls"
              xmlns:views="clr-namespace:Calendar.Views"
              x:Class="Calendar.Views.Month"
              x:DataType="viewModels:MonthCalendarViewModel">
@@ -16,14 +17,11 @@
         <Style Selector="TextBlock.today">
             <Setter Property="Foreground" Value="White" />
         </Style>
-        <!-- Today marker: accent by default, or the theme-resolved custom color.
-             Both brushes come from styles (not a local value) so the higher-specificity
-             customColor setter wins over the plain todayDot one. -->
-        <Style Selector="Ellipse.todayDot">
-            <Setter Property="Fill" Value="{DynamicResource SystemAccentColor}" />
-        </Style>
-        <Style Selector="Ellipse.todayDot.customColor">
-            <Setter Property="Fill" Value="{Binding TodayCustomBrush, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}" />
+        <!-- 镂空数字: today's number is punched out of the marker disc, so the text block must
+             stay out of the way (otherwise the number would be painted back on top of its own
+             hole). -->
+        <Style Selector="TextBlock.today.hollow">
+            <Setter Property="IsVisible" Value="False" />
         </Style>
     </UserControl.Styles>
     
@@ -39,17 +37,18 @@
                         <Grid>
                             <Viewbox>
                                 <Panel Width="100" Height="100">
-                                    <Ellipse Width="100" Height="100"
-                                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                                             Classes.todayDot="True"
-                                             Classes.customColor="{Binding IsCustomTodayColor, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
-                                             IsVisible="{Binding IsToday}" />
+                                    <controls:HollowTodayMark Width="100" Height="100"
+                                                              IsToday="{Binding IsToday}"
+                                                              Text="{Binding Day}"
+                                                              Hollow="{Binding HollowToday, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
+                                                              DotBrush="{Binding TodayDotBrush, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}" />
                                     <TextBlock Width="100"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                TextAlignment="Center"
                                                FontSize="60"
                                                Classes.weekend="{Binding IsWeekend}"
                                                Classes.today="{Binding IsToday}"
+                                               Classes.hollow="{Binding HollowToday, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
                                                Text="{Binding Day}"  />
                                 </Panel>
                             </Viewbox>
@@ -87,17 +86,18 @@
                         <Grid>
                             <Viewbox>
                                 <Panel Width="100" Height="100">
-                                    <Ellipse Width="100" Height="100"
-                                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                                             Classes.todayDot="True"
-                                             Classes.customColor="{Binding IsCustomTodayColor, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
-                                             IsVisible="{Binding IsToday}" />
+                                    <controls:HollowTodayMark Width="100" Height="100"
+                                                              IsToday="{Binding IsToday}"
+                                                              Text="{Binding Day}"
+                                                              Hollow="{Binding HollowToday, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
+                                                              DotBrush="{Binding TodayDotBrush, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}" />
                                     <TextBlock Width="100"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                TextAlignment="Center"
                                                FontSize="60"
                                                Classes.weekend="{Binding IsWeekend}"
                                                Classes.today="{Binding IsToday}"
+                                               Classes.hollow="{Binding HollowToday, RelativeSource={RelativeSource AncestorType={x:Type views:Month}}}"
                                                Text="{Binding Day}" />
                                 </Panel>
                             </Viewbox>

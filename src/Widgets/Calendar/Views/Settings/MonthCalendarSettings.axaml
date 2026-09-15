@@ -17,6 +17,10 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Calendar_HollowToday}"
+                              Subtitle="{x:Static locales:Locale.Calendar_HollowToday_Subtitle}">
+                <ToggleSwitch IsChecked="{Binding HollowTodayNumber}" OnContent="" OffContent="" />
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Calendar_TodayColor}">
                 <ComboBox Width="130" SelectedIndex="{Binding TodayColorModeIndex}">
                     <ComboBoxItem Content="{x:Static locales:Locale.Calendar_TodayColor_Accent}" />

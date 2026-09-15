@@ -63,12 +63,13 @@ public interface IWidgetFactory<out TWindow, out TControl>
     public void CreateFromLayout();
 
     /// <summary>
-    /// Hide every widget window, release the caches the widget views opt to release
-    /// (see <see cref="IWidgetSuspendable"/>) and pause the shared widget timers —
-    /// used while a fullscreen application covers the desktop.
+    /// Release the caches the widget views opt to release (see <see cref="IWidgetSuspendable"/>)
+    /// and pause the shared widget timers — used while a fullscreen or maximized application
+    /// covers <b>every</b> attached screen. The windows stay visible in place (they are already
+    /// behind whatever covers the screens), so leaving the covered state is instant.
     /// </summary>
     public void SuspendAll();
 
-    /// <summary>Undo <see cref="SuspendAll"/>: show the windows, resume timers and rebuild caches.</summary>
+    /// <summary>Undo <see cref="SuspendAll"/>: resume the timers and rebuild the released caches.</summary>
     public void ResumeAll();
 }

@@ -12,7 +12,9 @@ namespace Music.Views.Settings;
 public partial class MusicSettings : UserControl
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
-    private readonly MediaManagerService mediaService;
+    // Not readonly: the settings window caches pages, so this page can be unloaded and re-added to the
+    // visual tree; the media service is disposed on unload and rebuilt on the next load.
+    private MediaManagerService mediaService;
     private MusicModel model;
     private bool isInitializing = true;
 
@@ -29,8 +31,29 @@ public partial class MusicSettings : UserControl
         AmbientGlowToggle.IsChecked = model.AmbientGlow;
         ShowProgressToggle.IsChecked = model.ShowProgressBar;
 
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+
         isInitializing = false;
         RefreshList();
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        // A cached page comes back after being unloaded, at which point its media service (and the
+        // 1.5 s SMTC poll timer inside it) had to be released — rebuild it so "add from running
+        // sessions" keeps working.
+        if (mediaService.IsDisposed)
+        {
+            mediaService = new MediaManagerService();
+        }
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        // Without this the page's SMTC client, its event subscriptions and its 1.5 s poll timer live
+        // for the rest of the process, once per opened settings page.
+        mediaService.Dispose();
     }
 
     private void RefreshList()
@@ -136,7 +159,13 @@ public partial class MusicSettings : UserControl
 
     private async void OnAddFromRunningClicked(object? sender, RoutedEventArgs e)
     {
-        var sessions = await mediaService.GetActiveSessionsAsync();
+        // Capture the instance: unloading the page disposes (and the next load replaces) the field,
+        // and a stale reference here would query a torn-down SMTC client.
+        var service = mediaService;
+        var sessions = await service.GetActiveSessionsAsync();
+        // The page can be unloaded while the picker is open; a torn-down client cannot serve it.
+        if (service.IsDisposed) return;
+
         if (sessions.Count == 0)
         {
             RunningSessionsList.ItemsSource = new List<ActiveSessionItem>

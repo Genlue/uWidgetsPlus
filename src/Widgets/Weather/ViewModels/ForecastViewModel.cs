@@ -13,6 +13,9 @@ public class ForecastViewModel : ReactiveObject, IDisposable
     private readonly ForecastModel model;
     private readonly OpenMeteoWeatherProvider provider;
 
+    /// <summary>Set once <see cref="Dispose"/> ran; keeps disposal (and late replies) harmless.</summary>
+    private bool disposed;
+
     public ForecastViewModel(ForecastModel model)
     {
         provider = new OpenMeteoWeatherProvider();
@@ -21,12 +24,18 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         UpdateForecast();
     }
 
-    private void UpdateForecast() => _ = UpdateForecastAsync();
+    private void UpdateForecast()
+    {
+        if (disposed) return;
+        _ = UpdateForecastAsync();
+    }
 
     private async Task UpdateForecastAsync()
     {
         var forecast = await provider.GetForecastAsync(model.Latitude, model.Longitude, model.TemperatureUnit);
-        if (forecast is null) return;
+        // A reply that arrives after disposal (the view was unloaded mid-request) must not
+        // touch this view model any more, and must not revive it through its bindings.
+        if (disposed || forecast is null) return;
 
         var currentHour = DateTime.Now.Hour;
 
@@ -182,9 +191,19 @@ public class ForecastViewModel : ReactiveObject, IDisposable
         private set => this.RaiseAndSetIfChanged(ref sunsetSunrise, value);
     }
 
+    /// <summary>
+    /// Detach from the process-lifetime hourly timer and dispose the provider's
+    /// <see cref="HttpClient"/>. The timer holds the tick delegate, so without this every
+    /// abandoned view (each settings save re-creates the views, each Gallery visit creates
+    /// a preview) would stay alive with its item view models and its HTTP client. The
+    /// view must rebuild a fresh view model before using this one again. Idempotent.
+    /// </summary>
     public void Dispose()
     {
+        if (disposed) return;
+        disposed = true;
         TimerService.Timer1Hour.Unsubscribe(UpdateForecast);
+        provider.Dispose();
         GC.SuppressFinalize(this);
     }
 }

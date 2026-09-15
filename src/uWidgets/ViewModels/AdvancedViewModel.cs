@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using ReactiveUI;
 using uWidgets.Core.Interfaces;
@@ -21,16 +22,13 @@ public record GridModeOption(string Label, GridMode Value);
 public record ProxyOption(string Label, string Value);
 
 /// <summary>
-/// Advanced page view model. The manual-grid numeric fields target the EFFECTIVE
-/// grid of the primary screen — the same store and the same fallback chain the
-/// full-screen grid editor uses: per-screen primary entry Grid →
-/// <see cref="AppSettings.Grid"/> → <see cref="Grid.Default"/>.
-/// <para>
-/// This keeps the two editing surfaces (numeric boxes here, the visual editor)
-/// on ONE configuration, so changing the grid in the editor is immediately
-/// reflected by these fields (and vice versa). The view model re-raises its
-/// grid properties whenever either provider publishes changes.
-/// </para>
+/// A target screen option shown in the Advanced grid screen selector.
+/// </summary>
+public record ScreenGridTargetOption(string Label, string? ScreenConfigId, AttachedScreen? Attached);
+
+/// <summary>
+/// Advanced page view model. The manual-grid numeric fields target the selected screen
+/// (or the global fallback grid).
 /// </summary>
 public class AdvancedViewModel : ReactiveObject, IDisposable
 {
@@ -39,6 +37,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     private readonly DisplayMonitorService displayMonitor;
 
     private readonly ProfileService? profileService;
+    private ScreenGridTargetOption? selectedScreenTarget;
 
     public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, ProfileService? profileService = null)
     {
@@ -49,6 +48,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
 
         layoutProvider.DataChanged += OnLayoutDataChanged;
         appSettingsProvider.DataChanged += OnAppSettingsDataChanged;
+        displayMonitor.ScreensChanged += OnScreensChanged;
         if (profileService != null)
         {
             profileService.ActiveProfileChanged += OnActiveProfileChanged;
@@ -60,12 +60,14 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     {
         layoutProvider.DataChanged -= OnLayoutDataChanged;
         appSettingsProvider.DataChanged -= OnAppSettingsDataChanged;
+        displayMonitor.ScreensChanged -= OnScreensChanged;
         if (profileService != null)
         {
             profileService.ActiveProfileChanged -= OnActiveProfileChanged;
         }
     }
 
+    private void OnScreensChanged(object? sender, EventArgs e) => RaiseAllProperties();
     private void OnActiveProfileChanged(object? sender, EventArgs e) => RaiseAllProperties();
     private void OnLayoutDataChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => RaiseAllProperties();
     private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData) => RaiseAllProperties();
@@ -74,11 +76,9 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     {
         this.RaisePropertyChanged(nameof(GridMode));
         this.RaisePropertyChanged(nameof(IsManualGrid));
-        this.RaisePropertyChanged(nameof(GridColumns));
-        this.RaisePropertyChanged(nameof(GridRows));
-        this.RaisePropertyChanged(nameof(GridCellPercent));
-        this.RaisePropertyChanged(nameof(GridXPercent));
-        this.RaisePropertyChanged(nameof(GridYPercent));
+        this.RaisePropertyChanged(nameof(ScreenTargets));
+        this.RaisePropertyChanged(nameof(SelectedScreenTarget));
+        RaiseGridProperties();
         this.RaisePropertyChanged(nameof(SnapSize));
         this.RaisePropertyChanged(nameof(LockSize));
         this.RaisePropertyChanged(nameof(SnapPosition));
@@ -90,28 +90,120 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(UpdateUrl));
     }
 
-    /// <summary>
-    /// The grid that actually applies to the primary screen right now
-    /// (per-screen primary entry → global <see cref="AppSettings.Grid"/> → default).
-    /// </summary>
-    private Grid EffectiveGrid =>
-        displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary)?.Config?.Grid
-        ?? appSettingsProvider.Get().Grid
-        ?? Grid.Default;
+    private void RaiseGridProperties()
+    {
+        this.RaisePropertyChanged(nameof(GridColumns));
+        this.RaisePropertyChanged(nameof(GridRows));
+        this.RaisePropertyChanged(nameof(GridCellPercent));
+        this.RaisePropertyChanged(nameof(GridXPercent));
+        this.RaisePropertyChanged(nameof(GridYPercent));
+        this.RaisePropertyChanged(nameof(CanResetScreenGrid));
+    }
+
+    public IReadOnlyList<ScreenGridTargetOption> ScreenTargets
+    {
+        get
+        {
+            var list = new List<ScreenGridTargetOption>
+            {
+                new(Locale.Settings_Advanced_GridTargetScreen_Global, null, null)
+            };
+
+            foreach (var attached in displayMonitor.Attached)
+            {
+                var name = attached.Config?.DisplayName 
+                           ?? (attached.Identity.FriendlyName.Length > 0 ? attached.Identity.FriendlyName : "Screen");
+                var suffix = attached.Screen.Primary ? " [Primary]" : "";
+                var label = $"{name} ({attached.Screen.Bounds.Width}×{attached.Screen.Bounds.Height}{suffix})";
+                list.Add(new(label, attached.Config?.Id, attached));
+            }
+
+            return list;
+        }
+    }
+
+    public ScreenGridTargetOption SelectedScreenTarget
+    {
+        get
+        {
+            var targets = ScreenTargets;
+            if (selectedScreenTarget != null)
+            {
+                var match = targets.FirstOrDefault(t => t.ScreenConfigId == selectedScreenTarget.ScreenConfigId);
+                if (match != null) return match;
+            }
+            return targets[0];
+        }
+        set
+        {
+            selectedScreenTarget = value;
+            this.RaisePropertyChanged(nameof(SelectedScreenTarget));
+            RaiseGridProperties();
+        }
+    }
+
+    public bool CanResetScreenGrid => SelectedScreenTarget.ScreenConfigId != null &&
+        layoutProvider.Get().FindById(SelectedScreenTarget.ScreenConfigId)?.Grid != null;
+
+    public void ResetScreenGrid()
+    {
+        var target = SelectedScreenTarget;
+        if (target.ScreenConfigId == null) return;
+        var screens = layoutProvider.Get();
+        var screen = screens.FindById(target.ScreenConfigId);
+        if (screen != null && screen.Grid != null)
+        {
+            layoutProvider.Save(screens.WithScreen(screen with { Grid = null }));
+            RaiseGridProperties();
+        }
+    }
 
     /// <summary>
-    /// Persist a grid change to the SAME store the full-screen grid editor uses:
-    /// the primary screen's per-screen entry when one exists, and the
-    /// global <see cref="AppSettings.Grid"/>.
+    /// The grid that actually applies to the currently selected screen target
+    /// (per-screen entry → global <see cref="AppSettings.Grid"/> → default).
+    /// </summary>
+    private Grid EffectiveGrid
+    {
+        get
+        {
+            var target = SelectedScreenTarget;
+            if (target.ScreenConfigId != null)
+            {
+                return layoutProvider.Get().FindById(target.ScreenConfigId)?.Grid
+                       ?? appSettingsProvider.Get().Grid
+                       ?? Grid.Default;
+            }
+            return appSettingsProvider.Get().Grid ?? Grid.Default;
+        }
+    }
+
+    /// <summary>
+    /// Persist a grid change to the selected screen's configuration (isolated),
+    /// or to the global <see cref="AppSettings.Grid"/> when global default is selected.
     /// </summary>
     private void SaveGrid(Grid grid)
     {
-        var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
-        if (primary?.Config != null)
+        var target = SelectedScreenTarget;
+        if (target.ScreenConfigId != null)
         {
-            layoutProvider.Save(layoutProvider.Get().WithScreen(primary.Config with { Grid = grid }));
+            var screens = layoutProvider.Get();
+            var screen = screens.FindById(target.ScreenConfigId);
+            if (screen != null)
+            {
+                layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
+            }
+            else if (target.Attached != null)
+            {
+                var config = displayMonitor.EnsureConfig(target.Attached);
+                screens = layoutProvider.Get();
+                layoutProvider.Save(screens.WithScreen(config with { Grid = grid }));
+            }
+            RaiseGridProperties();
+            return;
         }
+
         appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
+        RaiseGridProperties();
     }
 
     // ---------- Grid mode ----------

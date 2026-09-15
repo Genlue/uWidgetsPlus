@@ -1674,6 +1674,42 @@ namespace uWidgets.Locales {
             }
         }
 
+        public static string Settings_MultiScreen_ResetGrid {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_ResetGrid", resourceCulture);
+            }
+        }
+
+        public static string Settings_MultiScreen_Grid_Custom {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Grid_Custom", resourceCulture);
+            }
+        }
+
+        public static string Settings_MultiScreen_Grid_Default {
+            get {
+                return ResourceManager.GetString("Settings_MultiScreen_Grid_Default", resourceCulture);
+            }
+        }
+
+        public static string Settings_Advanced_GridTargetScreen {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_GridTargetScreen", resourceCulture);
+            }
+        }
+
+        public static string Settings_Advanced_GridTargetScreen_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_GridTargetScreen_Subtitle", resourceCulture);
+            }
+        }
+
+        public static string Settings_Advanced_GridTargetScreen_Global {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_GridTargetScreen_Global", resourceCulture);
+            }
+        }
+
         public static string Settings_Profiles {
             get {
                 return ResourceManager.GetString("Settings_Profiles", resourceCulture);

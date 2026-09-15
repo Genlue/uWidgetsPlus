@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
+using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
 using uWidgets.Services;
 using uWidgets.Views;
@@ -41,7 +42,22 @@ public partial class MultiScreen : UserControl
         this.displayMonitor = displayMonitor;
         InitializeComponent();
         Loaded += (_, _) => Reload();
-        displayMonitor.ScreensChanged += (_, _) => Reload();
+        displayMonitor.ScreensChanged += OnScreensChanged;
+        layoutProvider.DataChanged += OnLayoutChanged;
+        appSettingsProvider.DataChanged += OnAppSettingsChanged;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnScreensChanged(object? sender, EventArgs e) => Reload();
+    private void OnLayoutChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => Reload();
+    private void OnAppSettingsChanged(object? sender, AppSettings? oldData, AppSettings newData) => Reload();
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        displayMonitor.ScreensChanged -= OnScreensChanged;
+        layoutProvider.DataChanged -= OnLayoutChanged;
+        appSettingsProvider.DataChanged -= OnAppSettingsChanged;
+        Unloaded -= OnUnloaded;
     }
 
     private void Reload()
@@ -120,6 +136,20 @@ public partial class MultiScreen : UserControl
             Opacity = 0.6
         });
 
+        // Grid summary line
+        var hasCustomGrid = config?.Grid != null;
+        var globalGrid = appSettingsProvider.Get().Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
+        var gridSummary = hasCustomGrid
+            ? string.Format(Locale.Settings_MultiScreen_Grid_Custom, config!.Grid!.Columns, config.Grid.Rows, config.Grid.CellPercent, config.Grid.XPercent, config.Grid.YPercent)
+            : string.Format(Locale.Settings_MultiScreen_Grid_Default, globalGrid.Columns, globalGrid.Rows);
+        panel.Children.Add(new TextBlock
+        {
+            Text = gridSummary,
+            FontSize = 12,
+            Opacity = hasCustomGrid ? 0.95 : 0.6,
+            FontWeight = hasCustomGrid ? FontWeight.Medium : FontWeight.Normal
+        });
+
         // Alias
         var alias = new TextBox
         {
@@ -131,11 +161,21 @@ public partial class MultiScreen : UserControl
         alias.LostFocus += (_, _) => SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Alias = string.IsNullOrWhiteSpace(alias.Text) ? null : alias.Text.Trim() });
         panel.Children.Add(alias);
 
-        // Buttons: grid / export / import
+        // Buttons: grid / reset grid / export / import
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         buttons.Children.Add(Button(Locale.Settings_MultiScreen_EditGrid, (_, _) =>
-            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor,
-                (config ?? displayMonitor.EnsureConfig(attached)).Id).Show()));
+        {
+            var targetConfig = config ?? displayMonitor.EnsureConfig(attached);
+            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, targetConfig.Id, attached.Screen).Show();
+        }));
+        if (hasCustomGrid)
+        {
+            buttons.Children.Add(Button(Locale.Settings_MultiScreen_ResetGrid, (_, _) =>
+            {
+                SaveConfig(config!, entry => entry with { Grid = null });
+                Reload();
+            }));
+        }
         buttons.Children.Add(Button(Locale.Settings_MultiScreen_Export, async (_, _) => await ExportScreen(config ?? displayMonitor.EnsureConfig(attached))));
         buttons.Children.Add(Button(Locale.Settings_MultiScreen_Import, async (_, _) => await ImportScreen(attached)));
         panel.Children.Add(buttons);

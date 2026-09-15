@@ -636,6 +636,24 @@
     <data name="Settings_MultiScreen_EditGrid" xml:space="preserve">
         <value>编辑网格</value>
     </data>
+    <data name="Settings_MultiScreen_ResetGrid" xml:space="preserve">
+        <value>恢复默认网格</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Custom" xml:space="preserve">
+        <value>网格：{0}列 × {1}行 · 格子 {2:0.#}% · 偏移 ({3:0.#}%, {4:0.#}%)</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Default" xml:space="preserve">
+        <value>网格：跟随全局默认 ({0}列 × {1}行)</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen" xml:space="preserve">
+        <value>目标屏幕</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Subtitle" xml:space="preserve">
+        <value>选择要配置或编辑网格的显示器（全局或指定屏幕）</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Global" xml:space="preserve">
+        <value>全局默认 (所有未独立定制的屏幕)</value>
+    </data>
     <data name="Settings_MultiScreen_Export" xml:space="preserve">
         <value>导出该屏</value>
     </data>

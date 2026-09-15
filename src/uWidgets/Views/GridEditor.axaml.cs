@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Settings;
@@ -35,18 +36,20 @@ public partial class GridEditor : Window
     private readonly ILayoutProvider layoutProvider;
     private readonly DisplayMonitorService displayMonitor;
     private readonly string? screenId;
+    private readonly Screen? targetScreen;
     private bool dragging;
     private Point dragStart;
     private double startLeft;
     private double startTop;
 
     public GridEditor(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider,
-        DisplayMonitorService displayMonitor, string? screenId = null)
+        DisplayMonitorService displayMonitor, string? screenId = null, Screen? targetScreen = null)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.layoutProvider = layoutProvider;
         this.displayMonitor = displayMonitor;
         this.screenId = screenId;
+        this.targetScreen = targetScreen;
         InitializeComponent();
 
         Opened += OnOpened;
@@ -67,8 +70,7 @@ public partial class GridEditor : Window
         // Full screen, DPI-correct: geometry is set BEFORE the window is shown so
         // the editor opens as a full-screen window every time (position in physical
         // pixels, size in DIPs = physical / scaling).
-        var attached = GetTargetScreen();
-        var screen = attached?.Screen ?? Screens.Primary ?? Screens.All.FirstOrDefault();
+        var screen = ResolveTargetScreen();
         if (screen != null)
         {
             Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
@@ -82,14 +84,41 @@ public partial class GridEditor : Window
         }
     }
 
-    /// <summary>DPI scale of the target screen (window and canvas work in DIPs).</summary>
-    private double Scaling => GetTargetScreen()?.Screen.Scaling ?? 1.0;
+    /// <summary>Target screen (provided explicitly or resolved from screenId).</summary>
+    private Screen? ResolveTargetScreen() =>
+        targetScreen ?? GetTargetScreen()?.Screen ?? Screens.Primary ?? Screens.All.FirstOrDefault();
 
-    /// <summary>The attached screen this editor covers (per-screen config → primary fallback).</summary>
-    private AttachedScreen? GetTargetScreen() =>
-        screenId != null
-            ? displayMonitor.FindByConfigId(screenId)
-            : displayMonitor.Attached.FirstOrDefault(s => s.Screen.Primary);
+    /// <summary>DPI scale of the target screen (window and canvas work in DIPs).</summary>
+    private double Scaling => ResolveTargetScreen()?.Scaling ?? 1.0;
+
+    /// <summary>The attached screen this editor covers (targetScreen → per-screen config → primary fallback).</summary>
+    private AttachedScreen? GetTargetScreen()
+    {
+        if (targetScreen != null)
+        {
+            var foundByScreen = displayMonitor.Find(targetScreen);
+            if (foundByScreen != null) return foundByScreen;
+            return new AttachedScreen(targetScreen,
+                new ScreenIdentity(string.Empty, "Screen", targetScreen.Bounds.Width, targetScreen.Bounds.Height, targetScreen.Primary, targetScreen.Scaling),
+                screenId != null ? layoutProvider.Get().FindById(screenId) : null);
+        }
+
+        if (screenId != null)
+        {
+            var found = displayMonitor.FindByConfigId(screenId);
+            if (found != null) return found;
+
+            var config = layoutProvider.Get().FindById(screenId);
+            if (config?.Key != null)
+            {
+                var matched = displayMonitor.Attached.FirstOrDefault(a => a.Identity.Key == config.Key);
+                if (matched != null) return matched;
+            }
+        }
+
+        return displayMonitor.Attached.FirstOrDefault(s => s.Screen.Primary)
+               ?? (Screens.Primary is { } prim ? displayMonitor.Find(prim) : null);
+    }
 
     /// <summary>The grid being edited: per-screen grid → global grid → default.</summary>
     private GridSettings CurrentGrid =>
@@ -97,7 +126,7 @@ public partial class GridEditor : Window
             ? layoutProvider.Get().FindById(screenId)?.Grid ?? appSettingsProvider.Get().Grid ?? GridSettings.Default
             : appSettingsProvider.Get().Grid ?? GridSettings.Default;
 
-    /// <summary>Persist the grid: into the per-screen entry and the global settings.</summary>
+    /// <summary>Persist the grid: into the per-screen entry or the global settings.</summary>
     private void SaveGrid(GridSettings grid)
     {
         if (screenId != null)
@@ -108,17 +137,36 @@ public partial class GridEditor : Window
             {
                 layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
             }
+            // Do NOT overwrite global appSettings when editing a specific screen!
+            return;
         }
+
         appSettingsProvider.Save(appSettingsProvider.Get() with { Grid = grid });
     }
 
     private void OnOpened(object? sender, EventArgs e)
     {
-        // Keep the window pinned to the screen on every activation.
-        if (GetTargetScreen()?.Screen is { } screen)
-            Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
-
+        ApplyScreenPlacement();
         ApplyGrid();
+    }
+
+    /// <summary>
+    /// Force native physical window position and dimensions via Win32 SetWindowPosition
+    /// to guarantee full coverage of the target display without DPI mismatch or clamping.
+    /// </summary>
+    private void ApplyScreenPlacement()
+    {
+        var screen = ResolveTargetScreen();
+        if (screen == null) return;
+
+        var bounds = screen.Bounds;
+        var scaling = screen.Scaling;
+
+        InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
+
+        Position = new PixelPoint(bounds.X, bounds.Y);
+        Width = bounds.Width / scaling;
+        Height = bounds.Height / scaling;
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -278,7 +326,7 @@ public partial class GridEditor : Window
     /// </summary>
     private (double Cell, double X, double Y) ResolveInWindow(GridSettings grid)
     {
-        var screen = GetTargetScreen()?.Screen ?? Screens.Primary;
+        var screen = ResolveTargetScreen();
         if (screen is not { } target)
             return (96, 100, 100);
 
@@ -297,7 +345,7 @@ public partial class GridEditor : Window
     private void SaveGeometry()
     {
         var grid = CurrentGrid;
-        var screen = GetTargetScreen()?.Screen ?? Screens.Primary;
+        var screen = ResolveTargetScreen();
         if (screen is not { } target) return;
 
         var bounds = target.Bounds;
@@ -354,6 +402,13 @@ public partial class GridEditor : Window
     {
         var grid = CurrentGrid;
         var (cellDip, _, _) = ResolveInWindow(grid);
-        InfoText.Text = string.Format(Locale.Settings_Advanced_GridEditorInfo, grid.Columns, grid.Rows, (int) Math.Round(cellDip * Scaling));
+        var target = GetTargetScreen();
+        var screenName = target?.Config?.DisplayName
+                         ?? (target?.Identity.FriendlyName.Length > 0 ? target.Identity.FriendlyName : null)
+                         ?? (target?.Screen.Primary == true ? "Primary" : null);
+        var screenHeader = screenName != null && target != null
+            ? $"[{screenName} · {target.Screen.Bounds.Width}×{target.Screen.Bounds.Height}] "
+            : "";
+        InfoText.Text = screenHeader + string.Format(Locale.Settings_Advanced_GridEditorInfo, grid.Columns, grid.Rows, (int) Math.Round(cellDip * Scaling));
     }
 }

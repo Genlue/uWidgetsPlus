@@ -219,6 +219,29 @@ public class InteropService
         return unchecked((int)intPtr.ToInt64());
     }
 
+    private static readonly IntPtr HWND_TOPMOST = new(-1);
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_SHOWWINDOW = 0x0040;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    /// <summary>
+    /// Position and size a native window in physical screen coordinates using Win32 SetWindowPos.
+    /// Used by full-screen overlays (such as GridEditor) to guarantee placement on the target screen
+    /// across mixed DPI monitors and negative desktop coordinates.
+    /// </summary>
+    public static void SetWindowPosition(Window window, int x, int y, int width, int height, bool topmost = false)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null || handle.Value == IntPtr.Zero) return;
+
+        var insertAfter = topmost ? HWND_TOPMOST : IntPtr.Zero;
+        var flags = SWP_SHOWWINDOW | (topmost ? 0u : SWP_NOZORDER);
+        SetWindowPos(handle.Value, insertAfter, x, y, width, height, flags);
+    }
+
     [DllImport("kernel32.dll", EntryPoint = "SetLastError")]
     private static extern void SetLastError(int dwErrorCode);
 }

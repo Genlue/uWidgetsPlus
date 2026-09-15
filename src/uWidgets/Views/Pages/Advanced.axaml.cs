@@ -32,11 +32,23 @@ public partial class Advanced : UserControl
 
     private void OnEditGridClicked(object? sender, RoutedEventArgs e)
     {
-        // Multi-screen: the advanced → grid editor edits the PRIMARY screen's
-        // per-screen grid (falls back to the legacy global grid when the primary
-        // screen has no per-screen entry yet).
-        var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
-        new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, primary?.Config?.Id).Show();
+        if (DataContext is not AdvancedViewModel vm) return;
+        var target = vm.SelectedScreenTarget;
+        if (target.ScreenConfigId != null)
+        {
+            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, target.ScreenConfigId, target.Attached?.Screen).Show();
+        }
+        else
+        {
+            var primary = displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary);
+            new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, null, primary?.Screen).Show();
+        }
+    }
+
+    private void OnResetGridClicked(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AdvancedViewModel vm) return;
+        vm.ResetScreenGrid();
     }
 
     /// <summary>

@@ -537,6 +537,24 @@
     <data name="Settings_MultiScreen_EditGrid" xml:space="preserve">
         <value>Edit grid</value>
     </data>
+    <data name="Settings_MultiScreen_ResetGrid" xml:space="preserve">
+        <value>Reset to Default Grid</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Custom" xml:space="preserve">
+        <value>Grid: {0} cols × {1} rows · Cell {2:0.#}% · Offset ({3:0.#}%, {4:0.#}%)</value>
+    </data>
+    <data name="Settings_MultiScreen_Grid_Default" xml:space="preserve">
+        <value>Grid: Follow global default ({0} cols × {1} rows)</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen" xml:space="preserve">
+        <value>Target Screen</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Subtitle" xml:space="preserve">
+        <value>Select which display to configure or edit grid for</value>
+    </data>
+    <data name="Settings_Advanced_GridTargetScreen_Global" xml:space="preserve">
+        <value>Global Default (all uncustomized screens)</value>
+    </data>
     <data name="Settings_MultiScreen_Export" xml:space="preserve">
         <value>Export screen</value>
     </data>

@@ -80,6 +80,7 @@ public partial class TrafficLightTitleBar : UserControl
         LightsHitbox.Margin = new Thickness(size * (14.0 / 12.0), 0, 0, 0);
         CloseIcon.Width = CloseIcon.Height = size;
         MinimizeIcon.Width = MinimizeIcon.Height = size;
+        MaximizePanel.Width = MaximizePanel.Height = size;
         MaximizeIcon.Width = MaximizeIcon.Height = size;
         RestoreIcon.Width = RestoreIcon.Height = size;
         ZoomIcon.Width = ZoomIcon.Height = size;

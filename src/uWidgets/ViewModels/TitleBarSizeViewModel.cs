@@ -10,8 +10,8 @@ public record TitleBarSizeViewModel(string Name, double Value)
     /// </summary>
     public static TitleBarSizeViewModel[] Options { get; } =
     [
-        new($"{AppSettings.DefaultTitleBarSize:0}px", AppSettings.DefaultTitleBarSize),
         new("12px", 12),
+        new("14px", 14),
         new("16px", 16),
         new("18px", 18),
         new("20px", 20)

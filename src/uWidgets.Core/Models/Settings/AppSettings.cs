@@ -41,7 +41,7 @@ public record AppSettings(
         string.IsNullOrWhiteSpace(ActiveProfile) ? DefaultProfileName : ActiveProfile;
 
     /// <summary>The macOS-standard traffic light diameter (DIPs).</summary>
-    public const double DefaultTitleBarSize = 14;
+    public const double DefaultTitleBarSize = 12;
 
     /// <summary>
     /// The effective title bar style; falls back to <see cref="TitleBarStyle.Native"/>

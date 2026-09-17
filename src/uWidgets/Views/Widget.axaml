@@ -51,6 +51,10 @@
             <Separator />
             <MenuItem Header="{x:Static locales:Locale.Widget_Remove}" Command="{Binding Remove}" />
             <Separator />
+            <!-- Escape hatch for a tray icon hidden from the tray menu itself. -->
+            <MenuItem Header="{x:Static locales:Locale.Tray_ShowIcon}" ToggleType="CheckBox"
+                      IsChecked="{Binding TrayIconVisible, Mode=TwoWay}" />
+            <Separator />
             <MenuItem Header="{x:Static locales:Locale.Settings}" Command="{Binding OpenSettings}" />
         </ContextMenu>
     </Window.ContextMenu> 
@@ -68,6 +72,9 @@
             <Setter Property="Margin" Value="12" />
         </Style>
         <Style Selector=":is(UserControl).Frameless">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector=":is(UserControl).Flush">
             <Setter Property="Margin" Value="0" />
         </Style>
         <Style Selector="ToolTip">

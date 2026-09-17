@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using FixedWidgets.Locales;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
@@ -85,6 +87,21 @@ public partial class AggregateSettings : UserControl
         ShowSecondsSwitch.IsChecked = model.ShowSeconds;
 
         FirstDayCombo.SelectedIndex = model.FirstDayOfWeek == DayOfWeek.Sunday ? 1 : 0;
+        PaddingUpDown.Value = (decimal)(model.Padding > 0 ? model.Padding : 14.0);
+
+        HollowTodaySwitch.IsChecked = model.HollowTodayNumber;
+        TodayColorModeCombo.SelectedIndex = model.TodayColorMode == "Custom" ? 1 : 0;
+        UpdateTodayColorVisibility();
+
+        if (!string.IsNullOrWhiteSpace(model.TodayColorLight) && Color.TryParse(model.TodayColorLight, out var lightColor))
+            TodayColorLightPicker.Color = lightColor;
+        else
+            TodayColorLightPicker.Color = ResolveAccentColor();
+
+        if (!string.IsNullOrWhiteSpace(model.TodayColorDark) && Color.TryParse(model.TodayColorDark, out var darkColor))
+            TodayColorDarkPicker.Color = darkColor;
+        else
+            TodayColorDarkPicker.Color = ResolveAccentColor();
     }
 
     private async Task<IEnumerable<object>> SearchCity(string? query, CancellationToken token)
@@ -185,9 +202,53 @@ public partial class AggregateSettings : UserControl
         model = model with
         {
             Is24Hour = Use24HoursSwitch.IsChecked ?? true,
-            ShowSeconds = ShowSecondsSwitch.IsChecked ?? false
+            ShowSeconds = ShowSecondsSwitch.IsChecked ?? false,
+            HollowTodayNumber = HollowTodaySwitch.IsChecked ?? true
         };
         Save();
+    }
+
+    private void OnTodayColorModeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (isInitializing || TodayColorModeCombo.SelectedIndex < 0) return;
+        var isCustom = TodayColorModeCombo.SelectedIndex == 1;
+        model = model with
+        {
+            TodayColorMode = isCustom ? "Custom" : "Accent",
+            TodayColorLight = isCustom ? (model.TodayColorLight ?? TodayColorLightPicker.Color.ToString()) : model.TodayColorLight,
+            TodayColorDark = isCustom ? (model.TodayColorDark ?? TodayColorDarkPicker.Color.ToString()) : model.TodayColorDark
+        };
+        UpdateTodayColorVisibility();
+        Save();
+    }
+
+    private void OnColorPickerChanged(object? sender, ColorChangedEventArgs e)
+    {
+        if (isInitializing) return;
+        model = model with
+        {
+            TodayColorLight = TodayColorLightPicker.Color.ToString(),
+            TodayColorDark = TodayColorDarkPicker.Color.ToString()
+        };
+        Save();
+    }
+
+    private void UpdateTodayColorVisibility()
+    {
+        var isCustom = TodayColorModeCombo.SelectedIndex == 1;
+        TodayColorLightSetting.IsVisible = isCustom;
+        TodayColorDarkSetting.IsVisible = isCustom;
+    }
+
+    private static Color ResolveAccentColor()
+    {
+        if (Application.Current != null &&
+            Application.Current.TryFindResource("SystemAccentColor", out var value) &&
+            value is Color accent)
+        {
+            return accent;
+        }
+        return Color.Parse("#FF7043");
     }
 
     private void OnFirstDayChanged(object? sender, SelectionChangedEventArgs e)
@@ -196,6 +257,16 @@ public partial class AggregateSettings : UserControl
         model = model with
         {
             FirstDayOfWeek = FirstDayCombo.SelectedIndex == 1 ? DayOfWeek.Sunday : DayOfWeek.Monday
+        };
+        Save();
+    }
+
+    private void OnPaddingChanged(object? sender, NumericUpDownValueChangedEventArgs e)
+    {
+        if (isInitializing || !e.NewValue.HasValue) return;
+        model = model with
+        {
+            Padding = (double)e.NewValue.Value
         };
         Save();
     }

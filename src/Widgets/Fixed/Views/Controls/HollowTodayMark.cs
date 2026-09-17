@@ -4,47 +4,34 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 
-namespace Calendar.Views.Controls;
+namespace FixedWidgets.Views.Controls;
 
 /// <summary>
-/// The "today" marker of the month grid: one filled disc with the day number punched out of it
-/// (镂空), so the number reads as a hole in the disc and the surface behind the card — the glass,
-/// with whatever wallpaper it is refracting — shows through it.
-/// <para>
-/// A knock-out cannot be expressed with a text element drawn on top of a filled ellipse, so the
-/// disc is drawn as a single geometry: the ellipse with the glyph outlines subtracted
-/// (<see cref="GeometryCombineMode.Exclude"/>). With <see cref="Hollow"/> off the control draws
-/// the plain filled disc instead and the template's text block paints the number on top, which is
-/// the historic look.
-/// </para>
+/// The "today" marker of the month grid in the fixed dashboard widget:
+/// one filled disc with the day number punched out of it (镂空),
+/// or drawn with the numeral centered inside.
+/// Both the disc and the numeral share the EXACT same visual center.
 /// </summary>
 public class HollowTodayMark : Control
 {
-    /// <summary>Draw the marker at all (the cell belongs to today).</summary>
     public static readonly StyledProperty<bool> IsTodayProperty =
         AvaloniaProperty.Register<HollowTodayMark, bool>(nameof(IsToday));
 
-    /// <summary>Punch the number out of the disc instead of painting it on top.</summary>
     public static readonly StyledProperty<bool> HollowProperty =
         AvaloniaProperty.Register<HollowTodayMark, bool>(nameof(Hollow), true);
 
-    /// <summary>The day number to punch out.</summary>
     public static readonly StyledProperty<string?> TextProperty =
         AvaloniaProperty.Register<HollowTodayMark, string?>(nameof(Text));
 
-    /// <summary>Color of the disc (the number itself is transparent).</summary>
     public static readonly StyledProperty<IBrush?> DotBrushProperty =
         AvaloniaProperty.Register<HollowTodayMark, IBrush?>(nameof(DotBrush));
 
-    /// <summary>Font size the punched-out number is built at, in the control's own coordinates.</summary>
     public static readonly StyledProperty<double> GlyphSizeProperty =
-        AvaloniaProperty.Register<HollowTodayMark, double>(nameof(GlyphSize), 60);
+        AvaloniaProperty.Register<HollowTodayMark, double>(nameof(GlyphSize), 56);
 
-    /// <summary>Weight the punched-out number is built at (the grid draws bold day numbers).</summary>
     public static readonly StyledProperty<FontWeight> GlyphWeightProperty =
         AvaloniaProperty.Register<HollowTodayMark, FontWeight>(nameof(GlyphWeight), FontWeight.Bold);
 
-    /// <summary>Typeface the punched-out number is built with (null = the app default).</summary>
     public static readonly StyledProperty<FontFamily?> GlyphFontFamilyProperty =
         AvaloniaProperty.Register<HollowTodayMark, FontFamily?>(nameof(GlyphFontFamily));
 
@@ -118,7 +105,7 @@ public class HollowTodayMark : Control
 
         if (!Hollow)
         {
-            // Filled disc + centered white numeral, strictly sharing the exact same center
+            // Solid filled disc + white numeral, strictly sharing the exact same center
             context.DrawEllipse(brush, null, center, radius, radius);
             if (glyph != null)
             {
@@ -128,9 +115,6 @@ public class HollowTodayMark : Control
         }
 
         var disc = new EllipseGeometry(new Rect(center.X - radius, center.Y - radius, radius * 2.0, radius * 2.0));
-
-        // Subtract the numeral from the disc. The holes stay unfilled, so the card's own
-        // background (glass or solid) is what shows inside the number.
         Geometry marker = glyph == null
             ? disc
             : new CombinedGeometry(GeometryCombineMode.Exclude, disc, glyph);

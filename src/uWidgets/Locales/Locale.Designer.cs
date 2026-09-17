@@ -1844,5 +1844,53 @@ namespace uWidgets.Locales {
                 return ResourceManager.GetString("Cancel", resourceCulture);
             }
         }
+
+        public static string Tray_OpenSettings {
+            get {
+                return ResourceManager.GetString("Tray_OpenSettings", resourceCulture);
+            }
+        }
+
+        public static string Tray_HideWidgets {
+            get {
+                return ResourceManager.GetString("Tray_HideWidgets", resourceCulture);
+            }
+        }
+
+        public static string Tray_ShowWidgets {
+            get {
+                return ResourceManager.GetString("Tray_ShowWidgets", resourceCulture);
+            }
+        }
+
+        public static string Tray_ShowIcon {
+            get {
+                return ResourceManager.GetString("Tray_ShowIcon", resourceCulture);
+            }
+        }
+
+        public static string Tray_HideIcon {
+            get {
+                return ResourceManager.GetString("Tray_HideIcon", resourceCulture);
+            }
+        }
+
+        public static string Tray_Exit {
+            get {
+                return ResourceManager.GetString("Tray_Exit", resourceCulture);
+            }
+        }
+
+        public static string Settings_Advanced_Tray {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_Tray", resourceCulture);
+            }
+        }
+
+        public static string Settings_Advanced_TrayIcon_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_Advanced_TrayIcon_Subtitle", resourceCulture);
+            }
+        }
     }
 }

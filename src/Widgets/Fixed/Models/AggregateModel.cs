@@ -10,7 +10,12 @@ public record AggregateModel(
     bool Is24Hour = true,
     DayOfWeek FirstDayOfWeek = DayOfWeek.Monday,
     bool ShowSeconds = false,
-    string? CustomAccentColor = null)
+    string? CustomAccentColor = null,
+    double Padding = 14.0,
+    bool HollowTodayNumber = true,
+    string TodayColorMode = "Accent",
+    string? TodayColorLight = null,
+    string? TodayColorDark = null)
 {
     public AggregateModel Copy() => this with { };
 }

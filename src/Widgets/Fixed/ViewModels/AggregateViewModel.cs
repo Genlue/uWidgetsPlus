@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
 using FixedWidgets.Models;
 using FixedWidgets.Services;
 using ReactiveUI;
@@ -103,6 +106,107 @@ public class AggregateViewModel : ReactiveObject, IDisposable
         set => this.RaiseAndSetIfChanged(ref customAccentBrush, value);
     }
 
+    private double padding = 14.0;
+    public double Padding
+    {
+        get => padding;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref padding, value);
+            this.RaisePropertyChanged(nameof(LeftMargin));
+            this.RaisePropertyChanged(nameof(RightMargin));
+            this.RaisePropertyChanged(nameof(DividerMargin));
+            this.RaisePropertyChanged(nameof(CityMargin));
+            this.RaisePropertyChanged(nameof(TimeMargin));
+            this.RaisePropertyChanged(nameof(WeatherMargin));
+        }
+    }
+
+    public Thickness LeftMargin => new(padding, padding, padding, padding);
+    public Thickness RightMargin => new(padding, padding, padding, padding);
+    public Thickness DividerMargin => new(0, padding, 0, padding);
+    public Thickness CityMargin => LeftMargin;
+    public Thickness TimeMargin => LeftMargin;
+    public Thickness WeatherMargin => LeftMargin;
+
+    private bool hollowTodayNumber = true;
+    public bool HollowTodayNumber
+    {
+        get => hollowTodayNumber;
+        set => this.RaiseAndSetIfChanged(ref hollowTodayNumber, value);
+    }
+
+    private IBrush? todayDotBrush;
+    public IBrush? TodayDotBrush
+    {
+        get => todayDotBrush;
+        set => this.RaiseAndSetIfChanged(ref todayDotBrush, value);
+    }
+
+    public void UpdateTodayBrush()
+    {
+        if (model.TodayColorMode != "Custom")
+        {
+            SetTodayDotBrush(ResolveAccentBrush());
+            return;
+        }
+
+        var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+        var hex = dark ? model.TodayColorDark : model.TodayColorLight;
+
+        IBrush? brush = null;
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            try { brush = new SolidColorBrush(Color.Parse(hex)); }
+            catch { brush = null; }
+        }
+
+        SetTodayDotBrush(brush ?? ResolveAccentBrush());
+    }
+
+    /// <summary>
+    /// Assigns the marker brush only when the colour really changed: the accent resource is
+    /// replaced on every theme re-apply, and a blind assignment would re-render the calendar
+    /// (and allocate a brush) for an unchanged colour.
+    /// </summary>
+    private void SetTodayDotBrush(IBrush? brush)
+    {
+        if (TodayDotBrush is ISolidColorBrush current && brush is ISolidColorBrush next)
+        {
+            if (current.Color == next.Color) return;
+        }
+        else if (TodayDotBrush == null && brush == null)
+        {
+            return;
+        }
+
+        TodayDotBrush = brush;
+    }
+
+    private static IBrush ResolveAccentBrush()
+    {
+        if (Application.Current != null &&
+            Application.Current.TryFindResource("SystemAccentColor", out var value) &&
+            value is Color accent)
+        {
+            return new SolidColorBrush(accent);
+        }
+        return new SolidColorBrush(Color.Parse("#FF7043"));
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        UpdateTodayBrush();
+    }
+
+    /// <summary>The process-lifetime resource host the accent subscription belongs to.</summary>
+    private IResourceHost? accentHost;
+
+    private void OnAccentResourcesChanged(object? sender, EventArgs e)
+    {
+        UpdateTodayBrush();
+    }
+
     public AggregateViewModel(AggregateModel model)
     {
         this.model = model;
@@ -110,6 +214,17 @@ public class AggregateViewModel : ReactiveObject, IDisposable
 
         TimerService.Timer1Second.Subscribe(OnSecondTick);
         TimerService.Timer1Hour.Subscribe(OnHourTick);
+
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
+        // A colour picked in 外观 replaces the accent resource in place; follow it so the
+        // marker does not keep the colour it was created with.
+        if (Application.Current is IResourceHost host)
+        {
+            accentHost = host;
+            accentHost.ResourcesChanged += OnAccentResourcesChanged;
+        }
 
         UpdateClock();
         UpdateCalendar();
@@ -128,6 +243,9 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     private void ApplyModel(AggregateModel m)
     {
         CityName = m.City;
+        Padding = m.Padding > 0 ? m.Padding : 14.0;
+        HollowTodayNumber = m.HollowTodayNumber;
+        UpdateTodayBrush();
         if (!string.IsNullOrWhiteSpace(m.CustomAccentColor) && Color.TryParse(m.CustomAccentColor, out var col))
         {
             CustomAccentBrush = new SolidColorBrush(col);
@@ -279,6 +397,10 @@ public class AggregateViewModel : ReactiveObject, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        if (Application.Current != null)
+            Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        if (accentHost != null)
+            accentHost.ResourcesChanged -= OnAccentResourcesChanged;
         TimerService.Timer1Second.Unsubscribe(OnSecondTick);
         TimerService.Timer1Hour.Unsubscribe(OnHourTick);
         weatherService.Dispose();

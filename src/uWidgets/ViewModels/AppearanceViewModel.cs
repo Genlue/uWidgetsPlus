@@ -22,7 +22,7 @@ public class AppearanceViewModel : ReactiveObject
         this.appSettingsProvider = appSettingsProvider;
         // Surface-dependent rows (glass outline) and the monochrome color picker
         // appear/disappear when the settings change.
-        appSettingsProvider.DataChanged += (_, _, _) =>
+        appSettingsProvider.DataChanged += (_, oldData, newData) =>
         {
             this.RaisePropertyChanged(nameof(ShowGlassSettings));
             this.RaisePropertyChanged(nameof(ShowLiquidGlassSettings));
@@ -37,6 +37,16 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowTitleBarSize));
             this.RaisePropertyChanged(nameof(TitleBarSize));
+            // The accent controls read the settings directly, so they have to announce changes made
+            // elsewhere (another settings window, a profile switch, …) instead of keeping a stale
+            // colour on screen.
+            this.RaisePropertyChanged(nameof(ShowColorPalette));
+            this.RaisePropertyChanged(nameof(AccentColor));
+            // Only re-resolve the combo when the manual/system choice itself changed: a plain
+            // colour change must not touch the selection, or the closed combo would flicker on
+            // every pointer move of the palette.
+            if ((oldData?.Theme.AccentColor is null) != (newData.Theme.AccentColor is null))
+                this.RaisePropertyChanged(nameof(AccentMode));
         };
         // Fixed material presets; other appearance preferences are preserved.
         Themes = SurfaceTemplates.Select(theme => new ThemeButton(appSettingsProvider, theme)).ToArray();
@@ -125,11 +135,29 @@ public class AppearanceViewModel : ReactiveObject
         new DarkModeViewModel(Locale.Settings_Appearance_DarkMode_Auto, null, Auto: true)
     ];
 
+    /// <summary>
+    /// Colour the 手动 entry offers while no manual colour has been stored yet.
+    /// </summary>
+    private const string ManualAccentDefault = "#3376CD";
+
+    private AccentColorViewModel[]? accentComboboxItems;
+
+    /// <summary>
+    /// The accent source options (跟随系统 / 手动).
+    /// <para>
+    /// Built once and never replaced. Re-creating the items makes the closed ComboBox throw away
+    /// and rebuild its containers, which visibly flickers its text — and picking a colour updates
+    /// the settings on every pointer move, so that used to flicker constantly while the palette was
+    /// open. What protects a stored colour is the mode check in <see cref="AccentMode"/>'s setter,
+    /// not the value carried here.
+    /// </para>
+    /// </summary>
     public AccentColorViewModel[] AccentComboboxItems =>
-    [
-        new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Null, null),
-        new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Manual, "#3376CD")
-    ];
+        accentComboboxItems ??=
+        [
+            new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Null, null),
+            new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Manual, ManualAccentDefault)
+        ];
 
     public bool ShowColorPalette => appSettingsProvider.Get().Theme.AccentColor != null;
     
@@ -138,23 +166,32 @@ public class AppearanceViewModel : ReactiveObject
         get => appSettingsProvider.Get().Theme.AccentColor == null ? AccentComboboxItems[0] : AccentComboboxItems[1];
         set
         {
+            if (value == null) return;
+
+            // Selecting the entry that is already active is a no-op. The ComboBox re-resolves
+            // SelectedItem whenever it (re)attaches — and its 手动 entry carries a default colour,
+            // so acting on that would overwrite whatever the user picked.
             var settings = appSettingsProvider.Get();
+            if ((value.Value != null) == (settings.Theme.AccentColor != null)) return;
+
             var newTheme = settings.Theme with { AccentColor = value.Value };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
-            this.RaisePropertyChanged(nameof(ShowColorPalette));
+            appSettingsProvider.Save(settings with { Theme = newTheme });
         }
     }
 
+    /// <summary>
+    /// The manual accent colour. Stored via <see cref="ToHex"/> ("#AARRGGBB") so it
+    /// round-trips through the settings JSON in a stable way and can be compared.
+    /// </summary>
     public Color AccentColor
     {
         get => Color.TryParse(appSettingsProvider.Get().Theme.AccentColor, out var color) ? color : Colors.DodgerBlue;
         set
         {
             var settings = appSettingsProvider.Get();
-            var newTheme = settings.Theme with { AccentColor = value.ToString() };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            var hex = ToHex(value);
+            if (settings.Theme.AccentColor == hex) return;
+            appSettingsProvider.Save(settings with { Theme = settings.Theme with { AccentColor = hex } });
         }
     }
 
@@ -169,10 +206,14 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
+            var darkMode = value?.Value;
+            var auto = value?.Auto ?? false;
+            // Idempotent: the ComboBox writes its resolved item back on attach.
+            if (settings.Theme.DarkMode == darkMode && settings.Theme.AutoTheme == auto) return;
             var newTheme = settings.Theme with
             {
-                DarkMode = value?.Value,
-                AutoTheme = value?.Auto ?? false
+                DarkMode = darkMode,
+                AutoTheme = auto
             };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
@@ -185,6 +226,9 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
+            // Controls push their rendered value back on attach; only a real change is saved
+            // so that merely opening the settings window never touches the settings file.
+            if (settings.Theme.OpacityLevel.Equals(value)) return;
             var newTheme = settings.Theme with { OpacityLevel = value };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
@@ -201,7 +245,11 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
-            var newTheme = settings.Theme with { OutlineColor = value.ToString() };
+            // Compare against the *effective* value: the picker renders the default while
+            // nothing is stored, and writing that back would materialize it.
+            var hex = ToHex(value);
+            if (settings.Theme.EffectiveOutlineColor == hex) return;
+            var newTheme = settings.Theme with { OutlineColor = hex };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
         }
@@ -216,7 +264,9 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
-            var newTheme = settings.Theme with { OutlineWidth = Math.Clamp(value, 0, 6) };
+            var width = Math.Clamp(value, 0, 6);
+            if (Math.Abs(settings.Theme.OutlineWidth - width) < 0.001) return;
+            var newTheme = settings.Theme with { OutlineWidth = width };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
         }
@@ -228,6 +278,7 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
+            if (settings.Theme.Monochrome == value) return;
             var newTheme = settings.Theme with { Monochrome = value };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
@@ -255,6 +306,7 @@ public class AppearanceViewModel : ReactiveObject
         {
             if (value == null) return;
             var settings = appSettingsProvider.Get();
+            if (settings.Theme.EffectiveMonochromeVariant == value.Value) return;
             var newTheme = settings.Theme with { MonochromeVariant = value.Value };
             var newSettings = settings with { Theme = newTheme };
             appSettingsProvider.Save(newSettings);
@@ -361,6 +413,8 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
+            // Idempotent: the font ComboBox writes its resolved item back on attach.
+            if (settings.Theme.FontFamily == value) return;
             var theme = settings.Theme with { FontFamily = value };
             var newSettings = settings with { Theme = theme };
             appSettingsProvider.Save(newSettings);
@@ -373,6 +427,7 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             var settings = appSettingsProvider.Get();
+            if (settings.Theme.UseNativeFrame == value) return;
             var theme = settings.Theme with { UseNativeFrame = value };
             var newSettings = settings with { Theme = theme };
             appSettingsProvider.Save(newSettings);
@@ -400,7 +455,10 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             if (value == null) return;
-            appSettingsProvider.Save(appSettingsProvider.Get() with { TitleBarStyle = value.Value });
+            var settings = appSettingsProvider.Get();
+            // Idempotent: the ComboBox writes its resolved item back on attach.
+            if (settings.EffectiveTitleBarStyle == value.Value) return;
+            appSettingsProvider.Save(settings with { TitleBarStyle = value.Value });
         }
     }
 
@@ -422,7 +480,10 @@ public class AppearanceViewModel : ReactiveObject
         set
         {
             if (value == null) return;
-            appSettingsProvider.Save(appSettingsProvider.Get() with { TitleBarSize = value.Value });
+            var settings = appSettingsProvider.Get();
+            // Idempotent: the ComboBox writes its resolved item back on attach.
+            if (Math.Abs(settings.EffectiveTitleBarSize - value.Value) < 0.001) return;
+            appSettingsProvider.Save(settings with { TitleBarSize = value.Value });
         }
     }
 

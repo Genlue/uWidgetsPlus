@@ -60,6 +60,16 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         SizeChanged -= OnSizeChanged;
         SizeChanged += OnSizeChanged;
 
+        if (Bounds.Width > 0 && Bounds.Height > 0)
+        {
+            var initialTier = ResolveTier(Bounds.Size);
+            if (initialTier != currentTier)
+            {
+                currentTier = initialTier;
+                ApplyTier(initialTier);
+            }
+        }
+
         RefreshDisplay();
     }
 
@@ -83,13 +93,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
 
     private WidgetTier ResolveTier(Size size)
     {
-        // 1. Physically narrow cards (<= 215 DIP) cannot fit medium/large layouts
-        if (size.Width <= 215)
-        {
-            return WidgetTier.Small;
-        }
-
-        // 2. Try grid host span resolution
+        // 1. Try grid host span resolution first (highest accuracy)
         try
         {
             var spanTier = SizeTiers.ResolveTier(this, size);
@@ -100,10 +104,16 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         }
         catch { }
 
-        // 3. Pixel fallback
-        if (size.Width > 220 && size.Height > 220)
+        // 2. Physically narrow cards (<= 230 DIP) cannot fit medium/large layouts
+        if (size.Width <= 230)
+        {
+            return WidgetTier.Small;
+        }
+
+        // 3. Pixel fallback calibrated for desktop grid
+        if (size.Width >= 280 && size.Height >= 280)
             return WidgetTier.Large;
-        if (size.Width > 220 || size.Width > size.Height * 1.35)
+        if (size.Width >= 260 || size.Width > size.Height * 1.35)
             return WidgetTier.Medium;
 
         return WidgetTier.Small;

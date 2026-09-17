@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Services;
@@ -38,6 +39,9 @@ public class App : Application
             .AddSingleton<ProfileService>()
             .AddSingleton<MemoryTrimmerService>()
             .AddSingleton<Settings, Settings>()
+            // One settings window for the whole process: widgets (and a hand-over from a second
+            // launch) resolve this same instance instead of each building their own.
+            .AddSingleton<Func<Settings>>(sp => () => sp.GetRequiredService<Settings>())
             .AddSingleton<UpdateService, UpdateService>()
             .BuildServiceProvider();
 
@@ -98,9 +102,23 @@ public class App : Application
                 return widget;
             })
             .Count();
-        
+
+        // Resolved on demand: a widget-only start must not pay for building the settings window,
+        // while both the primary launch and a hand-over from a second launch address the same
+        // instance (it is a DI singleton).
+        Settings SharedSettingsWindow() => services.GetRequiredService<Settings>();
+
+        // A second launch of the exe signals this instance instead of starting a rival process;
+        // surface the settings window so the user sees why nothing new appeared.
+        SingleInstance.Current?.Listen(() =>
+            Dispatcher.UIThread.Post(() => SharedSettingsWindow().ShowAndActivate()));
+
+        // Notification-area icon: the always-reachable way back into a desktop-only app.
+        var tray = new TrayIconService(appSettingsProvider, SharedSettingsWindow, widgetFactory);
+        tray.Start();
+
         if ((ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { Args.Length: > 0 } desktop && desktop.Args[0] == "--settings") || widgetsCount == 0)
-            services.GetRequiredService<Settings>().Show();
+            SharedSettingsWindow().ShowAndActivate();
         
         services.GetRequiredService<UpdateService>().CheckForUpdates();
 

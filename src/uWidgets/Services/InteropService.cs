@@ -245,4 +245,45 @@ public class InteropService
 
     [DllImport("kernel32.dll", EntryPoint = "SetLastError")]
     private static extern void SetLastError(int dwErrorCode);
+
+    /// <summary>Value for <see cref="AllowSetForegroundWindow"/> meaning "any process".</summary>
+    private const int ASFW_ANY = -1;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool AllowSetForegroundWindow(int dwProcessId);
+
+    /// <summary>
+    /// Let other processes pull a window to the foreground.
+    /// <para>
+    /// Windows only lets the current foreground process reassign the foreground. A launch started
+    /// by the shell (a second launch of the app) is still foreground, so it grants this before
+    /// signalling the already running instance, which could otherwise only flash its taskbar
+    /// button instead of coming to the front.
+    /// </para>
+    /// </summary>
+    public static void AllowOtherProcessToTakeForeground()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        try { AllowSetForegroundWindow(ASFW_ANY); } catch { }
+    }
+
+    /// <summary>
+    /// Raise a window to the foreground.
+    /// <para>
+    /// Deliberately does <b>not</b> call <c>ShowWindow</c>: restoring a window is the caller's job
+    /// (it knows whether it was minimized), and <c>SW_RESTORE</c> here would give the window a
+    /// second, competing placement path.
+    /// </para>
+    /// </summary>
+    public static void BringToFront(Window window)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var handle = window.TryGetPlatformHandle()?.Handle;
+        if (handle == null || handle.Value == IntPtr.Zero) return;
+
+        try { SetForegroundWindow(handle.Value); } catch { }
+    }
 }

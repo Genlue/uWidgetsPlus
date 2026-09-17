@@ -1,3 +1,4 @@
+using Avalonia;
 using FixedWidgets.Views;
 
 namespace FixedSpanChecks;
@@ -18,6 +19,8 @@ class Program
     {
         Console.WriteLine("=== Fixed (4×2 dashboard) span lattice checks ===");
         Console.WriteLine();
+
+        CheckTodayMarkerCenteringAndRowParallelism();
 
         // --- accepted shapes ---
         Allowed("4×2 (100%)", 4, 2);
@@ -84,5 +87,75 @@ class Program
     {
         Console.WriteLine($"  [{(ok ? "PASS" : "FAIL")}] {what}");
         if (!ok) failures++;
+    }
+
+    private static void CheckTodayMarkerCenteringAndRowParallelism()
+    {
+        try
+        {
+            Avalonia.AppBuilder.Configure<uWidgets.App>()
+                .UsePlatformDetect()
+                .WithInterFont()
+                .SetupWithoutStarting();
+
+            var typeface = new Avalonia.Media.Typeface(Avalonia.Media.FontFamily.Default, Avalonia.Media.FontStyle.Normal, Avalonia.Media.FontWeight.SemiBold);
+            foreach (var size in new[] { 56, 60 })
+            {
+                double maxVerticalDelta = 0;
+                double maxHorizontalDelta = 0;
+                double maxBaselineDiff = 0;
+                for (int day = 1; day <= 31; day++)
+                {
+                    var text = day.ToString();
+                    var formatted = new Avalonia.Media.FormattedText(
+                        text,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        Avalonia.Media.FlowDirection.LeftToRight,
+                        typeface,
+                        size,
+                        Avalonia.Media.Brushes.Black);
+
+                    var top = (100.0 - formatted.Height) / 2.0;
+                    var defaultOriginX = (100.0 - formatted.Width) / 2.0;
+                    var testGlyph = formatted.BuildGeometry(new Avalonia.Point(defaultOriginX, top));
+                    var tb = testGlyph?.Bounds ?? default;
+                    var testCenterX = (tb.Left + tb.Right) / 2.0;
+
+                    var dx = 50.0 - testCenterX;
+                    var finalOrigin = new Avalonia.Point(defaultOriginX + dx, top);
+                    var finalGlyph = formatted.BuildGeometry(finalOrigin);
+                    var fb = finalGlyph?.Bounds ?? default;
+
+                    var finalCenterX = (fb.Left + fb.Right) / 2.0;
+                    var finalCenterY = (fb.Top + fb.Bottom) / 2.0;
+
+                    var center = new Avalonia.Point(50.0, finalCenterY);
+                    var radius = 45.0;
+
+                    var topGap = fb.Top - (center.Y - radius);
+                    var bottomGap = (center.Y + radius) - fb.Bottom;
+                    var vDelta = Math.Abs(topGap - bottomGap);
+                    if (vDelta > maxVerticalDelta) maxVerticalDelta = vDelta;
+
+                    var leftGap = fb.Left - (center.X - radius);
+                    var rightGap = (center.X + radius) - fb.Right;
+                    var hDelta = Math.Abs(leftGap - rightGap);
+                    if (hDelta > maxHorizontalDelta) maxHorizontalDelta = hDelta;
+
+                    // Baseline check: today's baseline must equal standard row baseline
+                    var standardRowBaseline = top + formatted.Baseline;
+                    var todayBaseline = finalOrigin.Y + formatted.Baseline;
+                    var bDiff = Math.Abs(standardRowBaseline - todayBaseline);
+                    if (bDiff > maxBaselineDiff) maxBaselineDiff = bDiff;
+                }
+
+                Check($"Today marker circle/numeral concentricity (size {size})", maxVerticalDelta < 0.001 && maxHorizontalDelta < 0.001);
+                Check($"Today numeral parallel with row baseline (size {size})", maxBaselineDiff < 0.001);
+            }
+        }
+        catch (Exception ex)
+        {
+            Check($"Today marker initialization: {ex.Message}", false);
+        }
     }
 }

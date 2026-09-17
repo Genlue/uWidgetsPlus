@@ -46,6 +46,11 @@
       <None Include="..\..\.github\images\icon.ico">
         <Link>icon.ico</Link>
       </None>
+      <!-- Notification-area icon. The <None> entry above only feeds the exe icon; the tray needs
+           a real WindowIcon, which can only be loaded from an Avalonia resource. -->
+      <AvaloniaResource Include="..\..\.github\images\icon.ico">
+        <Link>Assets\icon.ico</Link>
+      </AvaloniaResource>
       <!-- Single-file mode: defaults shipped inside the exe, extracted to the data folder on first run. -->
       <EmbeddedResource Include="appSettings.json">
         <LogicalName>uWidgets.Resources.appSettings.json</LogicalName>

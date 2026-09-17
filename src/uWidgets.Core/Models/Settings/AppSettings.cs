@@ -16,6 +16,10 @@ namespace uWidgets.Core.Models.Settings;
 /// <param name="TitleBarStyle">Title bar style of the settings window (macOS traffic lights or native system buttons); <c>null</c> uses <see cref="TitleBarStyle.Native"/> so old configurations keep their look.</param>
 /// <param name="TitleBarSize">Traffic light diameter in DIPs; <c>null</c> uses <see cref="DefaultTitleBarSize"/> (14 — a bit larger than the 12px macOS standard for high-DPI screens).</param>
 /// <param name="ActiveProfile">Active profile name; <c>null</c> or empty defaults to "默认配置".</param>
+/// <param name="ShowTrayIcon">
+/// Show the notification-area (tray) icon. <c>true</c> by default; the tray menu can hide it and
+/// the widget context menu brings it back, so a hidden icon is never unreachable.
+/// </param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,
@@ -29,7 +33,8 @@ public record AppSettings(
     string? HttpProxy = null,
     TitleBarStyle? TitleBarStyle = null,
     double? TitleBarSize = null,
-    string? ActiveProfile = null)
+    string? ActiveProfile = null,
+    bool ShowTrayIcon = true)
 {
     /// <summary>Default profile name.</summary>
     public const string DefaultProfileName = "默认配置";

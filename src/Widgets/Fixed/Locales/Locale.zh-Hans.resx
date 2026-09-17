@@ -51,4 +51,28 @@
     <data name="Setting_FirstDay_Sunday" xml:space="preserve">
         <value>星期日</value>
     </data>
+    <data name="Setting_Padding" xml:space="preserve">
+        <value>卡片内边距</value>
+    </data>
+    <data name="Setting_HollowToday" xml:space="preserve">
+        <value>镂空当前日期</value>
+    </data>
+    <data name="Setting_HollowToday_Subtitle" xml:space="preserve">
+        <value>把今天的日期数字从圆圈中镂空挖出，关闭后数字显示在圆圈上</value>
+    </data>
+    <data name="Setting_TodayColor" xml:space="preserve">
+        <value>今日圆圈颜色</value>
+    </data>
+    <data name="Setting_TodayColor_Accent" xml:space="preserve">
+        <value>跟随系统强调色</value>
+    </data>
+    <data name="Setting_TodayColor_Custom" xml:space="preserve">
+        <value>自定义颜色</value>
+    </data>
+    <data name="Setting_TodayColor_Light" xml:space="preserve">
+        <value>浅色模式颜色</value>
+    </data>
+    <data name="Setting_TodayColor_Dark" xml:space="preserve">
+        <value>深色模式颜色</value>
+    </data>
 </root>

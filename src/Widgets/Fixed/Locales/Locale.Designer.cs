@@ -46,5 +46,13 @@ namespace FixedWidgets.Locales {
         public static string Setting_FirstDayOfWeek => ResourceManager.GetString("Setting_FirstDayOfWeek", resourceCulture) ?? "每周首日";
         public static string Setting_FirstDay_Monday => ResourceManager.GetString("Setting_FirstDay_Monday", resourceCulture) ?? "星期一";
         public static string Setting_FirstDay_Sunday => ResourceManager.GetString("Setting_FirstDay_Sunday", resourceCulture) ?? "星期日";
+        public static string Setting_Padding => ResourceManager.GetString("Setting_Padding", resourceCulture) ?? "卡片内边距";
+        public static string Setting_HollowToday => ResourceManager.GetString("Setting_HollowToday", resourceCulture) ?? "镂空当前日期";
+        public static string Setting_HollowToday_Subtitle => ResourceManager.GetString("Setting_HollowToday_Subtitle", resourceCulture) ?? "把今天的日期数字从圆圈中镂空挖出，关闭后数字显示在圆圈上";
+        public static string Setting_TodayColor => ResourceManager.GetString("Setting_TodayColor", resourceCulture) ?? "今日圆圈颜色";
+        public static string Setting_TodayColor_Accent => ResourceManager.GetString("Setting_TodayColor_Accent", resourceCulture) ?? "跟随系统强调色";
+        public static string Setting_TodayColor_Custom => ResourceManager.GetString("Setting_TodayColor_Custom", resourceCulture) ?? "自定义颜色";
+        public static string Setting_TodayColor_Light => ResourceManager.GetString("Setting_TodayColor_Light", resourceCulture) ?? "浅色模式颜色";
+        public static string Setting_TodayColor_Dark => ResourceManager.GetString("Setting_TodayColor_Dark", resourceCulture) ?? "深色模式颜色";
     }
 }

@@ -61,6 +61,7 @@ public partial class AggregateView : UserControl, IFixedSizeWidget, IWidgetSelfR
         viewModel = new AggregateViewModel(model);
         DataContext = viewModel;
         InitializeComponent();
+        Classes.Add("Flush");
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;

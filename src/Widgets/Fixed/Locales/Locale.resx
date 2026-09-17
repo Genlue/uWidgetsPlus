@@ -51,4 +51,28 @@
     <data name="Setting_FirstDay_Sunday" xml:space="preserve">
         <value>Sunday</value>
     </data>
+    <data name="Setting_Padding" xml:space="preserve">
+        <value>Card Padding</value>
+    </data>
+    <data name="Setting_HollowToday" xml:space="preserve">
+        <value>Hollow Today Number</value>
+    </data>
+    <data name="Setting_HollowToday_Subtitle" xml:space="preserve">
+        <value>Punch out today's day number from the marker circle</value>
+    </data>
+    <data name="Setting_TodayColor" xml:space="preserve">
+        <value>Today Circle Color</value>
+    </data>
+    <data name="Setting_TodayColor_Accent" xml:space="preserve">
+        <value>Follow System Accent</value>
+    </data>
+    <data name="Setting_TodayColor_Custom" xml:space="preserve">
+        <value>Custom Color</value>
+    </data>
+    <data name="Setting_TodayColor_Light" xml:space="preserve">
+        <value>Light Theme Color</value>
+    </data>
+    <data name="Setting_TodayColor_Dark" xml:space="preserve">
+        <value>Dark Theme Color</value>
+    </data>
 </root>

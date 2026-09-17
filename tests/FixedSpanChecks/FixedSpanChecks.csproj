@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
     <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
     <ProjectReference Include="..\..\src\uWidgets\uWidgets.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />

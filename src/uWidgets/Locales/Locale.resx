@@ -726,4 +726,28 @@
     <data name="Cancel" xml:space="preserve">
         <value>Cancel</value>
     </data>
+    <data name="Tray_OpenSettings" xml:space="preserve">
+        <value>Open Settings</value>
+    </data>
+    <data name="Tray_HideWidgets" xml:space="preserve">
+        <value>Hide Widgets</value>
+    </data>
+    <data name="Tray_ShowWidgets" xml:space="preserve">
+        <value>Show Widgets</value>
+    </data>
+    <data name="Tray_ShowIcon" xml:space="preserve">
+        <value>Show Tray Icon</value>
+    </data>
+    <data name="Tray_HideIcon" xml:space="preserve">
+        <value>Hide Tray Icon</value>
+    </data>
+    <data name="Tray_Exit" xml:space="preserve">
+        <value>Exit</value>
+    </data>
+    <data name="Settings_Advanced_Tray" xml:space="preserve">
+        <value>Tray</value>
+    </data>
+    <data name="Settings_Advanced_TrayIcon_Subtitle" xml:space="preserve">
+        <value>Notification-area icon; when off it can be switched back on from a widget's right-click menu</value>
+    </data>
 </root>

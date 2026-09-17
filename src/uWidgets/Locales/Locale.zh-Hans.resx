@@ -825,4 +825,28 @@
     <data name="Cancel" xml:space="preserve">
         <value>取消</value>
     </data>
+    <data name="Tray_OpenSettings" xml:space="preserve">
+        <value>打开设置</value>
+    </data>
+    <data name="Tray_HideWidgets" xml:space="preserve">
+        <value>隐藏组件</value>
+    </data>
+    <data name="Tray_ShowWidgets" xml:space="preserve">
+        <value>显示组件</value>
+    </data>
+    <data name="Tray_ShowIcon" xml:space="preserve">
+        <value>显示托盘图标</value>
+    </data>
+    <data name="Tray_HideIcon" xml:space="preserve">
+        <value>隐藏托盘图标</value>
+    </data>
+    <data name="Tray_Exit" xml:space="preserve">
+        <value>退出</value>
+    </data>
+    <data name="Settings_Advanced_Tray" xml:space="preserve">
+        <value>托盘</value>
+    </data>
+    <data name="Settings_Advanced_TrayIcon_Subtitle" xml:space="preserve">
+        <value>通知区域图标；关闭后可在组件右键菜单中重新打开</value>
+    </data>
 </root>

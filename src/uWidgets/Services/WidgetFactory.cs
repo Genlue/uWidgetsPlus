@@ -11,10 +11,54 @@ using uWidgets.Views;
 
 namespace uWidgets.Services;
 
-public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor)
+/// <summary>
+/// Creates the widget windows from the stored layout.
+/// </summary>
+/// <param name="settingsWindow">
+/// Resolves the one shared settings window (DI singleton). Every widget opens that same instance
+/// instead of building its own, so the app never accumulates settings windows.
+/// </param>
+public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider layoutProvider,
+    DisplayMonitorService displayMonitor, Func<Settings> settingsWindow)
     : IWidgetFactory<Window, UserControl>
 {
     private readonly Dictionary<string, List<Widget>> activeWidgets = [];
+
+    /// <summary>
+    /// True while at least one widget window is alive. The settings window asks this to decide
+    /// whether closing it should only hide the shared window or really let the app exit.
+    /// </summary>
+    public bool HasWidgets => activeWidgets.Values.Any(list => list.Count > 0);
+
+    /// <summary>True while the tray menu hides every widget (see <see cref="SetWidgetsHidden"/>).</summary>
+    public bool WidgetsHidden { get; private set; }
+
+    /// <summary>
+    /// Hide or bring back every widget window (the tray's 隐藏组件 toggle). Unlike
+    /// <see cref="SuspendAll"/> this keeps the content and the timers alive — it is a visibility
+    /// switch, not a resource-saving suspension.
+    /// </summary>
+    public void SetWidgetsHidden(bool hidden)
+    {
+        if (WidgetsHidden == hidden) return;
+        WidgetsHidden = hidden;
+
+        foreach (var list in activeWidgets.Values)
+        {
+            foreach (var widget in list.ToList())
+            {
+                try
+                {
+                    if (hidden) widget.Hide();
+                    else widget.Show();
+                }
+                catch
+                {
+                    // Never let one misbehaving widget abort the whole pass.
+                }
+            }
+        }
+    }
 
     /// <summary>True while <see cref="SuspendAll"/> is in effect (widgets hidden, timers paused).</summary>
     private bool suspended;
@@ -78,7 +122,6 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
         var assembly = assemblyProvider.LoadAssembly(widgetLayout.Type);
         var widgetInfo = GetWidgetInfo(assembly, widgetLayout.SubType);
         var widgetControl = () => CreateWidgetControl(widgetInfo.ViewType, widgetLayoutProvider, widgetLayoutProvider.Get().GetModel(widgetInfo.ModelType));
-        var settingsWindow = () => (Settings) assemblyProvider.Activate(typeof(Settings));
 
         var editWidgetWindow = widgetInfo.EditModelViewType != null
             ? () => CreateEditWidgetWindow(widgetLayoutProvider, widgetInfo.EditModelViewType)
@@ -92,6 +135,13 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
             activeWidgets[screen.Id] = list = [];
         list.Add(widget);
         widget.Closed += (_, _) => list.Remove(widget);
+
+        // A widget added while the tray toggle hides the desktop (Gallery "add", profile switch)
+        // must not pop up on its own.
+        widget.Opened += (_, _) =>
+        {
+            if (WidgetsHidden) widget.Hide();
+        };
         return widget;
     }
 

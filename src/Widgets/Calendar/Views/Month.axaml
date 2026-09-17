@@ -14,13 +14,9 @@
         <Style Selector="TextBlock.weekend:not(.today)">
             <Setter Property="Opacity" Value="0.5" />
         </Style>
+        <!-- 今日日期（无论是镂空还是实心白色数字）均由 HollowTodayMark 统一绘制，
+             以保证数字与圆心严格同心并与本行其他数字严格平行 -->
         <Style Selector="TextBlock.today">
-            <Setter Property="Foreground" Value="White" />
-        </Style>
-        <!-- 镂空数字: today's number is punched out of the marker disc, so the text block must
-             stay out of the way (otherwise the number would be painted back on top of its own
-             hole). -->
-        <Style Selector="TextBlock.today.hollow">
             <Setter Property="IsVisible" Value="False" />
         </Style>
     </UserControl.Styles>

@@ -50,6 +50,16 @@ public partial class Month : UserControl
             Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
             Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
         }
+
+        // The accent is an application resource, so a colour picked in 外观 replaces it
+        // in place. Without this the marker keeps the colour it was created with while
+        // every other accent-tinted element follows the new one.
+        if (Application.Current is IResourceHost host)
+        {
+            accentHost = host;
+            host.ResourcesChanged -= OnAccentResourcesChanged;
+            host.ResourcesChanged += OnAccentResourcesChanged;
+        }
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -60,9 +70,17 @@ public partial class Month : UserControl
         // every abandoned Month view (and its view model) alive forever.
         if (Application.Current != null)
             Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+
+        if (accentHost != null)
+            accentHost.ResourcesChanged -= OnAccentResourcesChanged;
     }
 
+    /// <summary>The process-lifetime resource host the accent subscription belongs to.</summary>
+    private IResourceHost? accentHost;
+
     private void OnActualThemeVariantChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
+
+    private void OnAccentResourcesChanged(object? sender, System.EventArgs e) => UpdateTodayBrush();
 
     /// <summary>
     /// True when today's number is punched out of the marker disc (镂空) instead of being painted
@@ -121,7 +139,7 @@ public partial class Month : UserControl
         {
             IsCustomTodayColor = false;
             TodayCustomBrush = null;
-            TodayDotBrush = ResolveAccentBrush();
+            SetTodayDotBrush(ResolveAccentBrush());
             return;
         }
 
@@ -140,7 +158,26 @@ public partial class Month : UserControl
 
         // The custom color is per theme (light/dark are tuned independently); when the current
         // theme has none configured the marker keeps following the accent instead of vanishing.
-        TodayDotBrush = brush ?? ResolveAccentBrush();
+        SetTodayDotBrush(brush ?? ResolveAccentBrush());
+    }
+
+    /// <summary>
+    /// Swaps the marker brush only when the colour really changed. The app accent resource
+    /// is replaced on every theme re-apply, and a blind assignment would re-render every
+    /// live month cell (and allocate a brush per cell) for an unchanged colour.
+    /// </summary>
+    private void SetTodayDotBrush(IBrush? brush)
+    {
+        if (TodayDotBrush is ISolidColorBrush current && brush is ISolidColorBrush next)
+        {
+            if (current.Color == next.Color) return;
+        }
+        else if (TodayDotBrush == null && brush == null)
+        {
+            return;
+        }
+
+        TodayDotBrush = brush;
     }
 
     /// <summary>The theme accent as a brush, or null while the resource is not resolvable yet.</summary>

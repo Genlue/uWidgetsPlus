@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 
 namespace uWidgets.Services;
 
@@ -22,8 +20,18 @@ public static class AppRestart
         var executablePath = Process.GetCurrentProcess().MainModule?.FileName;
         if (executablePath == null) return;
 
+        // Hand the single-instance scope over BEFORE the successor starts: it would otherwise
+        // read the still-held scope as "another instance is running" and exit immediately,
+        // leaving no app at all.
+        SingleInstance.Current?.Release();
+
         var process = Process.Start(executablePath, "--settings");
-        if (process == null) return;
+        if (process == null)
+        {
+            // Nothing took over — keep this instance guarded and running.
+            SingleInstance.Current?.TryReacquire();
+            return;
+        }
 
         // Wait up to 5 s for the new instance's settings window (longer than the
         // old 1 s: on a slow start the old instance used to stay alive, leaving
@@ -38,7 +46,6 @@ public static class AppRestart
             process.Refresh();
         }
 
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopApp)
-            desktopApp.Shutdown();
+        AppShutdown.Request();
     }
 }

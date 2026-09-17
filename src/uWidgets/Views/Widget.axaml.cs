@@ -116,6 +116,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         isFrameless = control is IFramelessWidget;
         if (isFrameless)
             control.Classes.Add("Frameless");
+        if (control is IFixedSizeWidget)
+            control.Classes.Add("Flush");
         ContentPresenter.Content = control;
         
         // The native transparency level is a LOCAL value, not a style: a runtime
@@ -455,7 +457,22 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
-    public void OpenSettings() => settingsWindow.Invoke().Show();
+    public void OpenSettings() => settingsWindow.Invoke().ShowAndActivate();
+
+    /// <summary>
+    /// Tray icon visibility. The tray menu can hide the icon, so this widget menu item is the
+    /// escape hatch that brings it back — hiding it is never a dead end.
+    /// </summary>
+    public bool TrayIconVisible
+    {
+        get => appSettingsProvider.Get().ShowTrayIcon;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            if (settings.ShowTrayIcon == value) return;
+            appSettingsProvider.Save(settings with { ShowTrayIcon = value });
+        }
+    }
 
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e) => AfterMove();
 
@@ -664,6 +681,9 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
     {
+        // The tray icon can also be switched from the tray menu itself.
+        Notify(nameof(TrayIconVisible));
+
         if (oldData?.Layout.LockSize != newData.Layout.LockSize)
             SetMinMaxSize(newData.Layout.LockSize);
 

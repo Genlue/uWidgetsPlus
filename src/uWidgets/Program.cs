@@ -17,16 +17,37 @@ class Program
     {
         try
         {
-            // Single-file mode: extract the embedded widget bundle & default settings first,
-            // so the rest of the app sees a regular data folder. No-op in portable mode.
-            WidgetBundle.ExtractIfNeeded();
+            // Only one uWidgets+ process per session. A later launch hands the request over to
+            // the running instance (which brings its settings window to the front) and exits,
+            // instead of starting a rival copy that would fight over the data folder, the widget
+            // windows and the auto-start entry.
+            var singleInstance = SingleInstance.Acquire();
+            if (singleInstance == null)
+            {
+                SingleInstance.Signal();
+                return;
+            }
 
-            // Keep the Windows auto-start entry in sync with the saved preference so the
-            // feature reliably takes effect (re-asserts the path each launch; safe when off).
-            SyncRunOnStartup();
+            SingleInstance.Current = singleInstance;
 
-            BuildAvaloniaApp()
-                .StartWithClassicDesktopLifetime(args);
+            try
+            {
+                // Single-file mode: extract the embedded widget bundle & default settings first,
+                // so the rest of the app sees a regular data folder. No-op in portable mode.
+                WidgetBundle.ExtractIfNeeded();
+
+                // Keep the Windows auto-start entry in sync with the saved preference so the
+                // feature reliably takes effect (re-asserts the path each launch; safe when off).
+                SyncRunOnStartup();
+
+                BuildAvaloniaApp()
+                    .StartWithClassicDesktopLifetime(args);
+            }
+            finally
+            {
+                SingleInstance.Current = null;
+                singleInstance.Dispose();
+            }
         }
         catch (Exception e)
         {

@@ -88,6 +88,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(ProxyMode));
         this.RaisePropertyChanged(nameof(ProxyCustomUrl));
         this.RaisePropertyChanged(nameof(UpdateUrl));
+        this.RaisePropertyChanged(nameof(ShowTrayIcon));
     }
 
     private void RaiseGridProperties()
@@ -391,6 +392,21 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         {
             var settings = appSettingsProvider.Get();
             appSettingsProvider.Save(settings with { UpdateUrl = string.IsNullOrWhiteSpace(value) ? null : value.Trim() });
+        }
+    }
+
+    /// <summary>
+    /// Notification-area icon visibility. The tray menu and the widget context menu can switch it
+    /// too; this row is what keeps it reachable from the settings window alone.
+    /// </summary>
+    public bool ShowTrayIcon
+    {
+        get => appSettingsProvider.Get().ShowTrayIcon;
+        set
+        {
+            var settings = appSettingsProvider.Get();
+            if (settings.ShowTrayIcon == value) return;
+            appSettingsProvider.Save(settings with { ShowTrayIcon = value });
         }
     }
 }

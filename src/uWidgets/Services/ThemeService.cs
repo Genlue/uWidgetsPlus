@@ -84,10 +84,17 @@ public class ThemeService : IThemeService
         // OS-level acrylic (the Transparent style sets the AcrylicBlur hint on the
         // windows): the desktop composer samples the live desktop every frame, so
         // dynamic wallpapers stay live behind the widgets. OpacityLevel is the
-        // coating alpha, unchanged.
-        Application.Current.Resources["BackgroundOpacity"] = theme.OpacityLevel;
+        // coating alpha. In Colorful mode, opacity is strictly 1.0 (opaque cards).
+        Application.Current.Resources["BackgroundOpacity"] = theme.IsColorful ? 1.0 : theme.OpacityLevel;
 
-        if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var color))
+        if (theme.IsColorful)
+        {
+            var appleBlue = Color.Parse("#007AFF");
+            Application.Current.Resources["SystemAccentColor"] = appleBlue;
+            Application.Current.Resources["SystemAccentColorDark1"] = appleBlue;
+            Application.Current.Resources["SystemAccentColorLight1"] = Color.Parse("#0A84FF");
+        }
+        else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var color))
         {
             Application.Current.Resources["SystemAccentColor"] = color;
             Application.Current.Resources["SystemAccentColorDark1"] = color;
@@ -96,10 +103,13 @@ public class ThemeService : IThemeService
 
         // 纯色 surface: the card color (per dark/light variant) and the coating
         // opacity — Solid.axaml's WidgetBackground brush picks these up.
-        Application.Current.Resources["SolidBackgroundDark"] =
-            ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
-        Application.Current.Resources["SolidBackgroundLight"] =
-            ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
+        // In Colorful mode, fixed authentic Apple card backgrounds are strictly enforced.
+        Application.Current.Resources["SolidBackgroundDark"] = theme.IsColorful
+            ? Color.Parse("#1C1C1E")
+            : ParseColor(theme.EffectiveSolidBackgroundDark, Theme.DefaultSolidBackgroundDark);
+        Application.Current.Resources["SolidBackgroundLight"] = theme.IsColorful
+            ? Color.Parse("#FFFFFF")
+            : ParseColor(theme.EffectiveSolidBackgroundLight, Theme.DefaultSolidBackgroundLight);
         
         // Surface material drives both the background style and the transparency
         // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
@@ -111,9 +121,10 @@ public class ThemeService : IThemeService
         // Monochrome color source: 黑白 = black in light / white in dark mode
         // (both text AND accent colors), 强调色 = accent-based (the historic
         // Monochrome.axaml dictionaries — accent stays accent, text becomes accent).
-        var monochrome = theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
+        // In Colorful mode, monochrome is strictly disabled.
+        var monochrome = !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
         SwitchStyle(monochromeBlackWhiteStyle, monochrome);
-        SwitchStyle(monochromeStyle, theme.Monochrome && !monochrome);
+        SwitchStyle(monochromeStyle, !theme.IsColorful && theme.Monochrome && !monochrome);
 
         // Surface material background styles
         SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
@@ -123,8 +134,7 @@ public class ThemeService : IThemeService
         // Colorful (macOS) uses live OS acrylic blur with rich Apple HIG system semantic colors.
         // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
         // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
-        var isColorful = theme.IsColorful || !theme.Monochrome;
-        SwitchStyle(colorfulStyle, isColorful);
+        SwitchStyle(colorfulStyle, theme.IsColorful);
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

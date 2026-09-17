@@ -34,6 +34,7 @@ public partial class ProgressView : UserControl, IWidgetSelfRefreshing
 
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
+        ActualThemeVariantChanged += (_, _) => viewModel?.UpdateProgress();
     }
 
     /// <summary>

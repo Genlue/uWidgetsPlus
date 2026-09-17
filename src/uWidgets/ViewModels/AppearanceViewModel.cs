@@ -42,6 +42,9 @@ public class AppearanceViewModel : ReactiveObject
             // colour on screen.
             this.RaisePropertyChanged(nameof(ShowColorPalette));
             this.RaisePropertyChanged(nameof(ShowAccentSetting));
+            this.RaisePropertyChanged(nameof(ShowOpacitySetting));
+            this.RaisePropertyChanged(nameof(ShowMonochromeSetting));
+            this.RaisePropertyChanged(nameof(ShowSolidBackgroundSetting));
             this.RaisePropertyChanged(nameof(AccentColor));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
@@ -165,6 +168,21 @@ public class AppearanceViewModel : ReactiveObject
     /// Accent color setting is hidden in Colorful mode, which uses authentic fixed macOS palettes.
     /// </summary>
     public bool ShowAccentSetting => !appSettingsProvider.Get().Theme.IsColorful;
+
+    /// <summary>
+    /// Opacity slider is hidden in Colorful mode, which uses 100% opaque cards.
+    /// </summary>
+    public bool ShowOpacitySetting => !appSettingsProvider.Get().Theme.IsColorful;
+
+    /// <summary>
+    /// Monochrome toggle is hidden in Colorful mode, which strictly uses Apple HIG vibrant semantic palettes.
+    /// </summary>
+    public bool ShowMonochromeSetting => !appSettingsProvider.Get().Theme.IsColorful;
+
+    /// <summary>
+    /// Custom background colors are hidden in Colorful mode, which strictly uses Apple HIG light/dark backgrounds.
+    /// </summary>
+    public bool ShowSolidBackgroundSetting => !appSettingsProvider.Get().Theme.IsColorful;
 
     public bool ShowColorPalette => appSettingsProvider.Get().Theme.AccentColor != null;
     

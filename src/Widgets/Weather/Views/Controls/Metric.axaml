@@ -17,8 +17,8 @@
                 </Path.Data>
             </Path>
             <Path StrokeThickness="10" StrokeLineCap="Round"
-                  StrokeDashArray="21,21"
-                  StrokeDashOffset="{Binding StrokeDashOffset}"
+                  StrokeDashArray="{Binding StrokeDashArray}"
+                  IsVisible="{Binding IsProgressVisible}"
                   Stroke="{DynamicResource WeatherGaugeBrush}"
                   RenderTransformOrigin="55,55">
                 <Path.RenderTransform>

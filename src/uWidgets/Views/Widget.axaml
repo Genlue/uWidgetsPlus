@@ -17,7 +17,7 @@
         Classes="Widget">
 
     <Window.ContextMenu>
-        <ContextMenu>
+        <ContextMenu Classes="WidgetContextMenu">
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
             <Separator IsVisible="{Binding ShowEditButton}"/>
             <MenuItem Header="{Binding SizeMenuTitle}">
@@ -66,6 +66,15 @@
     </Window.ContextMenu> 
     
     <Window.Styles>
+        <Style Selector="ContextMenu.WidgetContextMenu">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetCardCornerRadius}" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+            <Setter Property="Margin" Value="2,1" />
+        </Style>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
             <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />

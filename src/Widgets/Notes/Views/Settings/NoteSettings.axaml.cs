@@ -160,7 +160,7 @@ public partial class NoteSettings : UserControl
             UpdateModel(m => m with { HeaderColor = HeaderColorPicker.Color.ToString() });
         };
         HeaderOpacityBox.ValueChanged += (_, _) =>
-            UpdateModel(m => m with { HeaderOpacity = (double)(HeaderOpacityBox.Value ?? 0.15m) });
+            UpdateModel(m => m with { HeaderOpacity = (double)(HeaderOpacityBox.Value ?? 1.0m) });
         SourceBox.SelectionChanged += (_, _) =>
         {
             UpdateModel(m => m with { Source = (NoteSource)Math.Max(0, SourceBox.SelectedIndex) });

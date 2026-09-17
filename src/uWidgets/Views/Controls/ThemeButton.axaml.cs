@@ -40,8 +40,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
             var dark = IsDark();
             if (IsColorful)
             {
-                var color = dark ? Color.Parse("#D81C1C1E") : Color.Parse("#F2FFFFFF");
-                return new SolidColorBrush(color, AppTheme.OpacityLevel);
+                var color = dark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF");
+                return new SolidColorBrush(color, 1.0);
             }
             // Both surfaces use the user's custom dark/light background colors
             // (defaults: dark #2E2E2E, light #FFFFFF).

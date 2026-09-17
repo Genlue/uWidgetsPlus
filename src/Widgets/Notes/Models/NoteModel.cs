@@ -71,7 +71,7 @@ public record NoteModel(
     bool Markdown = true,
     bool FollowAccentHeader = true,
     string? HeaderColor = null,
-    double HeaderOpacity = 0.15,
+    double HeaderOpacity = 1.0,
     NoteSource Source = NoteSource.Internal,
     string? Path = null,
     bool RecentFiles = true,

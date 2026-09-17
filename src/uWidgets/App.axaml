@@ -35,6 +35,15 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
+        <Style Selector="ContextMenu.WidgetContextMenu">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetCardCornerRadius}" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="ContextMenu.WidgetContextMenu MenuItem">
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
+            <Setter Property="Margin" Value="2,1" />
+        </Style>
         <Style Selector="MenuFlyoutPresenter">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}" />
             <Setter Property="Background" Value="{DynamicResource MenuSurfaceBackground}" />
@@ -67,11 +76,24 @@
     
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#FFFFFF" Opacity="1.0" />
+                    <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#E5E5EA" Opacity="1.0" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#1C1C1E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#38383A" Opacity="1.0" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
             <!-- Menu surfaces (context menus): Mica-like chrome tint; items get an
                  accent-colored hover/pressed background (follows the chosen accent,
                  including the wallpaper/monochrome overrides applied by ThemeService). -->
             <SolidColorBrush x:Key="MenuSurfaceBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.7" />
             <SolidColorBrush x:Key="MenuSurfaceBorder" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />
+            <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#FFFFFF" Opacity="1.0" />
+            <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#E5E5EA" Opacity="1.0" />
             <SolidColorBrush x:Key="MenuFlyoutItemBackground" Color="Transparent" />
             <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="{DynamicResource SystemAccentColor}" Opacity="0.18" />
             <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />

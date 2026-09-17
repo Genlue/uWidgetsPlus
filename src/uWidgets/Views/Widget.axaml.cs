@@ -10,6 +10,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Settings;
@@ -153,7 +155,20 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ActiveProfileChanged += OnProfilesChanged;
         profileService.ProfilesListChanged += OnProfilesChanged;
         if (ContextMenu != null)
+        {
+            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
+            ContextMenu.CornerRadius = new CornerRadius(r);
             ContextMenu.Opened += OnContextMenuOpened;
+            ContextMenu.GetObservable(Visual.BoundsProperty).Subscribe(bounds =>
+            {
+                if (bounds.Width > 0 && bounds.Height > 0)
+                {
+                    var curR = this.appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : this.appSettingsProvider.Get().Dimensions.Radius;
+                    ContextMenu.CornerRadius = new CornerRadius(curR);
+                    ContextMenu.Clip = new RectangleGeometry(new Rect(0, 0, bounds.Width, bounds.Height), curR, curR);
+                }
+            });
+        }
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
         Unloaded += OnUnloaded;
     }
@@ -307,6 +322,23 @@ public partial class Widget : Window, INotifyPropertyChanged
         Resources["WidgetCardCornerRadius"] = cardRadius;
         Resources["WidgetInnerCornerRadius"] = innerRadius;
         Resources["WidgetPillCornerRadius"] = pillRadius;
+
+        if (Application.Current != null)
+        {
+            Application.Current.Resources["WidgetCardCornerRadius"] = cardRadius;
+            Application.Current.Resources["WidgetInnerCornerRadius"] = innerRadius;
+            Application.Current.Resources["WidgetPillCornerRadius"] = pillRadius;
+        }
+
+        if (ContextMenu != null)
+        {
+            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
+            ContextMenu.CornerRadius = new CornerRadius(r);
+            if (ContextMenu.Bounds.Width > 0 && ContextMenu.Bounds.Height > 0)
+            {
+                ContextMenu.Clip = new RectangleGeometry(new Rect(0, 0, ContextMenu.Bounds.Width, ContextMenu.Bounds.Height), r, r);
+            }
+        }
 
         Notify(nameof(Radius));
         Notify(nameof(InnerRadius));
@@ -878,8 +910,46 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// Refresh the profile entries of the context menu right before it opens. Wired as a named
     /// handler (not a lambda) so it can be detached on unload — a lambda subscribed to the
     /// window's own context menu would root the closed window through it.
-    /// </summary>
-    private void OnContextMenuOpened(object? sender, RoutedEventArgs e) => Notify(nameof(ProfileMenuItems));
+    private void OnContextMenuOpened(object? sender, RoutedEventArgs e)
+    {
+        Notify(nameof(ProfileMenuItems));
+        if (sender is ContextMenu cm)
+        {
+            var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
+            var cardRadius = new CornerRadius(r);
+            cm.CornerRadius = cardRadius;
+            if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
+            {
+                cm.Clip = new RectangleGeometry(new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height), r, r);
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                cm.CornerRadius = cardRadius;
+                if (cm.Bounds.Width > 0 && cm.Bounds.Height > 0)
+                {
+                    cm.Clip = new RectangleGeometry(new Rect(0, 0, cm.Bounds.Width, cm.Bounds.Height), r, r);
+                }
+
+                if (cm.GetVisualRoot() is WindowBase wb)
+                {
+                    var handle = wb.TryGetPlatformHandle()?.Handle;
+                    if (handle.HasValue && handle.Value != IntPtr.Zero)
+                    {
+                        InteropService.DisableWindowBorder(handle.Value);
+                        if (r > 0)
+                        {
+                            var scaling = wb.DesktopScaling;
+                            var w = (int)Math.Round(wb.ClientSize.Width * scaling);
+                            var h = (int)Math.Round(wb.ClientSize.Height * scaling);
+                            var radiusPx = (int)Math.Round(r * scaling);
+                            InteropService.SetWindowRegion(handle.Value, 0, 0, w, h, radiusPx);
+                        }
+                    }
+                }
+            }, DispatcherPriority.Render);
+        }
+    }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {

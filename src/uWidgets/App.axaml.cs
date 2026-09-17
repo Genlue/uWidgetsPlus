@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Services;
@@ -56,6 +57,25 @@ public class App : Application
         
         localeService.SetCulture(appSettingsProvider.Get().Region.Language);
         themeService.Apply(appSettingsProvider.Get().Theme);
+        UpdateCornerRadiusResources(appSettingsProvider.Get());
+        appSettingsProvider.DataChanged += (_, _, newSettings) => UpdateCornerRadiusResources(newSettings);
+
+
+        Control.LoadedEvent.AddClassHandler<ContextMenu>((cm, _) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (cm.GetVisualRoot() is WindowBase wb)
+                {
+                    var handle = wb.TryGetPlatformHandle()?.Handle;
+                    if (handle.HasValue && handle.Value != IntPtr.Zero)
+                    {
+                        InteropService.DisableWindowBorder(handle.Value);
+                    }
+                }
+            }, DispatcherPriority.Render);
+        });
+
         services.GetRequiredService<WallpaperWatcherService>();
 
         var profileService = services.GetRequiredService<ProfileService>();
@@ -130,5 +150,17 @@ public class App : Application
         System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ => InteropService.TrimProcessMemory());
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void UpdateCornerRadiusResources(uWidgets.Core.Models.Settings.AppSettings settings)
+    {
+        var r = settings.Theme.UseNativeFrame ? 0 : settings.Dimensions.Radius;
+        var cardRadius = new CornerRadius(r);
+        var innerRadius = r <= 0 ? new CornerRadius(0) : new CornerRadius(Math.Max(2, Math.Round(r * 0.70)));
+        var pillRadius = r <= 0 ? new CornerRadius(0) : new CornerRadius(Math.Max(2, Math.Round(r * 0.40)));
+
+        Resources["WidgetCardCornerRadius"] = cardRadius;
+        Resources["WidgetInnerCornerRadius"] = innerRadius;
+        Resources["WidgetPillCornerRadius"] = pillRadius;
     }
 }

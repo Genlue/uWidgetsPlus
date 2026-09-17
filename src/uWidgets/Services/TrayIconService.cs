@@ -1,7 +1,10 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Locales;
@@ -64,6 +67,56 @@ public sealed class TrayIconService : IDisposable
 
         // The widget context menu can switch the icon back on; follow the setting.
         appSettingsProvider.DataChanged += OnSettingsChanged;
+
+        // Ensure tray popup menu renders as a solid opaque card:
+        // - Window transparency set to Transparent (not AcrylicBlur from Styles/Transparent.axaml)
+        // - Presenter configured with 100% opaque solid colors (White in light, #1C1C1E in dark)
+        // - Disable Windows 11 DWM outer small-radius border rectangle
+        Window.WindowOpenedEvent.AddClassHandler<Window>((window, _) =>
+        {
+            try
+            {
+                if (window.GetType().FullName == "Avalonia.Win32.TrayIconImpl+TrayPopupRoot")
+                {
+                    window.TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
+                    window.Background = Brushes.Transparent;
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        try
+                        {
+                            var handle = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+                            if (handle != IntPtr.Zero)
+                            {
+                                InteropService.DisableWindowBorder(handle);
+                            }
+                        }
+                        catch { }
+                    }, DispatcherPriority.Render);
+
+                    if (window.Content is MenuFlyoutPresenter presenter)
+                    {
+                        ConfigureTrayPresenter(presenter);
+                    }
+                }
+            }
+            catch { }
+        });
+    }
+
+    private static void ConfigureTrayPresenter(MenuFlyoutPresenter presenter)
+    {
+        try
+        {
+            var isDark = Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+            presenter.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
+            presenter.BorderBrush = new SolidColorBrush(isDark ? Color.Parse("#38383A") : Color.Parse("#E5E5EA"));
+            presenter.BorderThickness = new Thickness(1);
+            presenter.CornerRadius = new CornerRadius(8);
+            presenter.Padding = new Thickness(4);
+            presenter.ClipToBounds = true;
+        }
+        catch { }
     }
 
     private NativeMenu BuildMenu()

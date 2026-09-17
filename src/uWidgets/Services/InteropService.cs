@@ -80,21 +80,31 @@ public class InteropService
     {
         var handle = window.TryGetPlatformHandle()?.Handle;
         if (handle == null) return;
+        SetWindowRegion(handle.Value, x, y, width, height, radius);
+    }
+
+    /// <summary>
+    /// Clip any native Win32 window (such as a PopupRoot) to a rounded rectangle region.
+    /// This forces the OS-level DWM AcrylicBlur to strictly follow the exact same rounded
+    /// rectangle boundary without bleeding blur into the corner areas.
+    /// </summary>
+    public static void SetWindowRegion(IntPtr handle, int x, int y, int width, int height, int radius)
+    {
+        if (handle == IntPtr.Zero) return;
 
         width = Math.Max(1, width);
         height = Math.Max(1, height);
         radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
 
         // Win32 GDI CreateRoundRectRgn treats right/bottom as exclusive.
-        // x + width + 1 ensures the right and bottom border pixel columns (cardWidth - 1)
+        // x + width + 1 ensures the right and bottom border pixel columns
         // are included rather than truncated.
         var region = radius > 0
             ? CreateRoundRectRgn(x, y, x + width + 1, y + height + 1, radius * 2, radius * 2)
             : CreateRectRgn(x, y, x + width + 1, y + height + 1);
         if (region == IntPtr.Zero) return;
 
-        // On success the system owns the region; only delete it on failure.
-        if (SetWindowRgn(handle.Value, region, true) == 0)
+        if (SetWindowRgn(handle, region, true) == 0)
             DeleteObject(region);
     }
 
@@ -285,5 +295,32 @@ public class InteropService
         if (handle == null || handle.Value == IntPtr.Zero) return;
 
         try { SetForegroundWindow(handle.Value); } catch { }
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, uint attribute, ref uint value, int size);
+
+    private const uint DWMWA_BORDER_COLOR = 34;
+    private const uint DWMWA_COLOR_NONE = 0xFFFFFFFE;
+    private const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const uint DWMWCP_DONOTROUND = 1;
+
+    /// <summary>
+    /// Disables the default Windows 11 DWM outer window frame/border (e.g. for context menu popups)
+    /// so the menu only renders its own single unified border and corner radius without a mismatched
+    /// DWM outer stroke.
+    /// </summary>
+    public static void DisableWindowBorder(IntPtr hwnd)
+    {
+        if (!OperatingSystem.IsWindows() || hwnd == IntPtr.Zero) return;
+        try
+        {
+            uint colorNone = DWMWA_COLOR_NONE;
+            DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref colorNone, sizeof(uint));
+
+            uint doNotRound = DWMWCP_DONOTROUND;
+            DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref doNotRound, sizeof(uint));
+        }
+        catch { }
     }
 }

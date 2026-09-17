@@ -229,7 +229,16 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         }
         CurrentBrush = new SolidColorBrush(curColor);
 
-        Color remColor = Color.FromArgb(50, 255, 255, 255); // Default semi-transparent remaining
+        bool isDark = theme?.DarkMode switch
+        {
+            true => true,
+            false => false,
+            null => Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark
+        };
+
+        Color remColor = isDark
+            ? Color.FromArgb(50, 255, 255, 255) // Soft light dots for dark background
+            : Color.FromArgb(38, 0, 0, 0);       // Soft dark dots for light background (Apple Gray 5)
         if (!string.IsNullOrEmpty(model.RemainingColor) && Color.TryParse(model.RemainingColor, out var parsedRem))
         {
             remColor = parsedRem;

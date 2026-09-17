@@ -19,6 +19,7 @@
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="#8E8E93" />
                     <SolidColorBrush x:Key="SystemControlForegroundBaseLowBrush" Color="#C7C7CC" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#007AFF" />
 
                     <!-- Apple Human Interface Guidelines System Colors (Light) -->
                     <SolidColorBrush x:Key="MacosRedBrush" Color="#FF3B30" />
@@ -71,8 +72,8 @@
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="#007AFF" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="#F2F2F7" />
 
-                    <!-- Fitness / Progress: Apple Activity 3-ring colors on pure black card -->
-                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#000000" />
+                    <!-- Time Progress: Pure white in light mode, authentic Apple dark card in dark mode -->
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FA114F" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#AFFF00" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="#00F5D4" />
@@ -104,6 +105,7 @@
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#FFFFFF" />
                     <SolidColorBrush x:Key="SystemControlForegroundBaseMediumBrush" Color="#98989D" />
                     <SolidColorBrush x:Key="SystemControlForegroundBaseLowBrush" Color="#48484A" />
+                    <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#0A84FF" />
 
                     <!-- Apple Human Interface Guidelines System Colors (Dark) -->
                     <SolidColorBrush x:Key="MacosRedBrush" Color="#FF453A" />
@@ -156,8 +158,8 @@
                     <SolidColorBrush x:Key="TranslateAccentBrush" Color="#0A84FF" />
                     <SolidColorBrush x:Key="TranslateCardBackground" Color="#2C2C2E" />
 
-                    <!-- Fitness / Progress: Apple Activity 3-ring colors on pure black card -->
-                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#000000" />
+                    <!-- Time Progress: Pure white in light mode, authentic Apple dark card in dark mode -->
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="#1C1C1E" />
                     <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FA114F" />
                     <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#AFFF00" />
                     <SolidColorBrush x:Key="ProgressStandBrush" Color="#00F5D4" />

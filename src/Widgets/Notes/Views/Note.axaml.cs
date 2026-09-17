@@ -94,12 +94,14 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     private void Rebuild()
     {
         var model = Model;
-        var compact = Bounds.Height <= CompactHeight;
+        var layoutH = widgetLayoutProvider.Get().Height;
+        var currentH = Bounds.Height > 0 ? Bounds.Height : layoutH;
+        var compact = currentH <= CompactHeight;
         ApplyHeader(model);
 
-        TitleBox.Height = compact ? 26 : 44;
-        TitleBox.FontSize = compact ? 13 : 16;
-        Divider.IsVisible = !compact;
+        TitleBox.Height = 44;
+        TitleBox.FontSize = 16;
+        Divider.IsVisible = true;
         ContentBox.IsVisible = false;
         RenderScroll.IsVisible = false;
         FileScroll.IsVisible = false;

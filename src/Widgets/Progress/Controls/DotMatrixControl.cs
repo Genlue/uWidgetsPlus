@@ -168,7 +168,9 @@ public class DotMatrixControl : Control
 
         var passedBrush = PassedBrush ?? Brushes.MediumPurple;
         var currentBrush = CurrentBrush ?? Brushes.DeepPink;
-        var remainingBrush = RemainingBrush ?? new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
+        bool isDark = Avalonia.Application.Current?.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        var defaultRemColor = isDark ? Color.FromArgb(50, 255, 255, 255) : Color.FromArgb(38, 0, 0, 0);
+        var remainingBrush = RemainingBrush ?? new SolidColorBrush(defaultRemColor);
 
         // Dot radius: 76% of half-cell, leaving comfortable 24% gap between dots
         double radius = (cellSize / 2.0) * 0.76;

@@ -3,6 +3,11 @@
              xmlns:viewModels="clr-namespace:Weather.ViewModels"
              x:Class="Weather.Views.Controls.ForecastLarge"
              x:DataType="viewModels:ForecastViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource WeatherForegroundBrush}" />
+        </Style>
+    </UserControl.Styles>
     <LayoutTransformControl Name="Scaler">
     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*">
         <TextBlock Grid.Row="0" Grid.Column="0"
@@ -24,7 +29,7 @@
                    Text="{Binding CurrentMinMax}" />
         <Path Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 4"
               Height="1" Stretch="Fill" Opacity="0.2" StrokeThickness="1.5"
-              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
+              Stroke="{DynamicResource WeatherForegroundBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
             </Path.Data>
@@ -52,7 +57,7 @@
         </ScrollViewer>
         <Path Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 4"
               Height="1" Stretch="Fill" Opacity="0.2" StrokeThickness="1.5"
-              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
+              Stroke="{DynamicResource WeatherForegroundBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
             </Path.Data>
@@ -70,7 +75,7 @@
                             <TextBlock Grid.Column="2" Text="{Binding Min}" Opacity="0.5" HorizontalAlignment="Right" FontWeight="Bold" />
                             <Path Grid.Column="3" Margin="10 4 10 0" 
                                   Height="5" Stretch="Fill" Opacity="0.2" StrokeThickness="5" StrokeLineCap="Round"
-                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
+                                  Stroke="{DynamicResource WeatherForegroundBrush}" >
                                 <Path.Data>
                                     <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
                                 </Path.Data>

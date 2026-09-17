@@ -41,6 +41,7 @@ public class AppearanceViewModel : ReactiveObject
             // elsewhere (another settings window, a profile switch, …) instead of keeping a stale
             // colour on screen.
             this.RaisePropertyChanged(nameof(ShowColorPalette));
+            this.RaisePropertyChanged(nameof(ShowAccentSetting));
             this.RaisePropertyChanged(nameof(AccentColor));
             // Only re-resolve the combo when the manual/system choice itself changed: a plain
             // colour change must not touch the selection, or the closed combo would flicker on
@@ -60,7 +61,7 @@ public class AppearanceViewModel : ReactiveObject
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.70, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Colorful)
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Colorful)
     ];
 
     public ThemeButton[] Themes { get; }
@@ -159,6 +160,11 @@ public class AppearanceViewModel : ReactiveObject
             new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Null, null),
             new AccentColorViewModel(Locale.Settings_Appearance_AccentColor_Manual, ManualAccentDefault)
         ];
+
+    /// <summary>
+    /// Accent color setting is hidden in Colorful mode, which uses authentic fixed macOS palettes.
+    /// </summary>
+    public bool ShowAccentSetting => !appSettingsProvider.Get().Theme.IsColorful;
 
     public bool ShowColorPalette => appSettingsProvider.Get().Theme.AccentColor != null;
     

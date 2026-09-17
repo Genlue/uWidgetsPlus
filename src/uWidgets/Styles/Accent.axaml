@@ -38,6 +38,14 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorDark1}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -67,6 +75,14 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="{DynamicResource SystemAccentColorLight2}" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

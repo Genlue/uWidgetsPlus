@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
              x:Class="Notes.Views.Note"
-             Margin="0">
+             Margin="0"
+             Foreground="{DynamicResource NotesTextBrush}">
     <UserControl.Styles>
         <Style Selector="Border:not(:pointerover) ScrollViewer">
             <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
@@ -14,12 +15,15 @@
         </Style>
     </UserControl.Styles>
     <Grid RowDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <!-- Content area background spanning row 1, 2 and 3: Light is pure white, Dark is pure black -->
+        <Border Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource NotesPaperBackground}" />
         <controls:ClickThroughTextBox Grid.Row="0" Name="TitleBox" CornerRadius="0" Height="44"
                                       VerticalContentAlignment="Center" LostFocus="UpdateTitle"
+                                      Foreground="{DynamicResource NotesTitleForegroundBrush}"
                                       FontSize="16" FontWeight="SemiBold" />
         <Path Grid.Row="1" Name="Divider" Height="1" Margin="0,5,0,0" Stretch="Fill"
-              Opacity="0.2" StrokeThickness="2" StrokeDashArray="1,1" StrokeDashOffset="1"
-              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
+              Opacity="0.5" StrokeThickness="1"
+              Stroke="{DynamicResource NotesDividerBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
             </Path.Data>
@@ -32,8 +36,11 @@
                 <StackPanel Name="FilePanel" Margin="0,2,0,0" />
             </ScrollViewer>
             <controls:ClickThroughTextBox Name="ContentBox" MinHeight="0" AcceptsReturn="True"
+                                          Background="Transparent"
+                                          Foreground="{DynamicResource NotesTextBrush}"
                                           TextWrapping="Wrap" IsVisible="False" LostFocus="UpdateContent" />
         </Grid>
-        <TextBlock Grid.Row="3" Name="UpdatedText" Padding="12,0,12,8" FontSize="12" Opacity="0.5" />
+        <TextBlock Grid.Row="3" Name="UpdatedText" Padding="12,0,12,8" FontSize="12" Opacity="0.5"
+                   Foreground="{DynamicResource NotesUpdatedBrush}" />
     </Grid>
 </UserControl>

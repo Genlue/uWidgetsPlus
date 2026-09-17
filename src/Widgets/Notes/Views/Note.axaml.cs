@@ -264,8 +264,9 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     /// </summary>
     private void ApplyHeader(NoteModel model)
     {
+        var theme = appSettingsProvider.Get().Theme;
         var opacity = Math.Clamp(model.HeaderOpacity, 0, 1);
-        var color = model.FollowAccentHeader
+        var color = (theme.IsColorful || model.FollowAccentHeader)
             ? ResolveAccent()
             : Color.TryParse(model.HeaderColor, out var custom) ? custom : Color.Parse("#3376CD");
         TitleBox.Background = new SolidColorBrush(color, opacity);

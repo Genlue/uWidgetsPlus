@@ -154,6 +154,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ProfilesListChanged += OnProfilesChanged;
         if (ContextMenu != null)
             ContextMenu.Opened += OnContextMenuOpened;
+        ActualThemeVariantChanged += OnActualThemeVariantChanged;
         Unloaded += OnUnloaded;
     }
 
@@ -356,9 +357,31 @@ public partial class Widget : Window, INotifyPropertyChanged
             ? new Thickness(appSettingsProvider.Get().Dimensions.Margin)
             : new Thickness(0));
 
-    public IBrush WidgetCardBackground => isFrameless
-        ? Brushes.Transparent
-        : (this.TryFindResource("WidgetBackground", out var res) && res is IBrush brush ? brush : Brushes.Transparent);
+    public IBrush WidgetCardBackground
+    {
+        get
+        {
+            if (isFrameless) return Brushes.Transparent;
+            var theme = appSettingsProvider.Get().Theme;
+            if (theme.IsColorful)
+            {
+                var contentName = ContentPresenter?.Content?.GetType().Name;
+                if (contentName == "Forecast")
+                {
+                    if (this.TryFindResource("WeatherCardBackground", out var wcb) && wcb is IBrush wb)
+                        return wb;
+                }
+                else if (contentName == "Progress")
+                {
+                    if (this.TryFindResource("ProgressCardBackground", out var pcb) && pcb is IBrush pb)
+                        return pb;
+                }
+            }
+            return this.TryFindResource("WidgetBackground", out var res) && res is IBrush brush
+                ? brush
+                : Brushes.Transparent;
+        }
+    }
 
     /// <summary>
     /// Context-menu size section title: "Grid size" in manual mode, with the
@@ -823,6 +846,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         layoutProvider.DataChanged -= OnLayoutDataUpdated;
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, EventArgs e)
+    {
+        Notify(nameof(WidgetCardBackground));
+        Notify(nameof(WidgetOutlineBrush));
     }
 
     private void OnWidgetLayoutUpdated(object? sender, WidgetLayout? oldLayout, WidgetLayout newLayout)

@@ -98,17 +98,17 @@ public record Theme(
 
     /// <summary>
     /// True for surfaces that use a translucent, blur-capable backdrop
-    /// (frosted glass and its outlined variant); false for <see cref="SurfaceStyle.Solid"/>.
+    /// (frosted glass and its outlined variant); false for <see cref="SurfaceStyle.Solid"/> and <see cref="SurfaceStyle.Colorful"/>.
     /// </summary>
-    public bool IsGlass => EffectiveSurface != SurfaceStyle.Solid;
+    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass;
 
     /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>Only frosted glass and colorful mode use the native, fixed-radius acrylic backdrop.</summary>
-    public bool UsesNativeBlur => IsGlass && !IsLiquidGlass;
+    /// <summary>Only frosted glass (毛玻璃) uses the native, fixed-radius acrylic backdrop.</summary>
+    public bool UsesNativeBlur => EffectiveSurface == SurfaceStyle.Acrylic;
 
-    /// <summary>True for the 多彩 / macOS vibrant theme.</summary>
+    /// <summary>True for the 多彩 / macOS flat opaque widget theme.</summary>
     public bool IsColorful => EffectiveSurface == SurfaceStyle.Colorful;
 
     /// <summary>Defaults and validated ranges for old or manually edited configurations.</summary>

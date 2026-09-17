@@ -3,6 +3,11 @@
              xmlns:viewModels="clr-namespace:Weather.ViewModels"
              x:Class="Weather.Views.Controls.ForecastSmall"
              x:DataType="viewModels:ForecastViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource WeatherForegroundBrush}" />
+        </Style>
+    </UserControl.Styles>
     <Viewbox Stretch="Uniform" StretchDirection="Both" HorizontalAlignment="Left">
         <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" FontSize="16" FontWeight="Bold" 

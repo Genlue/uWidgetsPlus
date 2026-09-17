@@ -135,7 +135,8 @@
             </controls:Setting>
         </StackPanel>
         <controls:Setting Icon="{DynamicResource Color}" 
-                          Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}">
+                          Title="{x:Static locales:Locale.Settings_Appearance_AccentColor_Title}"
+                          IsVisible="{Binding ShowAccentSetting}">
             <StackPanel Orientation="Horizontal" Spacing="16">
                 <ColorPicker Height="36" Width="72"
                              IsVisible="{Binding ShowColorPalette}" 

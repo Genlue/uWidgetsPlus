@@ -38,6 +38,14 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="Black" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="Black" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="Black" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="Black" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="Black" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="Black" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="Black" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="Black" />
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="White" />
@@ -67,6 +75,14 @@
                     <SolidColorBrush x:Key="WeatherGaugeBrush" Color="White" />
                     <SolidColorBrush x:Key="WeatherTempBarBrush" Color="White" />
                     <SolidColorBrush x:Key="WeatherCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="NotesTextBrush" Color="White" />
+                    <SolidColorBrush x:Key="NotesTitleForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="NotesDividerBrush" Color="White" />
+                    <SolidColorBrush x:Key="NotesUpdatedBrush" Color="White" />
+                    <SolidColorBrush x:Key="ClockHandBrush" Color="White" />
+                    <SolidColorBrush x:Key="WeatherForegroundBrush" Color="White" />
+                    <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

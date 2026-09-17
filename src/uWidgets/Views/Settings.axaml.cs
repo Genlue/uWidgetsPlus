@@ -87,7 +87,7 @@ public partial class Settings : Window
         var theme = appSettingsProvider.Get().Theme;
         GlassSurface.Material = theme;
         GlassSurface.IsVisible = theme.IsLiquidGlass;
-        TransparencyLevelHint = theme.UsesNativeBlur
+        TransparencyLevelHint = (theme.UsesNativeBlur || theme.IsColorful)
             ? [WindowTransparencyLevel.AcrylicBlur]
             : [WindowTransparencyLevel.Transparent];
     }

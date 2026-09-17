@@ -116,7 +116,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         isFrameless = control is IFramelessWidget;
         if (isFrameless)
             control.Classes.Add("Frameless");
-        if (control is IFixedSizeWidget && control.GetType().Name == "AggregateView")
+        if ((control is IFixedSizeWidget && control.GetType().Name == "AggregateView") || control.GetType().Name == "Note")
             control.Classes.Add("Flush");
         ContentPresenter.Content = control;
         
@@ -268,6 +268,51 @@ public partial class Widget : Window, INotifyPropertyChanged
         ? new(0)
         : new(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius) / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
 
+    /// <summary>
+    /// Concentric inner corner radius for cards/boxes placed inside the widget (e.g. Translator textboxes, Clipboard item cards).
+    /// Follows Apple HIG concentric curvature: R_inner ≈ round(R_outer * 0.70). If outer is square (0), inner is 0.
+    /// </summary>
+    public CornerRadius InnerRadius
+    {
+        get
+        {
+            var r = Radius.TopLeft;
+            if (r <= 0) return new CornerRadius(0);
+            return new CornerRadius(Math.Max(2, Math.Round(r * 0.70)));
+        }
+    }
+
+    /// <summary>
+    /// Concentric pill / button corner radius for controls placed inside the widget (e.g. language menu pills, action buttons).
+    /// </summary>
+    public CornerRadius PillRadius
+    {
+        get
+        {
+            var r = Radius.TopLeft;
+            if (r <= 0) return new CornerRadius(0);
+            return new CornerRadius(Math.Max(2, Math.Round(r * 0.40)));
+        }
+    }
+
+    /// <summary>
+    /// Publish dynamic corner radius resources to the widget's ResourceDictionary so child views can bind via DynamicResource.
+    /// </summary>
+    private void UpdateAdaptiveRadiusResources()
+    {
+        var cardRadius = Radius;
+        var innerRadius = InnerRadius;
+        var pillRadius = PillRadius;
+
+        Resources["WidgetCardCornerRadius"] = cardRadius;
+        Resources["WidgetInnerCornerRadius"] = innerRadius;
+        Resources["WidgetPillCornerRadius"] = pillRadius;
+
+        Notify(nameof(Radius));
+        Notify(nameof(InnerRadius));
+        Notify(nameof(PillRadius));
+    }
+
     public Theme GlassMaterial => appSettingsProvider.Get().Theme;
     public bool IsLiquidGlass => !isFrameless && GlassMaterial.IsLiquidGlass;
 
@@ -363,21 +408,22 @@ public partial class Widget : Window, INotifyPropertyChanged
         {
             if (isFrameless) return Brushes.Transparent;
             var theme = appSettingsProvider.Get().Theme;
+            var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
                 var contentName = ContentPresenter?.Content?.GetType().Name;
                 if (contentName == "Forecast")
                 {
-                    if (this.TryFindResource("WeatherCardBackground", out var wcb) && wcb is IBrush wb)
+                    if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
                         return wb;
                 }
-                else if (contentName == "Progress")
+                else if (contentName is "Progress" or "ProgressView")
                 {
-                    if (this.TryFindResource("ProgressCardBackground", out var pcb) && pcb is IBrush pb)
+                    if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
                         return pb;
                 }
             }
-            return this.TryFindResource("WidgetBackground", out var res) && res is IBrush brush
+            return this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush
                 ? brush
                 : Brushes.Transparent;
         }
@@ -648,6 +694,8 @@ public partial class Widget : Window, INotifyPropertyChanged
             ContentPresenter.Width = width;
             ContentPresenter.Height = height;
             ContentPresenter.Clip = null;
+
+            UpdateAdaptiveRadiusResources();
             return;
         }
 
@@ -665,7 +713,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         ContentPresenter.Width = innerW;
         ContentPresenter.Height = innerH;
 
-        Notify(nameof(Radius));
+        UpdateAdaptiveRadiusResources();
         var r = Radius.TopLeft;
         var innerR = Math.Max(0, r - outline.Left);
         ContentPresenter.Clip = new RectangleGeometry(new Rect(0, 0, innerW, innerH), innerR, innerR);
@@ -771,6 +819,8 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(WidgetMargin));
             Notify(nameof(WidgetCardBackground));
             Notify(nameof(Radius));
+            Notify(nameof(InnerRadius));
+            Notify(nameof(PillRadius));
             Notify(nameof(SizeMenuTitle));
             Notify(nameof(ToolTipVisible));
             Notify(nameof(WidgetOutlineThickness));

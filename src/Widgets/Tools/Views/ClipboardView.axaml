@@ -21,7 +21,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="7,3" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
         </Style>
@@ -38,7 +38,7 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="7,3" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetPillCornerRadius}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
@@ -49,7 +49,7 @@
             <Setter Property="Background" Value="#16808080" />
             <Setter Property="BorderBrush" Value="#15ffffff" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="{DynamicResource WidgetInnerCornerRadius}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Transitions">
                 <Transitions>
@@ -169,7 +169,7 @@
 
         <!-- Toast Notification Banner -->
         <Border x:Name="ToastBanner" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center"
-                Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="12" Padding="14,4" Margin="0,4,0,0"
+                Background="{DynamicResource SystemControlHighlightAccentBrush}" CornerRadius="{DynamicResource WidgetInnerCornerRadius}" Padding="14,4" Margin="0,4,0,0"
                 IsVisible="False" ZIndex="10">
             <TextBlock x:Name="ToastText" Text="{x:Static locales:Locale.Tools_Clipboard_Copied}" FontSize="12" FontWeight="SemiBold"
                        Foreground="White" />

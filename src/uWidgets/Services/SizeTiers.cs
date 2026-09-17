@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.VisualTree;
 
@@ -69,13 +70,17 @@ public static class SizeTiers
         var span = FindHostSpan(view);
         if (span == null)
         {
-            // No widget host (gallery preview): fall back to the pixel bands.
+            // No widget host (gallery preview / tests): fall back to the pixel bands.
             var size = pixelSize ?? view.Bounds.Size;
             if (IsCell(size)) return WidgetTier.Cell;
             if (IsRow(size)) return WidgetTier.Other;
-            return size.Width <= CellSide * 2.5 && size.Height <= CellSide * 2.5
-                ? WidgetTier.Small
-                : WidgetTier.Large;
+            if (size.Width <= CellSide * 2.5 && size.Height <= CellSide * 2.5 && Math.Abs(size.Width - size.Height) <= 60)
+                return WidgetTier.Small;
+            if (size.Width >= size.Height * 1.35 && size.Height <= CellSide * 2.5)
+                return WidgetTier.Medium;
+            if (size.Width > CellSide * 2.2 && size.Height > CellSide * 2.2)
+                return WidgetTier.Large;
+            return size.Width > size.Height * 1.35 ? WidgetTier.Medium : WidgetTier.Small;
         }
 
         var (columns, rows) = span.Value;

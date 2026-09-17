@@ -120,6 +120,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         Dispatcher.UIThread.Post(ConfigureScrollers);
         RebuildMenus();
         UpdatePillLabels();
+        UpdateAdaptiveCornerRadii();
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -145,6 +146,7 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
         var tier = ResolveTier(size);
         ApplyTier(tier);
+        UpdateAdaptiveCornerRadii();
     }
 
     private WidgetTier ResolveTier(Size size)
@@ -303,6 +305,44 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
 
         ConfigureScrollers();
         UpdatePillLabels();
+        UpdateAdaptiveCornerRadii();
+    }
+
+    /// <summary>
+    /// Adaptively match the inner textboxes and buttons to the host widget's corner radius (Apple HIG concentric curvature).
+    /// </summary>
+    private void UpdateAdaptiveCornerRadii()
+    {
+        CornerRadius? targetInner = null;
+        CornerRadius? targetPill = null;
+
+        var widget = this.FindAncestorOfType<uWidgets.Views.Widget>();
+        if (widget != null)
+        {
+            targetInner = widget.InnerRadius;
+            targetPill = widget.PillRadius;
+        }
+        else if (this.TryFindResource("WidgetInnerCornerRadius", ActualThemeVariant, out var ir) && ir is CornerRadius innerCr)
+        {
+            targetInner = innerCr;
+            if (this.TryFindResource("WidgetPillCornerRadius", ActualThemeVariant, out var pr) && pr is CornerRadius pillCr)
+            {
+                targetPill = pillCr;
+            }
+        }
+
+        if (targetInner.HasValue)
+        {
+            InputBoxBorder.CornerRadius = targetInner.Value;
+            OutputBoxBorder.CornerRadius = targetInner.Value;
+        }
+
+        if (targetPill.HasValue)
+        {
+            SourceLangBtn.CornerRadius = targetPill.Value;
+            TargetLangBtn.CornerRadius = targetPill.Value;
+            EngineBtn.CornerRadius = targetPill.Value;
+        }
     }
 
     private void ConfigureScrollers()

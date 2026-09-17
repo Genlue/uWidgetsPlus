@@ -8,6 +8,7 @@ namespace Monitor.ViewModels;
 /// </summary>
 public class MultiDashboardItemViewModel : ReactiveObject
 {
+    public Monitor.Models.MetricType Type { get; init; }
     private MetricViewModel? metric;
 
     public MetricViewModel? Metric

@@ -17,7 +17,7 @@
             <Setter Property="Height" Value="3"/>
             <Setter Property="CornerRadius" Value="1.5"/>
             <Setter Property="Background" Value="#20FFFFFF"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource MusicAccentBrush}"/>
             <Setter Property="Template">
                 <ControlTemplate>
                     <Border Name="ProgressBarRoot"
@@ -76,8 +76,8 @@
                         <Border Background="#12FFFFFF" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                         <PathIcon Data="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                                   Width="24" Height="24"
-                                  Opacity="0.45"
-                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  Opacity="0.75"
+                                  Foreground="{DynamicResource MusicAccentBrush}"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Panel>
                     <!-- Album Artwork -->

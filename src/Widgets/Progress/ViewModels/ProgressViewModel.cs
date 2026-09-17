@@ -192,16 +192,24 @@ public class ProgressViewModel : ReactiveObject, IDisposable
     private void UpdateBrushes()
     {
         Color passedColor = Color.Parse("#BDB2FF"); // Soft lavender fallback
+        var theme = appSettingsProvider?.Get()?.Theme;
         if (model.FollowAccentColor)
         {
-            var accentHex = appSettingsProvider?.Get()?.Theme?.AccentColor;
-            if (!string.IsNullOrEmpty(accentHex) && Color.TryParse(accentHex, out var parsed))
+            if (theme != null && theme.IsColorful)
             {
-                passedColor = parsed;
+                passedColor = Color.Parse("#30D158"); // Apple Fitness / Activity vibrant green
             }
             else
             {
-                passedColor = Color.Parse("#7B61FF");
+                var accentHex = theme?.AccentColor;
+                if (!string.IsNullOrEmpty(accentHex) && Color.TryParse(accentHex, out var parsed))
+                {
+                    passedColor = parsed;
+                }
+                else
+                {
+                    passedColor = Color.Parse("#7B61FF");
+                }
             }
         }
         else if (!string.IsNullOrEmpty(model.PassedColor) && Color.TryParse(model.PassedColor, out var parsedPassed))
@@ -211,7 +219,11 @@ public class ProgressViewModel : ReactiveObject, IDisposable
         PassedBrush = new SolidColorBrush(passedColor);
 
         Color curColor = Color.Parse("#FF2A85"); // Vibrant magenta for current highlight
-        if (!string.IsNullOrEmpty(model.CurrentColor) && Color.TryParse(model.CurrentColor, out var parsedCur))
+        if (model.FollowAccentColor && theme != null && theme.IsColorful)
+        {
+            curColor = Color.Parse("#FF375F"); // Apple Fitness vibrant red
+        }
+        else if (!string.IsNullOrEmpty(model.CurrentColor) && Color.TryParse(model.CurrentColor, out var parsedCur))
         {
             curColor = parsedCur;
         }

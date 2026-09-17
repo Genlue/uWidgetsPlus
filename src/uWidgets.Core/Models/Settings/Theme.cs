@@ -105,8 +105,11 @@ public record Theme(
     /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>Only frosted glass uses the native, fixed-radius acrylic backdrop.</summary>
+    /// <summary>Only frosted glass and colorful mode use the native, fixed-radius acrylic backdrop.</summary>
     public bool UsesNativeBlur => IsGlass && !IsLiquidGlass;
+
+    /// <summary>True for the 多彩 / macOS vibrant theme.</summary>
+    public bool IsColorful => EffectiveSurface == SurfaceStyle.Colorful;
 
     /// <summary>Defaults and validated ranges for old or manually edited configurations.</summary>
     public LiquidGlassSettings EffectiveLiquidGlass => (LiquidGlass ?? new()).Normalize();

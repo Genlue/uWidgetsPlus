@@ -53,13 +53,14 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// The three surface presets: frosted glass, solid and static liquid glass.
+    /// The four surface presets: frosted glass, solid, static liquid glass and colorful (macOS).
     /// </summary>
-    private static readonly Theme[] SurfaceTemplates =
+    public static readonly Theme[] SurfaceTemplates =
     [
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass)
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.70, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Colorful)
     ];
 
     public ThemeButton[] Themes { get; }

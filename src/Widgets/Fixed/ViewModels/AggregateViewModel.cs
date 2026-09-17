@@ -185,13 +185,14 @@ public class AggregateViewModel : ReactiveObject, IDisposable
 
     private static IBrush ResolveAccentBrush()
     {
-        if (Application.Current != null &&
-            Application.Current.TryFindResource("SystemAccentColor", out var value) &&
-            value is Color accent)
+        if (Application.Current != null)
         {
-            return new SolidColorBrush(accent);
+            if (Application.Current.TryFindResource("CalendarTodayBrush", out var calBrush) && calBrush is IBrush cb)
+                return cb;
+            if (Application.Current.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
+                return new SolidColorBrush(accent);
         }
-        return new SolidColorBrush(Color.Parse("#FF7043"));
+        return new SolidColorBrush(Color.Parse("#FF3B30"));
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)

@@ -23,6 +23,8 @@ public partial class SingleMetric : UserControl
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         InitializeComponent();
+        Ring.ApplyMetricType(model.Metric);
+        LandscapeRing.ApplyMetricType(model.Metric);
     }
 
     /// <summary>

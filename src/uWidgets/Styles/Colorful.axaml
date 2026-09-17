@@ -1,0 +1,126 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 多彩 (Colorful / macOS Vibrant) theme:
+         Recreates authentic macOS Sonoma / Sequoia widget design.
+         Uses OS-level AcrylicBlur for a vibrant, translucent frosted backdrop,
+         while rendering rich, semantic system colors for each widget. -->
+    <Style Selector="Window">
+        <Setter Property="TransparencyLevelHint" Value="AcrylicBlur" />
+    </Style>
+
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- ==================== Light Theme ==================== -->
+                <ResourceDictionary x:Key="Default">
+                    <!-- macOS Vibrancy Frosted Glass Card Background -->
+                    <SolidColorBrush x:Key="WidgetBackground" Color="#F2FFFFFF" Opacity="{DynamicResource BackgroundOpacity}" />
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#30000000" />
+                    <SolidColorBrush x:Key="WidgetInnerHighlightBrush" Color="#60FFFFFF" />
+
+                    <!-- Apple Human Interface Guidelines System Colors (Light) -->
+                    <SolidColorBrush x:Key="MacosRedBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="MacosOrangeBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MacosYellowBrush" Color="#FFCC00" />
+                    <SolidColorBrush x:Key="MacosGreenBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="MacosMintBrush" Color="#00C7BE" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MacosCyanBrush" Color="#32ADE6" />
+                    <SolidColorBrush x:Key="MacosBlueBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MacosIndigoBrush" Color="#5856D6" />
+                    <SolidColorBrush x:Key="MacosPurpleBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MacosPinkBrush" Color="#FF2D55" />
+
+                    <!-- Semantic Widget Brushes -->
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="#FF3B30" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="#E5A93C" />
+                    <SolidColorBrush x:Key="NotesPaperBackground" Color="#FCF9F2" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="#FA243C" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="#AF52DE" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="#30B0C7" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#0F0071E3" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FF2D55" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#34C759" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="#00D2FF" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="#007AFF" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="#FF9500" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="#007AFF" />
+                    <LinearGradientBrush x:Key="WeatherTempBarBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#34C759" />
+                        <GradientStop Offset="0.5" Color="#FFCC00" />
+                        <GradientStop Offset="1" Color="#FF9500" />
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="WeatherCardBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0" Color="#281E75C8" />
+                        <GradientStop Offset="1" Color="#104596E6" />
+                    </LinearGradientBrush>
+                </ResourceDictionary>
+
+                <!-- ==================== Dark Theme ==================== -->
+                <ResourceDictionary x:Key="Dark">
+                    <!-- macOS Dark Graphite Frosted Glass Card Background -->
+                    <SolidColorBrush x:Key="WidgetBackground" Color="#D81C1C1E" Opacity="{DynamicResource BackgroundOpacity}" />
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#28FFFFFF" />
+                    <SolidColorBrush x:Key="WidgetInnerHighlightBrush" Color="#20FFFFFF" />
+
+                    <!-- Apple Human Interface Guidelines System Colors (Dark) -->
+                    <SolidColorBrush x:Key="MacosRedBrush" Color="#FF453A" />
+                    <SolidColorBrush x:Key="MacosOrangeBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="MacosYellowBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="MacosGreenBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="MacosMintBrush" Color="#63E6E2" />
+                    <SolidColorBrush x:Key="MacosTealBrush" Color="#40C8E0" />
+                    <SolidColorBrush x:Key="MacosCyanBrush" Color="#64D2FF" />
+                    <SolidColorBrush x:Key="MacosBlueBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="MacosIndigoBrush" Color="#5E5CE6" />
+                    <SolidColorBrush x:Key="MacosPurpleBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="MacosPinkBrush" Color="#FF375F" />
+
+                    <!-- Semantic Widget Brushes -->
+                    <SolidColorBrush x:Key="CalendarHeaderBrush" Color="#FF453A" />
+                    <SolidColorBrush x:Key="CalendarTodayBrush" Color="#FF453A" />
+                    <SolidColorBrush x:Key="ClockSecondHandBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="ClockCenterPinBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="RemindersBadgeBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="RemindersCheckBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="NotesAccentBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="NotesPaperBackground" Color="#242426" />
+                    <SolidColorBrush x:Key="MusicAccentBrush" Color="#FC3C44" />
+                    <SolidColorBrush x:Key="MonitorCpuBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="MonitorRamBrush" Color="#BF5AF2" />
+                    <SolidColorBrush x:Key="MonitorDiskBrush" Color="#FF9F0A" />
+                    <SolidColorBrush x:Key="MonitorNetBrush" Color="#40C8E0" />
+                    <SolidColorBrush x:Key="MonitorBatteryBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="FolderAccentBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="TranslateAccentBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="TranslateCardBackground" Color="#220A84FF" />
+                    <SolidColorBrush x:Key="ProgressMoveBrush" Color="#FF375F" />
+                    <SolidColorBrush x:Key="ProgressExerciseBrush" Color="#30D158" />
+                    <SolidColorBrush x:Key="ProgressStandBrush" Color="#64D2FF" />
+                    <SolidColorBrush x:Key="SearchMagnifierBrush" Color="#0A84FF" />
+                    <SolidColorBrush x:Key="WeatherIconBrush" Color="#FFD60A" />
+                    <SolidColorBrush x:Key="WeatherGaugeBrush" Color="#0A84FF" />
+                    <LinearGradientBrush x:Key="WeatherTempBarBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Offset="0" Color="#30D158" />
+                        <GradientStop Offset="0.5" Color="#FFD60A" />
+                        <GradientStop Offset="1" Color="#FF9F0A" />
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="WeatherCardBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0" Color="#381B3B60" />
+                        <GradientStop Offset="1" Color="#180B1A2C" />
+                    </LinearGradientBrush>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+</Styles>

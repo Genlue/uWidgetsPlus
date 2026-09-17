@@ -116,7 +116,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         isFrameless = control is IFramelessWidget;
         if (isFrameless)
             control.Classes.Add("Frameless");
-        if (control is IFixedSizeWidget)
+        if (control is IFixedSizeWidget && control.GetType().Name == "AggregateView")
             control.Classes.Add("Flush");
         ContentPresenter.Content = control;
         
@@ -277,7 +277,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     private bool IsOutlined =>
         !isFrameless
         && appSettingsProvider.Get().Theme.IsGlass
-        && appSettingsProvider.Get().Theme.OutlineWidth > 0
+        && (appSettingsProvider.Get().Theme.OutlineWidth > 0 || appSettingsProvider.Get().Theme.IsColorful)
         && !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
@@ -287,6 +287,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         {
             if (!IsOutlined) return new Thickness(0);
             var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
+            if (width <= 0 && appSettingsProvider.Get().Theme.IsColorful)
+                return new Thickness(1);
             return new Thickness(width);
         }
     }
@@ -298,8 +300,20 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// the whole edge, not just a short notch near the corner). Built as a conic
     /// gradient whose sweep starts at the actual top-left corner, so the fades
     /// follow the real corners for any aspect ratio.
+    /// In Colorful mode, a subtle 1px macOS card rim light is used by default.
     /// </summary>
-    public IBrush? WidgetOutlineBrush => IsOutlined ? BuildOutlineBrush() : null;
+    public IBrush? WidgetOutlineBrush
+    {
+        get
+        {
+            if (!IsOutlined) return null;
+            if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
+                return BuildOutlineBrush();
+            if (appSettingsProvider.Get().Theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
+                return b;
+            return null;
+        }
+    }
 
     private ConicGradientBrush BuildOutlineBrush()
     {
@@ -401,6 +415,8 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private IFixedSizeWidget? FixedSizeWidget => ContentPresenter.Content as IFixedSizeWidget;
     public bool IsFixedWidget => FixedSizeWidget != null;
+    public bool IsFixed2x1Widget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((4, 2));
+    public bool IsFixedSquareWidget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((1, 1));
 
     public void SetFixedSpanPreset(string spanTag)
     {
@@ -427,7 +443,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (next == columns) return;
             if (FixedSizeWidget is { } fixedWidget)
             {
-                var snapped = fixedWidget.SnapSpan(next, rows);
+                var snapped = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                    ? fixedWidget.SnapSpan(next, next)
+                    : fixedWidget.SnapSpan(next, rows);
                 if (snapped.Columns == columns && snapped.Rows == rows) return;
                 _ = Resize(snapped.Columns, snapped.Rows);
                 return;
@@ -448,7 +466,9 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (next == rows) return;
             if (FixedSizeWidget is { } fixedWidget)
             {
-                var snapped = fixedWidget.SnapSpan(columns, next);
+                var snapped = fixedWidget.AllowedBaseSpans.Contains((1, 1))
+                    ? fixedWidget.SnapSpan(next, next)
+                    : fixedWidget.SnapSpan(columns, next);
                 if (snapped.Columns == columns && snapped.Rows == rows) return;
                 _ = Resize(snapped.Columns, snapped.Rows);
                 return;

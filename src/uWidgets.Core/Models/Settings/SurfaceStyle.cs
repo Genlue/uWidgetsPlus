@@ -22,5 +22,8 @@ public enum SurfaceStyle
     /// enabled by <see cref="Theme.OutlineWidth"/> &gt; 0 with
     /// <see cref="Theme.OutlineColor"/>.
     /// </summary>
-    OutlinedAcrylic = 3
+    OutlinedAcrylic = 3,
+
+    /// <summary>多彩 / macOS vibrant widget style: rich multi-color elements compatible with OS acrylic blur and solid fill.</summary>
+    Colorful = 4
 }

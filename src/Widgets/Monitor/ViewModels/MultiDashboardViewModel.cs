@@ -18,6 +18,7 @@ public class MultiDashboardViewModel : ReactiveObject, IDisposable
         Items = types
             .Select(type => new MultiDashboardItemViewModel
             {
+                Type = type,
                 Metric = new MetricViewModel(0d, MetricService.GetMetricIcon(type))
             })
             .ToArray();

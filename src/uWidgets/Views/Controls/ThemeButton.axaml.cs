@@ -22,9 +22,10 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     public Bitmap Wallpaper => wallpaper;
     public bool DimWallpaper => AppTheme.DarkMode == true;
     public bool IsLiquidGlass => AppTheme.IsLiquidGlass;
+    public bool IsColorful => AppTheme.IsColorful;
     public bool IsFrosted => AppTheme.UsesNativeBlur;
     public bool IsSelected => appSettingsProvider.Get().Theme.EffectiveSurface == AppTheme.EffectiveSurface
-        || (IsFrosted && appSettingsProvider.Get().Theme.EffectiveSurface == SurfaceStyle.OutlinedAcrylic);
+        || (IsFrosted && !IsColorful && appSettingsProvider.Get().Theme.EffectiveSurface == SurfaceStyle.OutlinedAcrylic);
     public IBrush SelectionBrush => IsSelected ? Brushes.DodgerBlue : Brushes.Transparent;
     public Theme GlassMaterial => appSettingsProvider.Get().Theme with
     {
@@ -37,12 +38,17 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         {
             var theme = appSettingsProvider.Get().Theme;
             var dark = IsDark();
+            if (IsColorful)
+            {
+                var color = dark ? Color.Parse("#D81C1C1E") : Color.Parse("#F2FFFFFF");
+                return new SolidColorBrush(color, AppTheme.OpacityLevel);
+            }
             // Both surfaces use the user's custom dark/light background colors
             // (defaults: dark #2E2E2E, light #FFFFFF).
-            var color = dark
+            var bg = dark
                 ? ParseColor(theme.EffectiveSolidBackgroundDark, "#2E2E2E")
                 : ParseColor(theme.EffectiveSolidBackgroundLight, "#FFFFFF");
-            return new SolidColorBrush(color, AppTheme.OpacityLevel);
+            return new SolidColorBrush(bg, AppTheme.OpacityLevel);
         }
     }
 
@@ -61,9 +67,10 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
         : new FontFamily(AppTheme.FontFamily);
 
-    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色).</summary>
-    public string ThemeName => IsLiquidGlass ? Locale.Settings_Appearance_Surface_LiquidGlass : AppTheme.IsGlass
-        ? Locale.Settings_Appearance_Surface_Frosted
+    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 多彩).</summary>
+    public string ThemeName => IsLiquidGlass ? Locale.Settings_Appearance_Surface_LiquidGlass
+        : IsColorful ? Locale.Settings_Appearance_Surface_Colorful
+        : AppTheme.IsGlass ? Locale.Settings_Appearance_Surface_Frosted
         : Locale.Settings_Appearance_Surface_Solid;
 
     private static Color ParseColor(string hex, string fallbackHex) =>
@@ -115,6 +122,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         {
             var theme = appSettingsProvider.Get().Theme;
             var dark = IsDark();
+            if (IsColorful)
+                return new SolidColorBrush(dark ? Color.Parse("#FF453A") : Color.Parse("#FF3B30"));
             // 黑白 monochrome: white in dark mode, black in light mode.
             if (theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
                 return new SolidColorBrush(dark ? Colors.White : Colors.Black);
@@ -187,6 +196,7 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     /// Applies only the surface material (glass vs solid). Dark mode, accent color,
     /// monochrome, font and native frame are set by their own controls and preserved,
     /// so choosing a material no longer resets the user's other appearance choices.
+    /// Choosing Colorful automatically enables multi-color mode (Monochrome = false).
     /// </summary>
     private void Apply(object? sender, RoutedEventArgs e)
     {
@@ -195,7 +205,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         var newTheme = settings.Theme with
         {
             Surface = AppTheme.EffectiveSurface,
-            OpacityLevel = AppTheme.OpacityLevel
+            OpacityLevel = AppTheme.OpacityLevel,
+            Monochrome = AppTheme.IsColorful ? false : settings.Theme.Monochrome
         };
         appSettingsProvider.Save(settings with { Theme = newTheme });
     }

@@ -180,11 +180,15 @@ public partial class Month : UserControl
         TodayDotBrush = brush;
     }
 
-    /// <summary>The theme accent as a brush, or null while the resource is not resolvable yet.</summary>
-    private IBrush? ResolveAccentBrush() =>
-        this.TryFindResource("SystemAccentColor", out var value) && value is Color accent
-            ? new SolidColorBrush(accent)
-            : null;
+    /// <summary>The theme accent / calendar today brush, or null while the resource is not resolvable yet.</summary>
+    private IBrush? ResolveAccentBrush()
+    {
+        if (this.TryFindResource("CalendarTodayBrush", out var calBrush) && calBrush is IBrush cb)
+            return cb;
+        if (this.TryFindResource("SystemAccentColor", out var value) && value is Color accent)
+            return new SolidColorBrush(accent);
+        return null;
+    }
 
     public static readonly StyledProperty<double> TextSizeProperty = 
         AvaloniaProperty.Register<Month, double>(nameof(TextSize), 12);

@@ -49,7 +49,7 @@
                     <!-- Mini Search Badge at bottom-right -->
                     <Border Width="15" Height="15"
                             CornerRadius="7.5"
-                            Background="#D0333333"
+                            Background="{DynamicResource SearchMagnifierBrush}"
                             BorderBrush="#40FFFFFF"
                             BorderThickness="1"
                             HorizontalAlignment="Right"

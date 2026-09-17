@@ -761,6 +761,15 @@ namespace uWidgets.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Colorful.
+        /// </summary>
+        public static string Settings_Appearance_Surface_Colorful {
+            get {
+                return ResourceManager.GetString("Settings_Appearance_Surface_Colorful", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Inter, round corners, no border, no shadow.
         /// </summary>
         public static string Settings_Appearance_Presets_Apple_Subtitle {

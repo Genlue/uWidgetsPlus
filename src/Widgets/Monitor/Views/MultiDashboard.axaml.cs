@@ -70,6 +70,11 @@ public partial class MultiDashboard : UserControl
         Item1.DataContext = viewModel.Items[1];
         Item2.DataContext = viewModel.Items[2];
         Item3.DataContext = viewModel.Items[3];
+
+        Ring0.ApplyMetricType(viewModel.Items[0].Type);
+        Ring1.ApplyMetricType(viewModel.Items[1].Type);
+        Ring2.ApplyMetricType(viewModel.Items[2].Type);
+        Ring3.ApplyMetricType(viewModel.Items[3].Type);
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyLayout();

@@ -39,6 +39,11 @@ public class ThemeService : IThemeService
     {
         Source = new Uri("avares://uWidgets/Styles/LiquidGlass.axaml")
     };
+
+    private readonly StyleInclude colorfulStyle = new(new Uri("avares://uWidgets/"))
+    {
+        Source = new Uri("avares://uWidgets/Styles/Colorful.axaml")
+    };
     
     private readonly StyleInclude monochromeStyle = new(new Uri("avares://uWidgets/"))
     {
@@ -99,18 +104,27 @@ public class ThemeService : IThemeService
         // Surface material drives both the background style and the transparency
         // hint: Acrylic/OutlinedAcrylic → OS-level live blur, Solid → per-pixel
         // transparency so the opacity slider actually blends with the desktop.
-        SwitchStyle(transparentStyle, theme.UsesNativeBlur);
-        SwitchStyle(solidStyle, !theme.IsGlass);
-        SwitchStyle(liquidGlassStyle, theme.IsLiquidGlass);
+        // Colorful (macOS) uses live OS acrylic blur with rich system semantic colors.
+        // Always on base accent fallback (generic icons / title fallback)
+        SwitchStyle(accentStyle, true);
 
         // Monochrome color source: 黑白 = black in light / white in dark mode
         // (both text AND accent colors), 强调色 = accent-based (the historic
         // Monochrome.axaml dictionaries — accent stays accent, text becomes accent).
         var monochrome = theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite;
-        // Always on, but before the monochrome styles so override precedence is stable.
-        SwitchStyle(accentStyle, true);
         SwitchStyle(monochromeBlackWhiteStyle, monochrome);
         SwitchStyle(monochromeStyle, theme.Monochrome && !monochrome);
+
+        // Surface material background styles
+        SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
+        SwitchStyle(solidStyle, !theme.IsGlass && !theme.IsColorful);
+        SwitchStyle(liquidGlassStyle, theme.IsLiquidGlass);
+
+        // Colorful (macOS) uses live OS acrylic blur with rich Apple HIG system semantic colors.
+        // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
+        // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
+        var isColorful = theme.IsColorful || !theme.Monochrome;
+        SwitchStyle(colorfulStyle, isColorful);
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

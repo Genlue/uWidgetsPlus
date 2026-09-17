@@ -273,6 +273,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
 
     private Color ResolveAccent()
     {
+        if (this.TryFindResource("NotesAccentBrush", out var res) && res is ISolidColorBrush scb) return scb.Color;
         var theme = appSettingsProvider.Get().Theme.AccentColor;
         if (theme != null && Color.TryParse(theme, out var accent)) return accent;
         if (this.TryFindResource("SystemAccentColor", out var accentResource) && accentResource is Color system) return system;

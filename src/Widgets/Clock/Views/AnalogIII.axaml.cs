@@ -1,13 +1,21 @@
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Clock.Models;
 using Clock.ViewModels;
+using uWidgets.Core.Interfaces;
 
 namespace Clock.Views;
 
-public partial class AnalogIII : UserControl
+public partial class AnalogIII : UserControl, IFixedSizeWidget
 {
     private readonly AnalogClockViewModel viewModel;
+
+    public IReadOnlyList<(int Columns, int Rows)> AllowedBaseSpans => AnalogI.AllowedBaseSpansOf;
+    public IReadOnlyList<(int Columns, int Rows)> PresetSpans => AnalogI.PresetSpansOf;
+
+    public bool IsAllowedSpan(int columns, int rows) => AnalogI.IsAllowedSpanOf(columns, rows);
+    public (int Columns, int Rows) SnapSpan(int columns, int rows) => AnalogI.SnapSpanOf(columns, rows);
 
     public AnalogIII() : this(new ClockModel()) {}
     

@@ -21,9 +21,15 @@
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
             <Separator IsVisible="{Binding ShowEditButton}"/>
             <MenuItem Header="{Binding SizeMenuTitle}">
-                <MenuItem Header="4×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixedWidget}" />
-                <MenuItem Header="6×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="6x3" IsVisible="{Binding IsFixedWidget}" />
-                <MenuItem Header="8×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="8x4" IsVisible="{Binding IsFixedWidget}" />
+                <!-- 4:2 ratio fixed widgets (e.g. Aggregate) -->
+                <MenuItem Header="4×2 (标准 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x2" IsVisible="{Binding IsFixed2x1Widget}" />
+                <MenuItem Header="6×3 (等比放大 150%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="6x3" IsVisible="{Binding IsFixed2x1Widget}" />
+                <MenuItem Header="8×4 (等比放大 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="8x4" IsVisible="{Binding IsFixed2x1Widget}" />
+                <!-- 1:1 square fixed widgets (e.g. Single-dial Analog Clock) -->
+                <MenuItem Header="1×1 (小 100%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="1x1" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="2×2 (标准 200%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="2x2" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="3×3 (中 300%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="3x3" IsVisible="{Binding IsFixedSquareWidget}" />
+                <MenuItem Header="4×4 (大 400%)" Command="{Binding SetFixedSpanPreset}" CommandParameter="4x4" IsVisible="{Binding IsFixedSquareWidget}" />
                 <Separator IsVisible="{Binding IsFixedWidget}" />
                 <MenuItem StaysOpenOnClick="True">
                     <MenuItem.Header>

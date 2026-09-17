@@ -10,9 +10,10 @@
         <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="0" Name="ListNameBox" Padding="0" Margin="0 0 8 0" 
                                       MinHeight="16" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Top"
                                       Text="{Binding ListName}" LostFocus="ListNameChanged"
-                                      Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
+                                      Foreground="{DynamicResource RemindersBadgeBrush}" />
         <TextBlock Grid.Row="0" Grid.Column="1" Name="CountText" Margin="0 -3 6 0" FontSize="20" FontWeight="Bold"
-                   VerticalAlignment="Top" HorizontalAlignment="Right" Text="{Binding Count}" />
+                   VerticalAlignment="Top" HorizontalAlignment="Right" Text="{Binding Count}"
+                   Foreground="{DynamicResource RemindersBadgeBrush}" />
         <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Reminders}">
@@ -23,13 +24,13 @@
                                         DataContext="{Binding}" Click="CompleteReminder" 
                                         Background="Transparent" CornerRadius="8">
                                     <Canvas Width="16" Height="16">
-                                        <Ellipse Width="16" Height="16" StrokeThickness="1"
-                                                 Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                        <Ellipse Width="16" Height="16" StrokeThickness="1.5"
+                                                 Stroke="{DynamicResource RemindersCheckBrush}" />
                                         
                                         <Path Canvas.Left="3" Canvas.Top="3" Width="10" Height="9" Stretch="Fill"
                                               IsVisible="{Binding Completed}" Data="M0,4.5 L3.3,8 L10,0"
                                               StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                                              Stroke="{DynamicResource SystemControlForegroundAccentBrush}" />
+                                              Stroke="{DynamicResource RemindersCheckBrush}" />
                                     </Canvas>
                                 </Button>
                                 <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="1" Padding="8,6,0,6" 
@@ -56,8 +57,8 @@
         </ScrollViewer>
         <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto, *">
             <Canvas Width="16" Height="16" Margin="1 -1 0 0">
-                <Ellipse Width="16" Height="16" StrokeThickness="1" StrokeDashArray="2,2"
-                         Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <Ellipse Width="16" Height="16" StrokeThickness="1.5" StrokeDashArray="2,2"
+                         Stroke="{DynamicResource RemindersCheckBrush}" Opacity="0.6" />
             </Canvas>
             <controls:ClickThroughTextBox Grid.Column="1" LostFocus="CreateReminder" Padding="14,6,0,6" />
         </Grid>

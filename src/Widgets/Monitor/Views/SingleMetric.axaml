@@ -22,7 +22,7 @@
                     <ColumnDefinition Width="80" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <controls:Metric Grid.Column="0" VerticalAlignment="Center" DataContext="{Binding Metric}" />
+                <controls:Metric x:Name="LandscapeRing" Grid.Column="0" VerticalAlignment="Center" DataContext="{Binding Metric}" />
                 <Viewbox Grid.Column="1" Stretch="Uniform" StretchDirection="DownOnly" Margin="8,0,0,0">
                     <TextBlock FontSize="44" TextAlignment="Right" Text="{Binding Metric.Text}" />
                 </Viewbox>

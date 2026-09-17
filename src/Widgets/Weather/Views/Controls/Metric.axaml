@@ -19,7 +19,7 @@
             <Path StrokeThickness="10" StrokeLineCap="Round"
                   StrokeDashArray="21,21"
                   StrokeDashOffset="{Binding StrokeDashOffset}"
-                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                  Stroke="{DynamicResource WeatherGaugeBrush}"
                   RenderTransformOrigin="55,55">
                 <Path.RenderTransform>
                     <RotateTransform Angle="149" />
@@ -36,7 +36,7 @@
             <TextBlock Name="MaxText" Canvas.Right="20" Canvas.Top="80"
                        Opacity="0.5" FontSize="20" FontWeight="SemiBold"
                        Text="{Binding DisplayMax}" />
-            <PathIcon Name="MetricIcon" Foreground="{DynamicResource SystemControlForegroundAccentBrush}" 
+            <PathIcon Name="MetricIcon" Foreground="{DynamicResource WeatherIconBrush}" 
                       Canvas.Left="45" Canvas.Top="80" Data="{Binding Icon}" />
         </Canvas>
     </Viewbox>

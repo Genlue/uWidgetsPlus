@@ -64,7 +64,7 @@
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
                     <Path Data="{Binding WeatherIcon}"
-                          Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                          Fill="{DynamicResource MacosTealBrush}"
                           Width="24" Height="24"
                           Stretch="Uniform"
                           VerticalAlignment="Center"
@@ -107,7 +107,7 @@
                            Text="{Binding MonthYearText}"
                            FontWeight="Bold"
                            FontSize="12"
-                           Foreground="{DynamicResource SystemControlForegroundAccentBrush}"
+                           Foreground="{DynamicResource CalendarHeaderBrush}"
                            Margin="0 0 0 4"
                            HorizontalAlignment="Left" />
 

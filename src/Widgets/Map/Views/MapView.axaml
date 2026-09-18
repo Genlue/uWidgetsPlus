@@ -1,0 +1,496 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Map.Controls"
+             xmlns:viewModels="clr-namespace:Map.ViewModels"
+             xmlns:views="clr-namespace:Map.Views"
+             x:Class="Map.Views.MapView"
+             x:DataType="viewModels:MapViewModel"
+             Margin="0"
+             Padding="0"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             HorizontalContentAlignment="Stretch"
+             VerticalContentAlignment="Stretch"
+             Classes="Flush">
+
+    <UserControl.Styles>
+        <!-- ==================== 悬浮按钮基础结构与动效 ==================== -->
+        <Style Selector="Button.FloatingBtn">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <!-- 自定义背景 Border，避免 Fluent 主题 pointerover 时背景被覆盖置空 -->
+                        <Border Name="PART_ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                BoxShadow="0 2 8 0 #26000000">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- 按钮微交互动效：Hover 放大 1.08x，Pressed 缩小 0.95x，背景永不消失 -->
+        <Style Selector="Button.FloatingBtn:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.08)" />
+        </Style>
+        <Style Selector="Button.FloatingBtn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)" />
+        </Style>
+
+        <!-- ==================== 1. Acrylic (毛玻璃) ==================== -->
+        <!-- 悬浮按钮：模糊半透 -->
+        <Style Selector="Button.FloatingBtn.Acrylic">
+            <Setter Property="Background" Value="#D9FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#80FFFFFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Acrylic:pointerover">
+            <Setter Property="Background" Value="#F5FFFFFF" />
+            <Setter Property="BorderBrush" Value="#B3FFFFFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Acrylic:pressed">
+            <Setter Property="Background" Value="#B3FFFFFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Acrylic, Button.FloatingBtn.Acrylic.DarkMode">
+            <Setter Property="Background" Value="#B32C2C2E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Acrylic:pointerover, Button.FloatingBtn.Acrylic.DarkMode:pointerover">
+            <Setter Property="Background" Value="#D93A3A3D" />
+            <Setter Property="BorderBrush" Value="#66FFFFFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Acrylic:pressed, Button.FloatingBtn.Acrylic.DarkMode:pressed">
+            <Setter Property="Background" Value="#99202022" />
+        </Style>
+
+        <!-- 信息卡片：模糊半透 -->
+        <Style Selector="Border.MapCard.Acrylic">
+            <Setter Property="Background" Value="#CCFFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#80FFFFFF" />
+            <Setter Property="BoxShadow" Value="0 3 10 0 #26000000" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard.Acrylic, Border.MapCard.Acrylic.DarkMode">
+            <Setter Property="Background" Value="#CC2C2C2E" />
+            <Setter Property="BorderBrush" Value="#4DFFFFFF" />
+            <Setter Property="BoxShadow" Value="0 3 10 0 #40000000" />
+        </Style>
+
+        <!-- ==================== 2. Solid (纯色) ==================== -->
+        <!-- 悬浮按钮：100% 纯色不透明 -->
+        <Style Selector="Button.FloatingBtn.Solid">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#E5E5EA" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Solid:pointerover">
+            <Setter Property="Background" Value="#F2F2F7" />
+            <Setter Property="BorderBrush" Value="#D1D1D6" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Solid:pressed">
+            <Setter Property="Background" Value="#E5E5EA" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Solid, Button.FloatingBtn.Solid.DarkMode">
+            <Setter Property="Background" Value="#2C2C2E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#3A3A3C" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Solid:pointerover, Button.FloatingBtn.Solid.DarkMode:pointerover">
+            <Setter Property="Background" Value="#3A3A3C" />
+            <Setter Property="BorderBrush" Value="#48484A" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Solid:pressed, Button.FloatingBtn.Solid.DarkMode:pressed">
+            <Setter Property="Background" Value="#242426" />
+        </Style>
+
+        <!-- 信息卡片：100% 纯色不透明 -->
+        <Style Selector="Border.MapCard.Solid">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#E5E5EA" />
+            <Setter Property="BoxShadow" Value="0 2 8 0 #1A000000" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard.Solid, Border.MapCard.Solid.DarkMode">
+            <Setter Property="Background" Value="#2C2C2E" />
+            <Setter Property="BorderBrush" Value="#3A3A3C" />
+            <Setter Property="BoxShadow" Value="0 2 8 0 #40000000" />
+        </Style>
+
+        <!-- ==================== 3. Liquid Glass (液态玻璃) ==================== -->
+        <!-- 悬浮按钮：质感渐变折射 -->
+        <Style Selector="Button.FloatingBtn.LiquidGlass">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#F0FFFFFF" />
+                    <GradientStop Offset="0.5" Color="#B0FFFFFF" />
+                    <GradientStop Offset="1.0" Color="#D8FFFFFF" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1.2" />
+            <Setter Property="BorderBrush" Value="#CCFFFFFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.LiquidGlass:pointerover">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#FFFFFFFF" />
+                    <GradientStop Offset="0.5" Color="#D0FFFFFF" />
+                    <GradientStop Offset="1.0" Color="#EFFFFFFF" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderBrush" Value="#FFFFFFFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.LiquidGlass:pressed">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#D0FFFFFF" />
+                    <GradientStop Offset="0.5" Color="#99FFFFFF" />
+                    <GradientStop Offset="1.0" Color="#B8FFFFFF" />
+                </LinearGradientBrush>
+            </Setter>
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.LiquidGlass, Button.FloatingBtn.LiquidGlass.DarkMode">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#D942424A" />
+                    <GradientStop Offset="0.5" Color="#882B2B30" />
+                    <GradientStop Offset="1.0" Color="#AA34343A" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1.2" />
+            <Setter Property="BorderBrush" Value="#60FFFFFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.LiquidGlass:pointerover, Button.FloatingBtn.LiquidGlass.DarkMode:pointerover">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#F050505A" />
+                    <GradientStop Offset="0.5" Color="#AA383840" />
+                    <GradientStop Offset="1.0" Color="#CC42424A" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderBrush" Value="#90FFFFFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.LiquidGlass:pressed, Button.FloatingBtn.LiquidGlass.DarkMode:pressed">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#99222226" />
+                    <GradientStop Offset="0.5" Color="#661A1A1E" />
+                    <GradientStop Offset="1.0" Color="#80222226" />
+                </LinearGradientBrush>
+            </Setter>
+        </Style>
+
+        <!-- 信息卡片：液态玻璃高光与深度阴影 -->
+        <Style Selector="Border.MapCard.LiquidGlass">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#F5FFFFFF" />
+                    <GradientStop Offset="0.45" Color="#B8FFFFFF" />
+                    <GradientStop Offset="1.0" Color="#DCFFFFFF" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1.2" />
+            <Setter Property="BorderBrush" Value="#D9FFFFFF" />
+            <Setter Property="BoxShadow" Value="0 6 16 0 #33000000" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard.LiquidGlass, Border.MapCard.LiquidGlass.DarkMode">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Offset="0.0" Color="#D945454E" />
+                    <GradientStop Offset="0.45" Color="#9928282D" />
+                    <GradientStop Offset="1.0" Color="#BF36363E" />
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="BorderThickness" Value="1.2" />
+            <Setter Property="BorderBrush" Value="#66FFFFFF" />
+            <Setter Property="BoxShadow" Value="0 6 16 0 #50000000" />
+        </Style>
+
+        <!-- ==================== 4. Vibrant (多彩) ==================== -->
+        <!-- 悬浮按钮：模糊半透 + 活力蓝强调 -->
+        <Style Selector="Button.FloatingBtn.Vibrant">
+            <Setter Property="Background" Value="#D9F2F7FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#50007AFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Vibrant:pointerover">
+            <Setter Property="Background" Value="#FFF5FAFF" />
+            <Setter Property="BorderBrush" Value="#99007AFF" />
+        </Style>
+        <Style Selector="Button.FloatingBtn.Vibrant:pressed">
+            <Setter Property="Background" Value="#BFDCEEFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Vibrant, Button.FloatingBtn.Vibrant.DarkMode">
+            <Setter Property="Background" Value="#D91A2330" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#600A84FF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Vibrant:pointerover, Button.FloatingBtn.Vibrant.DarkMode:pointerover">
+            <Setter Property="Background" Value="#FF243245" />
+            <Setter Property="BorderBrush" Value="#AA0A84FF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Button.FloatingBtn.Vibrant:pressed, Button.FloatingBtn.Vibrant.DarkMode:pressed">
+            <Setter Property="Background" Value="#B3121A24" />
+        </Style>
+
+        <!-- 信息卡片：模糊半透 + 活力微蓝 -->
+        <Style Selector="Border.MapCard.Vibrant">
+            <Setter Property="Background" Value="#D9F5F8FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#50007AFF" />
+            <Setter Property="BoxShadow" Value="0 3 12 0 #2E007AFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard.Vibrant, Border.MapCard.Vibrant.DarkMode">
+            <Setter Property="Background" Value="#D91E2633" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#600A84FF" />
+            <Setter Property="BoxShadow" Value="0 3 12 0 #400A84FF" />
+        </Style>
+
+        <!-- 卡片文字自适应明暗与主题 -->
+        <Style Selector="Border.MapCard TextBlock.CardTitle">
+            <Setter Property="Foreground" Value="#1C1C1E" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard TextBlock.CardTitle, Border.MapCard.DarkMode TextBlock.CardTitle">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Border.MapCard.Vibrant TextBlock.CardTitle">
+            <Setter Property="Foreground" Value="#007AFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard.Vibrant TextBlock.CardTitle, Border.MapCard.DarkMode.Vibrant TextBlock.CardTitle">
+            <Setter Property="Foreground" Value="#0A84FF" />
+        </Style>
+
+        <Style Selector="Border.MapCard TextBlock.CardSubtitle">
+            <Setter Property="Foreground" Value="#666666" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.MapCard TextBlock.CardSubtitle, Border.MapCard.DarkMode TextBlock.CardSubtitle">
+            <Setter Property="Foreground" Value="#A1A1A6" />
+        </Style>
+
+        <!-- 角标自适应明暗 -->
+        <Style Selector="Border.ZoomBadge">
+            <Setter Property="Background" Value="#20007AFF" />
+        </Style>
+        <Style Selector="Border.ZoomBadge TextBlock">
+            <Setter Property="Foreground" Value="#007AFF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.ZoomBadge, Border.MapCard.DarkMode Border.ZoomBadge">
+            <Setter Property="Background" Value="#300A84FF" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.ZoomBadge TextBlock, Border.MapCard.DarkMode Border.ZoomBadge TextBlock">
+            <Setter Property="Foreground" Value="#0A84FF" />
+        </Style>
+
+        <Style Selector="Border.ProviderBadge">
+            <Setter Property="Background" Value="#15000000" />
+        </Style>
+        <Style Selector=":is(UserControl).DarkMode Border.ProviderBadge, Border.MapCard.DarkMode Border.ProviderBadge">
+            <Setter Property="Background" Value="#25FFFFFF" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="0">
+        <!-- 核心地图画布 (全幅填满) -->
+        <controls:MapCanvas Name="Canvas"
+                            Latitude="{Binding CurrentLatitude}"
+                            Longitude="{Binding CurrentLongitude}"
+                            Zoom="{Binding CurrentZoom}"
+                            Provider="{Binding CurrentProvider}"
+                            IsDarkMode="{Binding IsDarkMode}"
+                            ShowPin="{Binding ShowPin}"
+                            ShowScaleBar="{Binding ShowScaleBar}"
+                            AllowMapDrag="{Binding AllowMapDrag}"
+                            BaiduApiKey="{Binding BaiduApiKey}"
+                            CornerRadius="{DynamicResource WidgetCardCornerRadius}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch" />
+
+        <!-- ==================== 尺寸 1: 2×2 (Small) 紧凑型顶部胶囊 ==================== -->
+        <Border Name="SmallPill"
+                Classes="MapCard"
+                IsVisible="{Binding IsSmallSize}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Margin="8,8,8,0"
+                CornerRadius="14"
+                Padding="8,4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Path Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                      Fill="{Binding PinIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}"
+                      Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center" />
+                <TextBlock Classes="CardTitle"
+                           Text="{Binding LocationName}"
+                           FontWeight="SemiBold"
+                           FontSize="11"
+                           MaxWidth="120"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- ==================== 尺寸 2: 4×2 (Medium) 左下角浮动信息卡 ==================== -->
+        <Border Name="MediumCard"
+                Classes="MapCard"
+                IsVisible="{Binding IsMediumSize}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="12,0,0,12"
+                CornerRadius="14"
+                Padding="10,6"
+                MaxWidth="220">
+            <StackPanel Orientation="Vertical" Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Path Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                          Fill="{Binding PinIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}"
+                          Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Classes="CardTitle"
+                               Text="{Binding LocationName}"
+                               FontWeight="Bold"
+                               FontSize="13"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="180" />
+                </StackPanel>
+                <TextBlock Classes="CardSubtitle"
+                           Text="{Binding CoordinatesDisplay}"
+                           FontSize="10"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="17,0,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- ==================== 尺寸 3: 4×4 (Large) 顶部全功能信息卡 ==================== -->
+        <Border Name="LargeCard"
+                Classes="MapCard"
+                IsVisible="{Binding IsLargeSize}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="14,14,0,0"
+                CornerRadius="16"
+                Padding="12,8"
+                MaxWidth="260">
+            <StackPanel Orientation="Vertical" Spacing="3">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                          Fill="{Binding PinIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}"
+                          Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Classes="CardTitle"
+                               Text="{Binding LocationName}"
+                               FontWeight="Bold"
+                               FontSize="15"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="210" />
+                </StackPanel>
+                <TextBlock Classes="CardSubtitle"
+                           Text="{Binding LocationDescription}"
+                           IsVisible="{Binding LocationDescription.Length}"
+                           FontSize="11"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="20,0,0,0" />
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="20,2,0,0">
+                    <TextBlock Classes="CardSubtitle"
+                               Text="{Binding CoordinatesDisplay}"
+                               FontSize="10" />
+                    <Border Classes="ZoomBadge" CornerRadius="4" Padding="4,1">
+                        <TextBlock Text="{Binding ZoomDisplay}"
+                                   FontSize="9"
+                                   FontWeight="SemiBold" />
+                    </Border>
+                    <Border Classes="ProviderBadge" CornerRadius="4" Padding="4,1">
+                        <TextBlock Classes="CardSubtitle"
+                                   Text="{Binding ProviderDisplayName}"
+                                   FontSize="9"
+                                   FontWeight="Medium" />
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ==================== 悬浮控制按钮组 (4 种主题动态适配) ==================== -->
+        <!-- 右侧悬浮垂直按钮栈 -->
+        <Border Name="ControlsPanel"
+                IsVisible="{Binding ShowControls}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,10,10">
+            <StackPanel Orientation="Vertical" Spacing="6">
+                <!-- 图源切换按钮 (仅中号和大号显示，避免 2x2 过度遮挡) -->
+                <Button Name="LayerBtn"
+                        Classes="FloatingBtn"
+                        IsVisible="{Binding !IsSmallSize}"
+                        Click="OnCycleProviderClicked">
+                    <Viewbox Width="14" Height="14" Stretch="Uniform">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"
+                                  Fill="{Binding ProviderIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <!-- 定位复位按钮 (对称直立 Apple 导航箭头) -->
+                <Button Name="RecenterBtn"
+                        Classes="FloatingBtn"
+                        Click="OnRecenterClicked">
+                    <Viewbox Width="14" Height="14" Stretch="Uniform">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M12 3L4 20.5l8-3.5 8 3.5L12 3z"
+                                  Fill="{Binding ControlIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <!-- 放大按钮 (+) -->
+                <Button Name="ZoomInBtn"
+                        Classes="FloatingBtn"
+                        Click="OnZoomInClicked">
+                    <Viewbox Width="14" Height="14" Stretch="Uniform">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                                  Fill="{Binding ControlIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <!-- 缩小按钮 (-) 与放大按钮共享完全相同的 24x24 视口与居中笔画 -->
+                <Button Name="ZoomOutBtn"
+                        Classes="FloatingBtn"
+                        Click="OnZoomOutClicked">
+                    <Viewbox Width="14" Height="14" Stretch="Uniform">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M19 13H5v-2h14v2z"
+                                  Fill="{Binding ControlIconBrush, RelativeSource={RelativeSource AncestorType=views:MapView}}" />
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</UserControl>

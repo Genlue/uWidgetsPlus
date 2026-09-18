@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
@@ -148,6 +149,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Opened += OnOpened;
         Resized += OnResized;
         PointerPressed += OnPointerPressed;
+        AddHandler(PointerPressedEvent, OnPreviewPointerPressed, RoutingStrategies.Tunnel);
         PointerReleased += OnPointerReleased;
         widgetLayoutProvider.DataChanged += OnWidgetLayoutUpdated;
         appSettingsProvider.DataChanged += OnAppSettingsUpdated;
@@ -518,6 +520,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool IsFixedWidget => FixedSizeWidget != null;
     public bool IsFixed2x1Widget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((4, 2));
     public bool IsFixedSquareWidget => FixedSizeWidget != null && FixedSizeWidget.AllowedBaseSpans.Contains((1, 1));
+    public bool IsMapWidget => ContentPresenter.Content?.GetType().Name == "MapView";
 
     public void SetFixedSpanPreset(string spanTag)
     {
@@ -954,6 +957,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
         PointerPressed -= OnPointerPressed;
+        RemoveHandler(PointerPressedEvent, OnPreviewPointerPressed);
         PointerReleased -= OnPointerReleased;
         Resized -= OnResized;
         Activated -= OnActivated;
@@ -994,6 +998,36 @@ public partial class Widget : Window, INotifyPropertyChanged
             Scale();
             Notify(nameof(ScaleMenuTitle));
         }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int nVirtKey);
+
+    private void OnPreviewPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(this);
+        if (!point.Properties.IsLeftButtonPressed) return;
+
+        var isCtrl = e.KeyModifiers.HasFlag(KeyModifiers.Control)
+                     || (OperatingSystem.IsWindows() && (GetKeyState(0x11) & 0x8000) != 0);
+        if (!isCtrl) return;
+
+        if (appSettingsProvider.Get().Layout.LockPosition) return;
+
+        // In manual grid mode, ignore drag if the click landed in the outer grid margin
+        if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+        {
+            var margin = WidgetMargin;
+            var p = e.GetPosition(this);
+            var card = new Rect(margin.Left, margin.Top,
+                Math.Max(0, (ClientSize.Width > 0 ? ClientSize.Width : Width) - margin.Left - margin.Right),
+                Math.Max(0, (ClientSize.Height > 0 ? ClientSize.Height : Height) - margin.Top - margin.Bottom));
+            if (!card.Contains(p)) return;
+        }
+
+        ToolTip.SetIsOpen(this, false);
+        e.Handled = true;
+        BeginMoveDrag(e);
     }
 
     public void OnPointerPressed(object? sender, PointerPressedEventArgs e)

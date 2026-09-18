@@ -111,7 +111,8 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     public UserControl CreateControl(Type type)
     {
         var previewScreenId = layoutProvider.Get().Screens.FirstOrDefault()?.Id ?? ScreensLayout.LegacyPrimaryId;
-        var widgetLayoutProvider = new WidgetLayoutProvider(layoutProvider, previewScreenId, null);
+        var defaultLayout = new WidgetLayout(type.Assembly.GetName().Name ?? "", type.Name, 0, 0, 200, 200, null);
+        var widgetLayoutProvider = new WidgetLayoutProvider(layoutProvider, previewScreenId, defaultLayout);
         return CreateWidgetControl(type, widgetLayoutProvider, null);
     }
 

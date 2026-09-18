@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Notes.Locales;
 using Notes.Models;
@@ -94,7 +95,7 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     private void Rebuild()
     {
         var model = Model;
-        var layoutH = widgetLayoutProvider.Get().Height;
+        var layoutH = widgetLayoutProvider?.Get()?.Height ?? (Bounds.Height > 0 ? Bounds.Height : 180);
         var currentH = Bounds.Height > 0 ? Bounds.Height : layoutH;
         var compact = currentH <= CompactHeight;
         ApplyHeader(model);
@@ -263,22 +264,38 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     /// <summary>
     /// Title bar brush: the app accent (live) or the custom color, with the
     /// configured opacity (both modes).
+    /// In Colorful (macOS 18 widget) mode:
+    /// - Opacity is strictly locked to 1.0 (100%), unaffected by widget settings.
+    /// - Color is strictly unified to Apple Notes signature Yellow (#FFCC00 in Light, #FFD60A in Dark).
     /// </summary>
     private void ApplyHeader(NoteModel model)
     {
         var theme = appSettingsProvider.Get().Theme;
-        var opacity = Math.Clamp(model.HeaderOpacity, 0, 1);
-        var color = (theme.IsColorful || model.FollowAccentHeader)
-            ? ResolveAccent()
-            : Color.TryParse(model.HeaderColor, out var custom) ? custom : Color.Parse("#3376CD");
+        var opacity = theme.IsColorful ? 1.0 : Math.Clamp(model.HeaderOpacity, 0, 1);
+
+        Color color;
+        if (theme.IsColorful)
+        {
+            // 多彩模式强制顶栏 100% 不透明，且严格统一为 Apple Notes 经典黄色
+            var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+            color = isDark ? Color.Parse("#FFD60A") : Color.Parse("#FFCC00");
+        }
+        else if (model.FollowAccentHeader)
+        {
+            color = ResolveAccent();
+        }
+        else
+        {
+            color = Color.TryParse(model.HeaderColor, out var custom) ? custom : Color.Parse("#3376CD");
+        }
+
         TitleBox.Background = new SolidColorBrush(color, opacity);
     }
 
     private Color ResolveAccent()
     {
-        if (this.TryFindResource("NotesAccentBrush", out var res) && res is ISolidColorBrush scb) return scb.Color;
-        var theme = appSettingsProvider.Get().Theme.AccentColor;
-        if (theme != null && Color.TryParse(theme, out var accent)) return accent;
+        var theme = appSettingsProvider.Get().Theme;
+        if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var accent)) return accent;
         if (this.TryFindResource("SystemAccentColor", out var accentResource) && accentResource is Color system) return system;
         return Color.Parse("#0078D4");
     }
@@ -374,10 +391,13 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     private void UpdateModel(NoteModel newModel)
     {
         viewModel.Update(newModel);
-        var newSettings = JsonSerializer.SerializeToElement(newModel);
-        var newLayout = widgetLayoutProvider.Get() with { Settings = newSettings };
-
-        widgetLayoutProvider.Save(newLayout);
+        var currentLayout = widgetLayoutProvider?.Get();
+        if (currentLayout != null)
+        {
+            var newSettings = JsonSerializer.SerializeToElement(newModel);
+            var newLayout = currentLayout with { Settings = newSettings };
+            widgetLayoutProvider.Save(newLayout);
+        }
     }
 
     // ---------- file watching ----------

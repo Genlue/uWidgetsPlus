@@ -19,6 +19,15 @@
             <Button MinWidth="130" HorizontalContentAlignment="Center" Content="{x:Static locales:Locale.Settings_About_Repository_Action}" Click="GoToUpdate" />
         </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
+                   Text="快捷操作与技巧"/>
+        <controls:Setting Icon="{DynamicResource Move}" 
+                          Title="快捷移动小组件"
+                          Subtitle="按住 Ctrl 键并使用鼠标左键拖动，可在任何组件（包括地图、便签、文件夹等可交互组件）上直接移动窗口">
+            <Border Background="{DynamicResource SystemAccentColor}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                <TextBlock Text="Ctrl + 鼠标左键拖动" Foreground="White" FontSize="11" FontWeight="SemiBold" />
+            </Border>
+        </controls:Setting>
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
                    Text="{x:Static locales:Locale.Settings_About_Actions}"/>
         <controls:Setting Icon="{DynamicResource GitHub}" 
                           Title="{x:Static locales:Locale.Settings_About_MyRepository}"

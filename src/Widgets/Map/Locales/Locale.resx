@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Map_Title" xml:space="preserve">
+    <value>Maps</value>
+  </data>
+  <data name="Map_Subtitle" xml:space="preserve">
+    <value>macOS &amp; iPad styled multi-provider desktop map widget</value>
+  </data>
+  <data name="Map_Provider" xml:space="preserve">
+    <value>Map Provider</value>
+  </data>
+  <data name="Map_PresetLocations" xml:space="preserve">
+    <value>Preset City</value>
+  </data>
+  <data name="Map_LocationName" xml:space="preserve">
+    <value>Location Name</value>
+  </data>
+  <data name="Map_LocationDescription" xml:space="preserve">
+    <value>Description / Address</value>
+  </data>
+  <data name="Map_Latitude" xml:space="preserve">
+    <value>Latitude</value>
+  </data>
+  <data name="Map_Longitude" xml:space="preserve">
+    <value>Longitude</value>
+  </data>
+  <data name="Map_Zoom" xml:space="preserve">
+    <value>Default Zoom Level</value>
+  </data>
+  <data name="Map_ShowPin" xml:space="preserve">
+    <value>Show Center Pin</value>
+  </data>
+  <data name="Map_ShowInfoPill" xml:space="preserve">
+    <value>Show Floating Info Card</value>
+  </data>
+  <data name="Map_ShowControls" xml:space="preserve">
+    <value>Show Floating Buttons</value>
+  </data>
+  <data name="Map_ShowScaleBar" xml:space="preserve">
+    <value>Show Scale Bar</value>
+  </data>
+  <data name="Map_AllowDrag" xml:space="preserve">
+    <value>Allow Mouse Drag to Pan</value>
+  </data>
+  <data name="Map_BaiduKey" xml:space="preserve">
+    <value>Baidu Maps AK (Optional)</value>
+  </data>
+  <data name="Map_RecenterTooltip" xml:space="preserve">
+    <value>Recenter to saved target</value>
+  </data>
+  <data name="Map_ZoomInTooltip" xml:space="preserve">
+    <value>Zoom In</value>
+  </data>
+  <data name="Map_ZoomOutTooltip" xml:space="preserve">
+    <value>Zoom Out</value>
+  </data>
+  <data name="Map_LayerTooltip" xml:space="preserve">
+    <value>Switch Map Source</value>
+  </data>
+</root>

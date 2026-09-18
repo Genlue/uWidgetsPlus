@@ -1,0 +1,12 @@
+using System.Reflection;
+using Map.Locales;
+using Map.Models;
+using Map.Views;
+using Map.Views.Settings;
+using uWidgets.Core.Models.Attributes;
+
+[assembly: AssemblyCompany("creewick")]
+[assembly: AssemblyVersion("1.0.0")]
+
+[assembly: WidgetInfo(typeof(MapView), typeof(MapModel), typeof(MapSettings), "Map_Title", "Map_Subtitle", defaultColumns: 2, defaultRows: 2)]
+[assembly: Locale(typeof(Locale), "Map", "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z")]

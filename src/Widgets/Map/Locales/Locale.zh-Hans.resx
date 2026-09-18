@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" msdata:Ordinal="0" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Map_Title" xml:space="preserve">
+    <value>地图</value>
+  </data>
+  <data name="Map_Subtitle" xml:space="preserve">
+    <value>macOS / iPad 风格多图源桌面地图小组件</value>
+  </data>
+  <data name="Map_Provider" xml:space="preserve">
+    <value>地图图源</value>
+  </data>
+  <data name="Map_PresetLocations" xml:space="preserve">
+    <value>预设城市</value>
+  </data>
+  <data name="Map_LocationName" xml:space="preserve">
+    <value>地点名称</value>
+  </data>
+  <data name="Map_LocationDescription" xml:space="preserve">
+    <value>详细地址 / 描述</value>
+  </data>
+  <data name="Map_Latitude" xml:space="preserve">
+    <value>纬度</value>
+  </data>
+  <data name="Map_Longitude" xml:space="preserve">
+    <value>经度</value>
+  </data>
+  <data name="Map_Zoom" xml:space="preserve">
+    <value>默认缩放级别</value>
+  </data>
+  <data name="Map_ShowPin" xml:space="preserve">
+    <value>显示中心大头针</value>
+  </data>
+  <data name="Map_ShowInfoPill" xml:space="preserve">
+    <value>显示浮动信息卡</value>
+  </data>
+  <data name="Map_ShowControls" xml:space="preserve">
+    <value>显示悬浮控制按钮</value>
+  </data>
+  <data name="Map_ShowScaleBar" xml:space="preserve">
+    <value>显示比例尺</value>
+  </data>
+  <data name="Map_AllowDrag" xml:space="preserve">
+    <value>允许鼠标拖拽平移</value>
+  </data>
+  <data name="Map_BaiduKey" xml:space="preserve">
+    <value>百度地图 AK (可选)</value>
+  </data>
+  <data name="Map_RecenterTooltip" xml:space="preserve">
+    <value>复位至预设中心</value>
+  </data>
+  <data name="Map_ZoomInTooltip" xml:space="preserve">
+    <value>放大</value>
+  </data>
+  <data name="Map_ZoomOutTooltip" xml:space="preserve">
+    <value>缩小</value>
+  </data>
+  <data name="Map_LayerTooltip" xml:space="preserve">
+    <value>切换图源</value>
+  </data>
+</root>

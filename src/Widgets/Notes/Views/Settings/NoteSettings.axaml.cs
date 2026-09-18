@@ -27,6 +27,7 @@ public partial class NoteSettings : UserControl
     private enum MdFormat { Text, Heading, Bold, Italic, Strike, Link, Code, Quote }
 
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
+    private readonly IAppSettingsProvider? appSettingsProvider;
 
     /// <summary>Font rows: "follow app font" + every installed family.</summary>
     private readonly List<string> fontLabels;
@@ -44,9 +45,10 @@ public partial class NoteSettings : UserControl
 
     private bool syncing;
 
-    public NoteSettings(IWidgetLayoutProvider widgetLayoutProvider)
+    public NoteSettings(IWidgetLayoutProvider widgetLayoutProvider, IAppSettingsProvider? appSettingsProvider = null)
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
+        this.appSettingsProvider = appSettingsProvider;
         InitializeComponent();
 
         HeaderModeBox.ItemsSource = new[] { Locale.Notes_Header_FollowAccent, Locale.Notes_Header_Custom };
@@ -202,10 +204,29 @@ public partial class NoteSettings : UserControl
         FontBox.SelectedIndex = fontIndex > 0 ? fontIndex : 0;
 
         BodyPaddingBox.Value = Math.Clamp(model.BodyPadding, 0, 64);
-        HeaderModeBox.SelectedIndex = model.FollowAccentHeader ? 0 : 1;
-        HeaderColorPicker.IsVisible = !model.FollowAccentHeader;
-        HeaderColorPicker.Color = Color.TryParse(model.HeaderColor, out var color) ? color : Color.Parse("#3376CD");
-        HeaderOpacityBox.Value = (decimal)Math.Round(model.HeaderOpacity, 2);
+
+        var isColorful = (appSettingsProvider?.Get().Theme.IsColorful == true) ||
+                         (Application.Current != null && Application.Current.TryFindResource("MacosYellowBrush", out _));
+        if (isColorful)
+        {
+            HeaderModeBox.IsEnabled = false;
+            HeaderColorPicker.IsEnabled = false;
+            HeaderColorPicker.IsVisible = true;
+            HeaderColorPicker.Color = actualDark ? Color.Parse("#FFD60A") : Color.Parse("#FFCC00");
+            HeaderOpacityBox.IsEnabled = false;
+            HeaderOpacityBox.Value = 1.00m;
+        }
+        else
+        {
+            HeaderModeBox.IsEnabled = true;
+            HeaderColorPicker.IsEnabled = true;
+            HeaderModeBox.SelectedIndex = model.FollowAccentHeader ? 0 : 1;
+            HeaderColorPicker.IsVisible = !model.FollowAccentHeader;
+            HeaderColorPicker.Color = Color.TryParse(model.HeaderColor, out var color) ? color : Color.Parse("#3376CD");
+            HeaderOpacityBox.IsEnabled = true;
+            HeaderOpacityBox.Value = (decimal)Math.Round(model.HeaderOpacity, 2);
+        }
+
         SourceBox.SelectedIndex = (int)model.Source;
         OrderBox.SelectedIndex = model.RecentFiles ? 0 : 1;
         DocumentCountBox.Value = Math.Clamp(model.DocumentCount, 1, 8);

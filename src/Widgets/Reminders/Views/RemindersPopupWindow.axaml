@@ -135,7 +135,7 @@
                 </Path>
 
                 <!-- Center: Reminders Scroll List (Row 1) -->
-                <ScrollViewer Grid.Row="1" Padding="14,8,14,8">
+                <ScrollViewer Grid.Row="1" Padding="14,8,14,8" HorizontalScrollBarVisibility="Disabled">
                     <Panel>
                         <!-- Empty State Notice -->
                         <StackPanel x:Name="EmptyPanel"
@@ -202,6 +202,8 @@
                                                          BorderThickness="0"
                                                          Padding="0,2,4,2"
                                                          FontSize="13"
+                                                         TextWrapping="Wrap"
+                                                         AcceptsReturn="False"
                                                          VerticalAlignment="Center"
                                                          Opacity="{Binding TextOpacity}"
                                                          LostFocus="OnItemTextLostFocus"

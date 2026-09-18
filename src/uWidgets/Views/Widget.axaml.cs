@@ -350,6 +350,16 @@ public partial class Widget : Window, INotifyPropertyChanged
     public Theme GlassMaterial => appSettingsProvider.Get().Theme;
     public bool IsLiquidGlass => !isFrameless && GlassMaterial.IsLiquidGlass;
 
+    private bool IsFlushWidget
+    {
+        get
+        {
+            var content = ContentPresenter?.Content;
+            var name = content?.GetType().Name ?? widgetLayoutProvider?.Get()?.Type;
+            return name is "Note" or "MapView" || (content as StyledElement)?.Classes.Contains("Flush") == true;
+        }
+    }
+
     /// <summary>
     /// True when the card should render the outline highlight ring: glass surface
     /// with the outline width &gt; 0, no native frame.
@@ -366,6 +376,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined) return new Thickness(0);
+            if (appSettingsProvider.Get().Theme.IsColorful && IsFlushWidget)
+                return new Thickness(0);
             var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
             if (width <= 0 && appSettingsProvider.Get().Theme.IsColorful)
                 return new Thickness(1);
@@ -387,6 +399,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined) return null;
+            if (appSettingsProvider.Get().Theme.IsColorful && IsFlushWidget)
+                return null;
             if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
                 return BuildOutlineBrush();
             if (appSettingsProvider.Get().Theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
@@ -461,6 +475,10 @@ public partial class Widget : Window, INotifyPropertyChanged
                     // Clock Style 1 (AnalogI):
                     // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
                     return new SolidColorBrush(Color.Parse("#1C1C1E"));
+                }
+                else if (IsFlushWidget)
+                {
+                    return Brushes.Transparent;
                 }
 
                 // Explicit fallback guarantee for Colorful theme to ensure pure white (light) or charcoal (dark)

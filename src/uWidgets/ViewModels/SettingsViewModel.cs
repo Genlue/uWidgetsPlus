@@ -73,19 +73,19 @@ public class SettingsViewModel : ReactiveObject
                  .ToList();
 
         var allAssemblies = loadedAssemblies.Values.ToList();
-        var timeAssemblies = GetAssemblies("Clock", "Calendar", "Progress");
+        var timeAssemblies = GetAssemblies("Clock", "Calendar", "Progress", "Pomodoro");
         var weatherAssemblies = GetAssemblies("Weather");
         var mapAssemblies = GetAssemblies("Map");
         var memoAssemblies = GetAssemblies("Notes", "Reminders");
         var desktopAssemblies = GetAssemblies("Folders");
-        var monitorAssemblies = GetAssemblies("Monitor");
+        var monitorAssemblies = GetAssemblies("Monitor", "Batteries");
         var mediaAssemblies = GetAssemblies("Music", "Picture");
         var toolsAssemblies = GetAssemblies("Tools", "Search");
         var fixedAssemblies = GetAssemblies("FixedWidgets");
 
         var knownNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Clock", "Calendar", "Progress", "Weather", "Map", "Notes", "Reminders", "Folders", "Monitor", "Music", "Picture", "Tools", "Search", "FixedWidgets"
+            "Clock", "Calendar", "Progress", "Pomodoro", "Weather", "Map", "Notes", "Reminders", "Folders", "Monitor", "Batteries", "Music", "Picture", "Tools", "Search", "FixedWidgets"
         };
         var otherAssemblies = loadedAssemblies.Values
             .Where(a => !knownNames.Contains(a.AssemblyName))

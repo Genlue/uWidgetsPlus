@@ -255,6 +255,7 @@ public partial class WeatherPopupWindow : Window
 
         IBrush textBrush = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
         IBrush subTextBrush = (theme.IsColorful || isDark) ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+        Resources["WeatherForegroundBrush"] = textBrush;
         CityText.Foreground = textBrush;
         TempText.Foreground = textBrush;
         CloseButton.Foreground = subTextBrush;

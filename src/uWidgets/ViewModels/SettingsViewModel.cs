@@ -22,6 +22,7 @@ public class SettingsViewModel : ReactiveObject
     private readonly DisplayMonitorService displayMonitor;
     private readonly IWidgetFactory<Window, UserControl> widgetFactory;
     private readonly ProfileService profileService;
+    private readonly UpdateService updateService;
 
     private UserControl? currentPage;
     public UserControl? CurrentPage
@@ -47,7 +48,8 @@ public class SettingsViewModel : ReactiveObject
         ILayoutProvider layoutProvider,
         DisplayMonitorService displayMonitor,
         IWidgetFactory<Window, UserControl> widgetFactory,
-        ProfileService profileService)
+        ProfileService profileService,
+        UpdateService updateService)
     {
         this.appSettingsProvider = appSettingsProvider;
         this.assemblyProvider = assemblyProvider;
@@ -55,6 +57,7 @@ public class SettingsViewModel : ReactiveObject
         this.displayMonitor = displayMonitor;
         this.widgetFactory = widgetFactory;
         this.profileService = profileService;
+        this.updateService = updateService;
         profileService.ActiveProfileChanged += (_, _) => pageCache.Clear();
 
         // 1. Load and deduplicate widget assemblies
@@ -153,6 +156,7 @@ public class SettingsViewModel : ReactiveObject
             {
                 page = value.Type switch
                 {
+                    var type when type == typeof(General) => new General(appSettingsProvider, updateService),
                     var type when type == typeof(Profiles) => new Profiles(profileService),
                     var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor, profileService),
                     var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),

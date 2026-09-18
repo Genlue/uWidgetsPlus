@@ -139,10 +139,10 @@ public class PomodoroViewModel : INotifyPropertyChanged
     public double ProgressFraction => TotalSeconds > 0 ? (double)RemainingSeconds / TotalSeconds : 0.0;
 
     /// <summary>
-    /// For EllipseGeometry circumference ~31.4 (radius 50, viewbox scaled).
-    /// Starts at 0 (full circle), increases to 31.4 as time expires.
+    /// For EllipseGeometry radius 48, stroke 7: circumference ~301.59, dash unit ~43.085.
+    /// Starts at 0 (full circle), increases to 43.085 as time expires.
     /// </summary>
-    public double StrokeDashOffset => 31.4 * (1.0 - ProgressFraction);
+    public double StrokeDashOffset => 43.085 * (1.0 - ProgressFraction);
 
     public string SessionCounterText => $"🍅 × {CompletedSessions}";
 
@@ -232,6 +232,8 @@ public class PomodoroViewModel : INotifyPropertyChanged
         else
         {
             // Phase complete!
+            SendPhaseCompleteNotification();
+
             bool autoStart;
             if (Phase == PomodoroPhase.Focus)
             {
@@ -245,6 +247,34 @@ public class PomodoroViewModel : INotifyPropertyChanged
 
             AdvanceToNextPhase(autoStart);
         }
+    }
+
+    private void SendPhaseCompleteNotification()
+    {
+        string title;
+        string message;
+
+        switch (Phase)
+        {
+            case PomodoroPhase.Focus:
+                title = "🍅 番茄钟专注完成！";
+                message = "太棒了，完成了一个番茄钟！放松一下吧。";
+                break;
+            case PomodoroPhase.ShortBreak:
+                title = "☕ 短休结束";
+                message = "休息结束，准备开始新的专注！";
+                break;
+            case PomodoroPhase.LongBreak:
+                title = "🌴 长休结束";
+                message = "长休结束，精神满满，开启新一轮专注！";
+                break;
+            default:
+                title = "🍅 番茄钟";
+                message = "计时完成！";
+                break;
+        }
+
+        NotificationHelper.Send(title, message, model.SoundEnabled);
     }
 
     private void AdvanceToNextPhase(bool autoStart)
@@ -285,4 +315,53 @@ public class PomodoroViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+}
+
+internal static class NotificationHelper
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool MessageBeep(uint uType);
+
+    public static void Send(string title, string message, bool soundEnabled)
+    {
+        if (soundEnabled && OperatingSystem.IsWindows())
+        {
+            try
+            {
+                MessageBeep(0x00000040); // MB_ICONASTERISK
+            }
+            catch { }
+        }
+
+        if (!OperatingSystem.IsWindows()) return;
+
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                var script = $@"
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+$textNodes = $template.GetElementsByTagName('text')
+$textNodes.Item(0).AppendChild($template.CreateTextNode('{title.Replace("'", "''")}')) | Out-Null
+$textNodes.Item(1).AppendChild($template.CreateTextNode('{message.Replace("'", "''")}')) | Out-Null
+$toast = [Windows.UI.Notifications.ToastNotification]::new($template)
+$appId = '{{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}}\WindowsPowerShell\v1.0\powershell.exe'
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+";
+                var bytes = System.Text.Encoding.Unicode.GetBytes(script);
+                var encoded = Convert.ToBase64String(bytes);
+
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -WindowStyle Hidden -EncodedCommand {encoded}",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                using var proc = System.Diagnostics.Process.Start(psi);
+            }
+            catch { }
+        });
+    }
 }

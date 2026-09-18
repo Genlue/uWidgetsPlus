@@ -57,9 +57,9 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
         if (tier == currentTier) return;
         currentTier = tier;
 
-        bool isWide = tier == WidgetTier.Medium || (size.Width > size.Height * 1.35 && size.Width > 240);
-        SmallLayout.IsVisible = !isWide;
-        WideLayout.IsVisible = isWide;
+        SmallLayout.IsVisible = tier == WidgetTier.Small;
+        WideLayout.IsVisible = tier == WidgetTier.Medium;
+        LargeLayout.IsVisible = tier == WidgetTier.Large;
     }
 
     private WidgetTier ResolveTier(Size size)
@@ -71,10 +71,10 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
         }
         catch { }
 
-        if (size.Width >= 260 && size.Width > size.Height * 1.35)
-            return WidgetTier.Medium;
         if (size.Width >= 280 && size.Height >= 280)
             return WidgetTier.Large;
+        if (size.Width >= 260 && size.Width > size.Height * 1.35)
+            return WidgetTier.Medium;
 
         return WidgetTier.Small;
     }
@@ -113,6 +113,17 @@ public partial class PomodoroView : UserControl, IWidgetSelfRefreshing
     private void OnSelectPhaseClicked(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string tag)
+        {
+            if (Enum.TryParse<PomodoroPhase>(tag, out var phase))
+            {
+                viewModel.SwitchPhase(phase);
+            }
+        }
+    }
+
+    private void OnSelectPhaseFromFlyout(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem item && item.Tag is string tag)
         {
             if (Enum.TryParse<PomodoroPhase>(tag, out var phase))
             {

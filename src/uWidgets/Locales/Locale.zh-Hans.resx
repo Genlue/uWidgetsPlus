@@ -852,4 +852,70 @@
     <data name="Settings_Advanced_TrayIcon_Subtitle" xml:space="preserve">
         <value>通知区域图标；关闭后可在组件右键菜单中重新打开</value>
     </data>
+    <data name="Settings_General_Update_Title" xml:space="preserve">
+        <value>软件更新</value>
+    </data>
+    <data name="Settings_General_Update_Subtitle" xml:space="preserve">
+        <value>检查并获取最新版本和新功能</value>
+    </data>
+    <data name="Settings_General_Update_Interval" xml:space="preserve">
+        <value>自动检查更新</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Subtitle" xml:space="preserve">
+        <value>设置后台自动检查更新的频率</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Disabled" xml:space="preserve">
+        <value>已禁用 (从不检查)</value>
+    </data>
+    <data name="Settings_General_Update_Interval_OnStartup" xml:space="preserve">
+        <value>每次启动时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Every6Hours" xml:space="preserve">
+        <value>每 6 小时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Every12Hours" xml:space="preserve">
+        <value>每 12 小时</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Daily" xml:space="preserve">
+        <value>每天 (推荐)</value>
+    </data>
+    <data name="Settings_General_Update_Interval_Weekly" xml:space="preserve">
+        <value>每周</value>
+    </data>
+    <data name="Settings_General_Update_CheckNow" xml:space="preserve">
+        <value>检查更新</value>
+    </data>
+    <data name="Settings_General_Update_Checking" xml:space="preserve">
+        <value>正在检查更新...</value>
+    </data>
+    <data name="Settings_General_Update_AlreadyLatest" xml:space="preserve">
+        <value>当前已是最新版本 ({0})</value>
+    </data>
+    <data name="Settings_General_Update_FoundNew" xml:space="preserve">
+        <value>发现新版本: {0}</value>
+    </data>
+    <data name="Settings_General_Update_CheckFailed" xml:space="preserve">
+        <value>检查更新失败，请检查网络</value>
+    </data>
+    <data name="Settings_General_Update_LastChecked" xml:space="preserve">
+        <value>上次检查时间: {0}</value>
+    </data>
+    <data name="Update_DownloadingFormat" xml:space="preserve">
+        <value>正在下载安装包... {0:0.0} MB / {1:0.0} MB ({2:0}%)</value>
+    </data>
+    <data name="Update_DownloadFailed" xml:space="preserve">
+        <value>下载失败: {0}</value>
+    </data>
+    <data name="Update_InstallNow" xml:space="preserve">
+        <value>立即安装</value>
+    </data>
+    <data name="Update_ReadyToInstall" xml:space="preserve">
+        <value>下载完成，点击“立即安装”启动安装程序</value>
+    </data>
+    <data name="Update_Installing" xml:space="preserve">
+        <value>正在启动安装程序并退出程序...</value>
+    </data>
+    <data name="Update_WhatsNew" xml:space="preserve">
+        <value>更新日志</value>
+    </data>
 </root>

@@ -4,8 +4,32 @@
              xmlns:locales="clr-namespace:Batteries.Locales"
              x:Class="Batteries.Views.Settings.BatteriesSettings">
 
-    <ScrollViewer>
-        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.group-header">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,12,0,4" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundAccentBrush}" />
+        </Style>
+        <Style Selector="Button.action-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.action-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,12">
+            <!-- 选项设置 -->
+            <TextBlock Classes="group-header" Text="显示选项" Margin="0,4,0,4" />
+
             <!-- 显示蓝牙外设电量 -->
             <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPeripherals}">
                 <ToggleSwitch Name="ShowPeripheralsSwitch" IsCheckedChanged="OnToggleChanged" />
@@ -21,23 +45,56 @@
                 <ToggleSwitch Name="ShowRemainingTimeSwitch" IsCheckedChanged="OnToggleChanged" />
             </controls:Setting>
 
-            <!-- 鼠标模拟电量 -->
-            <controls:Setting Title="外设: 鼠标电量 (%)">
-                <NumericUpDown Name="MouseBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
-                               ValueChanged="OnNumericSettingChanged" />
-            </controls:Setting>
+            <!-- 设备详情 Header with Refresh Button -->
+            <Grid Margin="0,14,0,2">
+                <TextBlock Classes="group-header" Text="设备详情" VerticalAlignment="Center" Margin="0" />
+                <Button Classes="action-btn" Content="刷新设备" HorizontalAlignment="Right"
+                        Click="OnRefreshDevicesClicked" />
+            </Grid>
 
-            <!-- 键盘模拟电量 -->
-            <controls:Setting Title="外设: 键盘电量 (%)">
-                <NumericUpDown Name="KeyboardBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
-                               ValueChanged="OnNumericSettingChanged" />
-            </controls:Setting>
+            <!-- Main Host Device Details -->
+            <Border CornerRadius="6" BorderThickness="1" Padding="14,10"
+                    BorderBrush="{DynamicResource ToolTipBorderBrush}"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <PathIcon Name="MainDeviceIcon" Grid.Column="0" Height="24" Width="24"
+                              VerticalAlignment="Center" Margin="0,0,14,0"
+                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              Data="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Name="MainDeviceTitle" FontSize="13" FontWeight="Medium"
+                                   Text="电脑供电"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                        <TextBlock Name="MainDeviceSubtitle" FontSize="11" Opacity="0.7" Margin="0,3,0,0"
+                                   Text="正在使用电池 · 剩余 99%"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    </StackPanel>
+                    <Border Grid.Column="2" Name="MainDeviceBadge"
+                            CornerRadius="12" Padding="8,3" VerticalAlignment="Center"
+                            Background="#2034C759">
+                        <TextBlock Name="MainDevicePercent" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="#34C759" Text="99%" />
+                    </Border>
+                </Grid>
+            </Border>
 
-            <!-- 耳机模拟电量 -->
-            <controls:Setting Title="外设: 耳机电量 (%)">
-                <NumericUpDown Name="HeadphonesBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
-                               ValueChanged="OnNumericSettingChanged" />
-            </controls:Setting>
+            <!-- Peripherals Container -->
+            <StackPanel Name="PeripheralsPanel" Orientation="Vertical" Spacing="6" />
+
+            <!-- Empty Peripherals Placeholder -->
+            <Border Name="NoPeripheralsBorder" CornerRadius="6" BorderThickness="1" Padding="14,14"
+                    BorderBrush="{DynamicResource ToolTipBorderBrush}"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    IsVisible="False">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="4">
+                    <TextBlock Text="未检测到已连接的低功耗蓝牙外设" FontSize="12" Opacity="0.8"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                    <TextBlock Text="支持低功耗蓝牙 (BLE) 协议的鼠标、键盘或耳机等设备" FontSize="11" Opacity="0.5"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

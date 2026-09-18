@@ -20,59 +20,23 @@ public partial class Forecast : UserControl
     {
         this.model = model;
         viewModel = new ForecastViewModel(model);
-        Content = new ForecastSmall(viewModel);
+        Content = new ForecastSmall(viewModel, this);
         SizeChanged += OnSizeChanged;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         PointerEntered += OnCardPointerEntered;
-        PointerPressed += OnCardPointerPressed;
-        PointerMoved += OnCardPointerMoved;
-        PointerReleased += OnCardPointerReleased;
+        DoubleTapped += OnCardDoubleTapped;
         InitializeComponent();
     }
-
-    private Point? pointerDownPos;
-    private bool isDragging;
 
     private void OnCardPointerEntered(object? sender, PointerEventArgs e)
     {
         PreRenderLiquidGlassPopup();
     }
 
-    private void OnCardPointerPressed(object? sender, PointerPressedEventArgs e)
+    private void OnCardDoubleTapped(object? sender, RoutedEventArgs e)
     {
-        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            pointerDownPos = e.GetPosition(this);
-            isDragging = false;
-        }
-    }
-
-    private void OnCardPointerMoved(object? sender, PointerEventArgs e)
-    {
-        if (pointerDownPos.HasValue)
-        {
-            var cur = e.GetPosition(this);
-            var dx = cur.X - pointerDownPos.Value.X;
-            var dy = cur.Y - pointerDownPos.Value.Y;
-            if (dx * dx + dy * dy > 36)
-            {
-                isDragging = true;
-            }
-        }
-    }
-
-    private void OnCardPointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (pointerDownPos.HasValue)
-        {
-            if (!isDragging && viewModel != null)
-            {
-                OpenPopupWindow();
-            }
-            pointerDownPos = null;
-            isDragging = false;
-        }
+        OpenPopupWindow();
     }
 
     public void OpenPopupWindow()
@@ -145,9 +109,7 @@ public partial class Forecast : UserControl
     {
         SizeChanged -= OnSizeChanged;
         PointerEntered -= OnCardPointerEntered;
-        PointerPressed -= OnCardPointerPressed;
-        PointerMoved -= OnCardPointerMoved;
-        PointerReleased -= OnCardPointerReleased;
+        DoubleTapped -= OnCardDoubleTapped;
         viewModel?.Dispose();
         viewModel = null;
     }
@@ -171,14 +133,14 @@ public partial class Forecast : UserControl
         return SizeTiers.ResolveTier(this, size) switch
         {
             WidgetTier.Cell => new ForecastTiny(vm),
-            WidgetTier.Small => new ForecastSmall(vm),
-            WidgetTier.Medium => new ForecastWide(vm),
-            WidgetTier.Large => new ForecastLarge(vm),
+            WidgetTier.Small => new ForecastSmall(vm, this),
+            WidgetTier.Medium => new ForecastWide(vm, this),
+            WidgetTier.Large => new ForecastLarge(vm, this),
             _ => size switch
             {
-                { Width: > 230, Height: > 230 } => new ForecastLarge(vm),
-                { Width: > 230, Height: > 140 } => new ForecastWide(vm),
-                { Width: > 75, Height: > 75 } => new ForecastSmall(vm),
+                { Width: > 230, Height: > 230 } => new ForecastLarge(vm, this),
+                { Width: > 230, Height: > 140 } => new ForecastWide(vm, this),
+                { Width: > 75, Height: > 75 } => new ForecastSmall(vm, this),
                 _ => new ForecastTiny(vm)
             }
         };

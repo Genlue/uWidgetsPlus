@@ -18,9 +18,11 @@ public partial class ForecastWide : UserControl
 {
     private const double DesignWidth = 340;
     private const double DesignHeight = 170;
+    private readonly Forecast? owner;
 
-    public ForecastWide(ForecastViewModel viewModel)
+    public ForecastWide(ForecastViewModel viewModel, Forecast? owner = null)
     {
+        this.owner = owner;
         DataContext = viewModel;
         SizeChanged += OnSizeChanged;
         Unloaded += (_, _) => SizeChanged -= OnSizeChanged;
@@ -63,5 +65,10 @@ public partial class ForecastWide : UserControl
             Math.Clamp(HourlyScroller.Offset.X - delta * 60, 0, maxX),
             HourlyScroller.Offset.Y);
         e.Handled = true;
+    }
+
+    public void OpenPopup(object? sender, RoutedEventArgs e)
+    {
+        owner?.OpenPopupWindow();
     }
 }

@@ -288,15 +288,15 @@ public partial class ClipboardPopupWindow : Window
         // 1. Filter by category
         if (activeCategory == "Text")
         {
-            items = items.Where(i => i.Type == ClipboardType.Text && !IsLink(i.Text) && !IsCode(i.Text));
+            items = items.Where(i => i.Type == ClipboardType.Text);
         }
-        else if (activeCategory == "Code")
+        else if (activeCategory == "Image")
         {
-            items = items.Where(i => i.Type == ClipboardType.Text && IsCode(i.Text));
+            items = items.Where(i => i.Type == ClipboardType.Image);
         }
-        else if (activeCategory == "Link")
+        else if (activeCategory == "Files")
         {
-            items = items.Where(i => i.Type == ClipboardType.Text && IsLink(i.Text));
+            items = items.Where(i => i.Type == ClipboardType.Files);
         }
 
         // 2. Filter by search query
@@ -316,35 +316,6 @@ public partial class ClipboardPopupWindow : Window
         EmptyPanel.IsVisible = result.Count == 0;
     }
 
-    private static bool IsLink(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        var trimmed = text.Trim();
-        return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-               trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-               trimmed.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase) ||
-               trimmed.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ||
-               trimmed.StartsWith("www.", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsCode(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        if (IsLink(text)) return false;
-
-        // Check common code patterns
-        if (text.Contains('{') && text.Contains('}')) return true;
-        if (text.Contains("</") || text.Contains("/>")) return true;
-        if (text.Contains("function") || text.Contains("class ") || text.Contains("def ") ||
-            text.Contains("import ") || text.Contains("using ") || text.Contains("public ") ||
-            text.Contains("private ") || text.Contains("const ") || text.Contains("let ") || text.Contains("var "))
-            return true;
-
-        if (text.Contains(';') && text.Contains('\n')) return true;
-
-        return false;
-    }
-
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
     {
         searchQuery = SearchBox.Text ?? string.Empty;
@@ -359,8 +330,8 @@ public partial class ClipboardPopupWindow : Window
 
             TabAll.Classes.Set("active", tag == "All");
             TabText.Classes.Set("active", tag == "Text");
-            TabCode.Classes.Set("active", tag == "Code");
-            TabLink.Classes.Set("active", tag == "Link");
+            TabImage.Classes.Set("active", tag == "Image");
+            TabFiles.Classes.Set("active", tag == "Files");
 
             RefreshList();
         }

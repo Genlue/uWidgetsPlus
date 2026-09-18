@@ -112,9 +112,9 @@
                     <!-- Filter Tabs (Row 2) -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,10">
                         <Button x:Name="TabAll" Classes="tab-pill active" Content="全部" Click="OnTabClicked" Tag="All" />
-                        <Button x:Name="TabText" Classes="tab-pill" Content="纯文本" Click="OnTabClicked" Tag="Text" />
-                        <Button x:Name="TabCode" Classes="tab-pill" Content="代码" Click="OnTabClicked" Tag="Code" />
-                        <Button x:Name="TabLink" Classes="tab-pill" Content="链接" Click="OnTabClicked" Tag="Link" />
+                        <Button x:Name="TabText" Classes="tab-pill" Content="文本" Click="OnTabClicked" Tag="Text" />
+                        <Button x:Name="TabImage" Classes="tab-pill" Content="图片" Click="OnTabClicked" Tag="Image" />
+                        <Button x:Name="TabFiles" Classes="tab-pill" Content="文件" Click="OnTabClicked" Tag="Files" />
                     </StackPanel>
 
                     <!-- History Items List (Row 3) -->

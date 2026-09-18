@@ -143,13 +143,13 @@
             </StackPanel>
 
             <!-- Right Controls: Filter dropdown in 2x2 + Expand button + Clear button -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <!-- Compact Filter Menu Button (Visible in Small 2x2 tier) -->
-                <Button x:Name="CompactFilterBtn" Classes="menu-pill" Padding="6,2" VerticalAlignment="Center"
-                        Click="OnCompactFilterBtnClicked" IsVisible="True">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
-                        <TextBlock x:Name="CompactFilterText" Text="全部" FontSize="10" />
-                        <TextBlock Text="▾" FontSize="8" Opacity="0.6" VerticalAlignment="Center" />
+                <Button x:Name="CompactFilterBtn" Classes="menu-pill" Padding="4,2" VerticalAlignment="Center"
+                        Click="OnCompactFilterBtnClicked" IsVisible="True" ToolTip.Tip="按类型过滤">
+                    <StackPanel Orientation="Horizontal" Spacing="1">
+                        <TextBlock x:Name="CompactFilterText" Text="全部" FontSize="9.5" />
+                        <TextBlock Text="▾" FontSize="7.5" Opacity="0.6" VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.ContextMenu>
                         <ContextMenu x:Name="FilterMenu">
@@ -162,13 +162,13 @@
                 </Button>
 
                 <!-- Expand Button -->
-                <Button Classes="icon-btn" Padding="4" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="展开管理器">
-                    <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" Width="11" Height="11" Opacity="0.7" />
+                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="展开管理器">
+                    <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" Width="10" Height="10" Opacity="0.75" />
                 </Button>
 
                 <!-- Clear Button -->
-                <Button Classes="icon-btn" Padding="4" VerticalAlignment="Center" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Clear}">
-                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="12" Height="12" Opacity="0.7" />
+                <Button Classes="icon-btn" Width="20" Height="20" Padding="3" VerticalAlignment="Center" Click="OnClearClicked" ToolTip.Tip="{x:Static locales:Locale.Tools_Clipboard_Clear}">
+                    <PathIcon Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" Width="11" Height="11" Opacity="0.75" />
                 </Button>
             </StackPanel>
         </Grid>

@@ -2,6 +2,8 @@ using System;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Batteries.Models;
 using Batteries.ViewModels;
 using uWidgets.Core.Interfaces;
@@ -13,8 +15,8 @@ namespace Batteries.Views;
 public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
 {
     private readonly IWidgetLayoutProvider? layoutProvider;
-    private readonly BatteriesViewModel viewModel;
-    private WidgetTier currentTier = (WidgetTier)(-1);
+    private BatteriesViewModel? viewModel;
+    private BatteriesModel model;
 
     public BatteriesView() : this(new BatteriesModel(), null) { }
 
@@ -24,58 +26,110 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
 
     public BatteriesView(BatteriesModel model, IWidgetLayoutProvider? layoutProvider)
     {
+        this.model = model;
         this.layoutProvider = layoutProvider;
         viewModel = new BatteriesViewModel(model);
         DataContext = viewModel;
 
         InitializeComponent();
+        BindItems(viewModel);
 
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
+        ApplyLayout();
     }
 
-    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void BindItems(BatteriesViewModel vm)
     {
-        if (Bounds.Width > 0 && Bounds.Height > 0)
+        Item0.DataContext = vm.Items[0];
+        Item1.DataContext = vm.Items[1];
+        Item2.DataContext = vm.Items[2];
+        Item3.DataContext = vm.Items[3];
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        SizeChanged -= OnSizeChanged;
+        SizeChanged += OnSizeChanged;
+
+        if (viewModel == null)
         {
-            ApplySize(Bounds.Size);
+            viewModel = new BatteriesViewModel(model);
+            DataContext = viewModel;
+            BindItems(viewModel);
+        }
+        ApplyLayout();
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        SizeChanged -= OnSizeChanged;
+        viewModel?.Dispose();
+        viewModel = null;
+    }
+
+    private void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyLayout();
+
+    private void ApplyLayout()
+    {
+        var items = new[] { Item0, Item1, Item2, Item3 };
+        var valueContainers = new[] { ValueContainer0, ValueContainer1, ValueContainer2, ValueContainer3 };
+        var (columns, rows, showNumbers) = ResolveLayout();
+        var show = showNumbers && model.ShowPercentage;
+
+        Board.ColumnDefinitions = new ColumnDefinitions(
+            columns == 1 ? "*" : columns == 4 ? "*,*,*,*" : "*,*");
+        Board.RowDefinitions = new RowDefinitions(rows == 1 ? "*" : rows == 4 ? "*,*,*,*" : "*,*");
+
+        (Board.Width, Board.Height) = columns == 4
+            ? show ? (360d, 150d) : (360d, 90d)
+            : rows == 4
+                ? show ? (120d, 360d) : (90d, 360d)
+                : show ? (220d, 220d) : (200d, 200d);
+
+        var index = 0;
+        for (var row = 0; row < rows && index < items.Length; row++)
+        {
+            for (var col = 0; col < columns && index < items.Length; col++)
+            {
+                var item = items[index];
+                Grid.SetColumn(item, col);
+                Grid.SetRow(item, row);
+                valueContainers[index].IsVisible = show;
+                index++;
+            }
         }
     }
 
-    private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
+    private (int Columns, int Rows, bool ShowNumbers) ResolveLayout()
     {
-        if (e.NewSize.Width > 0 && e.NewSize.Height > 0)
+        var span = FindHostSpan();
+        if (span is { } s)
         {
-            ApplySize(e.NewSize);
+            if (s.Columns >= 3 && s.Rows >= 3) return (2, 2, true);
+            if (s.Columns >= 3 && s.Rows == 2) return (4, 1, true);
+            if (s.Columns >= 3 && s.Rows == 1) return (4, 1, false);
+            if (s.Columns == 1 && s.Rows >= 3) return (1, 4, true);
+            if (s.Columns == 1 && s.Rows == 2) return (2, 2, false);
+            if (s.Columns == 2 && s.Rows == 1) return (4, 1, false);
+            return (2, 2, false);
         }
+
+        var size = Bounds.Size;
+        if (size.Width > 0 && size.Width > size.Height * 1.8)
+            return (4, 1, size.Height >= 100);
+        if (size.Height > 0 && size.Height > size.Width * 1.8)
+            return (1, 4, false);
+        return (2, 2, size.Width > 180 && size.Height > 180);
     }
 
-    private void ApplySize(Size size)
+    private (int Columns, int Rows)? FindHostSpan()
     {
-        var tier = ResolveTier(size);
-        if (tier == currentTier) return;
-        currentTier = tier;
-
-        bool isWide = tier == WidgetTier.Medium || (size.Width > size.Height * 1.35 && size.Width > 240);
-        SmallLayout.IsVisible = !isWide;
-        WideLayout.IsVisible = isWide;
-    }
-
-    private WidgetTier ResolveTier(Size size)
-    {
-        try
-        {
-            var spanTier = SizeTiers.ResolveTier(this, size);
-            if (spanTier != WidgetTier.Other) return spanTier;
-        }
-        catch { }
-
-        if (size.Width >= 260 && size.Width > size.Height * 1.35)
-            return WidgetTier.Medium;
-        if (size.Width >= 280 && size.Height >= 280)
-            return WidgetTier.Large;
-
-        return WidgetTier.Small;
+        for (var node = this.GetVisualParent(); node != null; node = node.GetVisualParent())
+            if (node is uWidgets.Views.Widget widget)
+                return widget.CurrentSpan;
+        return null;
     }
 
     public void Refresh(WidgetLayout layout)
@@ -88,7 +142,8 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
             var updated = settings.Deserialize<BatteriesModel>();
             if (updated != null)
             {
-                viewModel.UpdateModel(updated);
+                model = updated;
+                viewModel?.UpdateModel(updated);
             }
         }
         catch { }

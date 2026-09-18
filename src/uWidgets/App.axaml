@@ -68,8 +68,6 @@
                      Transparent/Solid surface styles): opaque-ish system color,
                      coated by the opacity level so the slider works in every mode. -->
                 <SolidColorBrush x:Key="WidgetBackground" Color="{DynamicResource SystemAltHighColor}" Opacity="{DynamicResource BackgroundOpacity}" />
-                <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" />
-                <SolidColorBrush x:Key="SettingsWindowBackground" Color="{DynamicResource SystemChromeLowColor}" />
             </Style.Resources>
         </Style>
     </Application.Styles>
@@ -78,10 +76,18 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.96" />
+                    <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="0.96" />
+                    <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#FFFFFF" Opacity="0.88" />
+                    <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#E5E5EA" Opacity="0.8" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#FFFFFF" Opacity="1.0" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#E5E5EA" Opacity="1.0" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="0.96" />
+                    <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="0.96" />
+                    <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#1C1C1E" Opacity="0.88" />
+                    <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#38383A" Opacity="0.8" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#1C1C1E" Opacity="1.0" />
                     <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#38383A" Opacity="1.0" />
                 </ResourceDictionary>
@@ -90,7 +96,6 @@
             <!-- Menu surfaces (context menus): Mica-like chrome tint; items get an
                  accent-colored hover/pressed background (follows the chosen accent,
                  including the wallpaper/monochrome overrides applied by ThemeService). -->
-            <SolidColorBrush x:Key="MenuSurfaceBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.7" />
             <SolidColorBrush x:Key="MenuSurfaceBorder" Color="{DynamicResource SystemAccentColor}" Opacity="0.3" />
             <SolidColorBrush x:Key="TrayMenuSurfaceBackground" Color="#FFFFFF" Opacity="1.0" />
             <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#E5E5EA" Opacity="1.0" />

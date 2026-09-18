@@ -48,6 +48,28 @@ namespace uWidgets.Locales {
         public static string Settings_Appearance_Glass_Align_Close => ResourceManager.GetString("Settings_Appearance_Glass_Align_Close", resourceCulture);
         public static string Settings_Appearance_Glass_Reset => ResourceManager.GetString("Settings_Appearance_Glass_Reset", resourceCulture);
         public static string Settings_Appearance_Glass_Refresh => ResourceManager.GetString("Settings_Appearance_Glass_Refresh", resourceCulture);
+        public static string Settings_General_Update_Title => ResourceManager.GetString("Settings_General_Update_Title", resourceCulture);
+        public static string Settings_General_Update_Subtitle => ResourceManager.GetString("Settings_General_Update_Subtitle", resourceCulture);
+        public static string Settings_General_Update_Interval => ResourceManager.GetString("Settings_General_Update_Interval", resourceCulture);
+        public static string Settings_General_Update_Interval_Subtitle => ResourceManager.GetString("Settings_General_Update_Interval_Subtitle", resourceCulture);
+        public static string Settings_General_Update_Interval_Disabled => ResourceManager.GetString("Settings_General_Update_Interval_Disabled", resourceCulture);
+        public static string Settings_General_Update_Interval_OnStartup => ResourceManager.GetString("Settings_General_Update_Interval_OnStartup", resourceCulture);
+        public static string Settings_General_Update_Interval_Every6Hours => ResourceManager.GetString("Settings_General_Update_Interval_Every6Hours", resourceCulture);
+        public static string Settings_General_Update_Interval_Every12Hours => ResourceManager.GetString("Settings_General_Update_Interval_Every12Hours", resourceCulture);
+        public static string Settings_General_Update_Interval_Daily => ResourceManager.GetString("Settings_General_Update_Interval_Daily", resourceCulture);
+        public static string Settings_General_Update_Interval_Weekly => ResourceManager.GetString("Settings_General_Update_Interval_Weekly", resourceCulture);
+        public static string Settings_General_Update_CheckNow => ResourceManager.GetString("Settings_General_Update_CheckNow", resourceCulture);
+        public static string Settings_General_Update_Checking => ResourceManager.GetString("Settings_General_Update_Checking", resourceCulture);
+        public static string Settings_General_Update_AlreadyLatest => ResourceManager.GetString("Settings_General_Update_AlreadyLatest", resourceCulture);
+        public static string Settings_General_Update_FoundNew => ResourceManager.GetString("Settings_General_Update_FoundNew", resourceCulture);
+        public static string Settings_General_Update_CheckFailed => ResourceManager.GetString("Settings_General_Update_CheckFailed", resourceCulture);
+        public static string Settings_General_Update_LastChecked => ResourceManager.GetString("Settings_General_Update_LastChecked", resourceCulture);
+        public static string Update_DownloadingFormat => ResourceManager.GetString("Update_DownloadingFormat", resourceCulture);
+        public static string Update_DownloadFailed => ResourceManager.GetString("Update_DownloadFailed", resourceCulture);
+        public static string Update_InstallNow => ResourceManager.GetString("Update_InstallNow", resourceCulture);
+        public static string Update_ReadyToInstall => ResourceManager.GetString("Update_ReadyToInstall", resourceCulture);
+        public static string Update_Installing => ResourceManager.GetString("Update_Installing", resourceCulture);
+        public static string Update_WhatsNew => ResourceManager.GetString("Update_WhatsNew", resourceCulture);
         
         private static global::System.Resources.ResourceManager resourceMan;
         

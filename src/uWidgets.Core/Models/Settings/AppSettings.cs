@@ -34,10 +34,21 @@ public record AppSettings(
     TitleBarStyle? TitleBarStyle = null,
     double? TitleBarSize = null,
     string? ActiveProfile = null,
-    bool ShowTrayIcon = true)
+    bool ShowTrayIcon = true,
+    UpdateCheckInterval UpdateInterval = UpdateCheckInterval.Daily,
+    DateTime? LastUpdateCheckTime = null)
 {
     /// <summary>Default profile name.</summary>
     public const string DefaultProfileName = "默认配置";
+
+    /// <summary>Default GitHub release API endpoint for uWidgetsPlus.</summary>
+    public const string DefaultReleaseApiUrl = "https://api.github.com/repos/Genlue/uWidgetsPlus/releases/latest";
+
+    /// <summary>
+    /// Effective update source URL; falls back to official repository releases when not configured.
+    /// </summary>
+    public string EffectiveUpdateUrl =>
+        string.IsNullOrWhiteSpace(UpdateUrl) ? DefaultReleaseApiUrl : UpdateUrl.Trim();
 
     /// <summary>
     /// The effective active configuration profile name.

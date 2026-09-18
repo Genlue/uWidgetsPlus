@@ -12,9 +12,5 @@ public enum DeviceKind
 public record BatteriesModel(
     bool ShowPercentage = true,
     bool ShowPeripherals = true,
-    bool ShowRemainingTime = true,
-    bool LowPowerWarning = true,
-    int MouseBattery = 85,
-    int KeyboardBattery = 68,
-    int HeadphonesBattery = 92
+    bool ShowRemainingTime = true
 );

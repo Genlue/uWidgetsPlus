@@ -31,10 +31,19 @@ public partial class About : UserControl
         Update.Subtitle = string.Format(Locale.Update_UpdateFormat, version);
     }
     
-    private void GoToUpdate(object? sender, RoutedEventArgs e)
+    private async void GoToUpdate(object? sender, RoutedEventArgs e)
     {
-        Process.Start(
-            new ProcessStartInfo("https://www.github.com/creewick/uWidgets/releases/latest") { UseShellExecute = true });
+        var svc = new UpdateService(appSettingsProvider);
+        var (info, result) = await svc.CheckForUpdatesDetailedAsync(isManual: true);
+        if (result == UpdateCheckResult.UpdateAvailable && info != null)
+        {
+            new UpdatePopup(info, svc).Show();
+        }
+        else
+        {
+            Process.Start(
+                new ProcessStartInfo("https://github.com/Genlue/uWidgetsPlus/releases/latest") { UseShellExecute = true });
+        }
     }
 
     private void GoToMyRepository(object? sender, RoutedEventArgs e)

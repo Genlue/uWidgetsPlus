@@ -21,9 +21,9 @@ public partial class Settings : Window
 
     public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider, 
         ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory,
-        ProfileService profileService)
+        ProfileService profileService, UpdateService updateService)
     {
-        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory, profileService);
+        viewModel = new SettingsViewModel(appSettingsProvider, assemblyProvider, layoutProvider, displayMonitor, widgetFactory, profileService, updateService);
         this.appSettingsProvider = appSettingsProvider;
         // Concrete type: HasWidgets is factory bookkeeping the shared SDK interface does not expose.
         this.widgetFactory = widgetFactory as WidgetFactory;

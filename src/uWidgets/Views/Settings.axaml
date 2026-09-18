@@ -26,7 +26,7 @@
         </Style>
     </Window.Styles>
     
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource SettingsWindowBackground}">
         <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.RowSpan="2" SettingsSurface="False" />
         <!-- macOS traffic lights title bar (native system buttons are hidden
              via code when this mode is active) -->

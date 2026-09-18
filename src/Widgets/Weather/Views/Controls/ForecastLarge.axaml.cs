@@ -16,9 +16,11 @@ namespace Weather.Views.Controls;
 public partial class ForecastLarge : UserControl
 {
     private const double DesignSize = 340;
+    private readonly Forecast? owner;
 
-    public ForecastLarge(ForecastViewModel viewModel)
+    public ForecastLarge(ForecastViewModel viewModel, Forecast? owner = null)
     {
+        this.owner = owner;
         DataContext = viewModel;
         SizeChanged += OnSizeChanged;
         Unloaded += (_, _) => SizeChanged -= OnSizeChanged;
@@ -61,5 +63,10 @@ public partial class ForecastLarge : UserControl
             Math.Clamp(HourlyScroller.Offset.X - delta * 60, 0, maxX),
             HourlyScroller.Offset.Y);
         e.Handled = true;
+    }
+
+    public void OpenPopup(object? sender, RoutedEventArgs e)
+    {
+        owner?.OpenPopupWindow();
     }
 }

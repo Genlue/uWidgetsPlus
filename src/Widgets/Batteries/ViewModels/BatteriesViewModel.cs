@@ -12,23 +12,47 @@ namespace Batteries.ViewModels;
 
 public class BatteryDeviceItem : INotifyPropertyChanged
 {
-    private string name;
+    private string name = string.Empty;
     private int percentage;
     private bool isCharging;
+    private bool hasDevice;
     private DeviceKind kind;
 
-    public BatteryDeviceItem(string name, DeviceKind kind, int percentage, bool isCharging)
+    public BatteryDeviceItem(string name, DeviceKind kind, int percentage, bool isCharging, bool hasDevice = true)
     {
         this.name = name;
         this.kind = kind;
         this.percentage = Math.Clamp(percentage, 0, 100);
         this.isCharging = isCharging;
+        this.hasDevice = hasDevice;
     }
+
+    public bool HasDevice
+    {
+        get => hasDevice;
+        set
+        {
+            if (hasDevice != value)
+            {
+                hasDevice = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsEmpty));
+                OnPropertyChanged(nameof(PercentText));
+                OnPropertyChanged(nameof(ProgressFraction));
+                OnPropertyChanged(nameof(StrokeDashOffset));
+                OnPropertyChanged(nameof(StatusBrush));
+                OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(TooltipText));
+            }
+        }
+    }
+
+    public bool IsEmpty => !hasDevice;
 
     public string Name
     {
         get => name;
-        set { if (name != value) { name = value; OnPropertyChanged(); } }
+        set { if (name != value) { name = value; OnPropertyChanged(); OnPropertyChanged(nameof(TooltipText)); } }
     }
 
     public DeviceKind Kind
@@ -52,6 +76,7 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 OnPropertyChanged(nameof(StrokeDashOffset));
                 OnPropertyChanged(nameof(StatusBrush));
                 OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(TooltipText));
             }
         }
     }
@@ -67,20 +92,23 @@ public class BatteryDeviceItem : INotifyPropertyChanged
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(StatusBrush));
                 OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(TooltipText));
             }
         }
     }
 
-    public string PercentText => $"{Percentage}%";
+    public string PercentText => hasDevice ? $"{Percentage}%" : string.Empty;
 
-    public double ProgressFraction => Percentage / 100.0;
+    public double ProgressFraction => hasDevice ? (Percentage / 100.0) : 0.0;
 
-    public double StrokeDashOffset => 30.16 * (1.0 - ProgressFraction);
+    // Radius 50, stroke thickness 10 -> Circumference = 2 * PI * 50 = 314.159. Relative to stroke: 31.416
+    public double StrokeDashOffset => 31.416 * (1.0 - ProgressFraction);
 
     public IBrush StatusBrush
     {
         get
         {
+            if (!hasDevice) return Brushes.Transparent;
             if (IsCharging) return new SolidColorBrush(Color.Parse("#34C759"));
             if (Percentage > 20) return new SolidColorBrush(Color.Parse("#34C759"));
             if (Percentage > 10) return new SolidColorBrush(Color.Parse("#FF9500"));
@@ -88,7 +116,9 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         }
     }
 
-    public string StatusText => IsCharging ? "⚡ 充电中" : $"{Percentage}%";
+    public string StatusText => !hasDevice ? string.Empty : (IsCharging ? "⚡ 充电中" : $"{Percentage}%");
+
+    public string TooltipText => !hasDevice ? string.Empty : $"{Name}: {(IsCharging ? "充电中 " : "")}{Percentage}%";
 
     public string IconData => Kind switch
     {
@@ -105,28 +135,25 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
 }
 
-public class BatteriesViewModel : INotifyPropertyChanged
+public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
 {
     private BatteriesModel model;
     private readonly DispatcherTimer timer;
-    private BatteryDeviceItem mainDevice;
     private string summaryText = string.Empty;
 
-    public ObservableCollection<BatteryDeviceItem> Devices { get; } = [];
+    public ObservableCollection<BatteryDeviceItem> Items { get; } = [
+        new BatteryDeviceItem(Locale.Batteries_MainDevice, DeviceKind.Computer, 100, true, true),
+        new BatteryDeviceItem(string.Empty, DeviceKind.Mouse, 0, false, false),
+        new BatteryDeviceItem(string.Empty, DeviceKind.Keyboard, 0, false, false),
+        new BatteryDeviceItem(string.Empty, DeviceKind.Headphones, 0, false, false)
+    ];
+
+    public ObservableCollection<BatteryDeviceItem> Devices => Items;
+    public BatteryDeviceItem MainDevice => Items[0];
 
     public BatteriesViewModel(BatteriesModel? initialModel = null)
     {
         model = initialModel ?? new BatteriesModel();
-
-        mainDevice = new BatteryDeviceItem(Locale.Batteries_MainDevice, DeviceKind.Computer, 100, true);
-        Devices.Add(mainDevice);
-
-        if (model.ShowPeripherals)
-        {
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Mouse, DeviceKind.Mouse, model.MouseBattery, false));
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Keyboard, DeviceKind.Keyboard, model.KeyboardBattery, false));
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Headphones, DeviceKind.Headphones, model.HeadphonesBattery, false));
-        }
 
         timer = new DispatcherTimer
         {
@@ -139,19 +166,6 @@ public class BatteriesViewModel : INotifyPropertyChanged
     }
 
     public BatteriesModel Model => model;
-
-    public BatteryDeviceItem MainDevice
-    {
-        get => mainDevice;
-        private set
-        {
-            if (mainDevice != value)
-            {
-                mainDevice = value;
-                OnPropertyChanged();
-            }
-        }
-    }
 
     public string SummaryText
     {
@@ -169,45 +183,73 @@ public class BatteriesViewModel : INotifyPropertyChanged
     public void UpdateModel(BatteriesModel newModel)
     {
         model = newModel;
-
-        if (Devices.Count > 1 && !model.ShowPeripherals)
-        {
-            while (Devices.Count > 1) Devices.RemoveAt(1);
-        }
-        else if (Devices.Count == 1 && model.ShowPeripherals)
-        {
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Mouse, DeviceKind.Mouse, model.MouseBattery, false));
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Keyboard, DeviceKind.Keyboard, model.KeyboardBattery, false));
-            Devices.Add(new BatteryDeviceItem(Locale.Batteries_Headphones, DeviceKind.Headphones, model.HeadphonesBattery, false));
-        }
-
         PollPowerStatus();
     }
 
-    private void PollPowerStatus()
+    public void PollPowerStatus()
     {
         var info = PowerService.GetCurrentPowerInfo();
 
-        mainDevice.Percentage = info.Percentage;
-        mainDevice.IsCharging = info.IsCharging;
+        Items[0].Percentage = info.Percentage;
+        Items[0].IsCharging = info.IsCharging;
+        Items[0].HasDevice = true;
 
         if (!info.HasBattery)
         {
-            mainDevice.Name = Locale.Batteries_AcPower;
+            Items[0].Name = Locale.Batteries_AcPower;
             SummaryText = "已连接交流电源";
         }
         else if (info.IsCharging)
         {
-            mainDevice.Name = Locale.Batteries_MainDevice;
+            Items[0].Name = Locale.Batteries_MainDevice;
             SummaryText = $"{Locale.Batteries_Charging} ({info.Percentage}%)";
         }
         else
         {
-            mainDevice.Name = Locale.Batteries_MainDevice;
+            Items[0].Name = Locale.Batteries_MainDevice;
             SummaryText = info.RemainingMinutes > 0
                 ? $"预计剩余 {(info.RemainingMinutes / 60)}小时{(info.RemainingMinutes % 60)}分"
                 : $"剩余电量 {info.Percentage}%";
         }
+
+        if (model.ShowPeripherals)
+        {
+            var peripherals = PowerService.GetConnectedPeripherals();
+            for (int i = 0; i < 3; i++)
+            {
+                var slot = Items[i + 1];
+                if (i < peripherals.Count)
+                {
+                    slot.Name = peripherals[i].Name;
+                    slot.Kind = peripherals[i].Kind;
+                    slot.Percentage = peripherals[i].Percentage;
+                    slot.IsCharging = false;
+                    slot.HasDevice = true;
+                }
+                else
+                {
+                    slot.Name = string.Empty;
+                    slot.Percentage = 0;
+                    slot.IsCharging = false;
+                    slot.HasDevice = false;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 1; i < 4; i++)
+            {
+                Items[i].Name = string.Empty;
+                Items[i].Percentage = 0;
+                Items[i].IsCharging = false;
+                Items[i].HasDevice = false;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        timer.Stop();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

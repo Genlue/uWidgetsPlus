@@ -4,124 +4,223 @@
              x:Class="Batteries.Views.BatteriesView"
              x:DataType="vm:BatteriesViewModel">
 
-    <UserControl.Styles>
-        <Style Selector="Border.device-ring-card">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Padding" Value="2" />
-        </Style>
-        <Style Selector="Border.device-bar-card">
-            <Setter Property="Background" Value="#10808080" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="Margin" Value="0,0,0,5" />
-        </Style>
-    </UserControl.Styles>
-
-    <Panel Margin="0">
-        <!-- 2x2 Small Layout: 2x2 Quad Mini Rings (or 1 Big Ring if single device) -->
-        <Grid x:Name="SmallLayout" Margin="2,0,2,0">
-            <!-- Quad Rings (Multiple devices) -->
-            <ItemsControl x:Name="QuadRingsControl" ItemsSource="{Binding Devices}"
-                          VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="2" Rows="2" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:BatteryDeviceItem">
-                        <Border Classes="device-ring-card" Margin="4,3">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                                <!-- Ring Gauge -->
-                                <Viewbox Width="44" Height="44" Stretch="Uniform">
-                                    <Canvas Width="110" Height="110">
-                                        <!-- Track -->
-                                        <Path StrokeThickness="9" Opacity="0.18" Stroke="{Binding StatusBrush}">
-                                            <Path.Data>
-                                                <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
-                                            </Path.Data>
-                                        </Path>
-                                        <!-- Active Arc -->
-                                        <Path StrokeThickness="9" StrokeDashArray="30.16,30.16" StrokeLineCap="Round"
-                                              StrokeDashOffset="{Binding StrokeDashOffset}"
-                                              Stroke="{Binding StatusBrush}"
-                                              RenderTransformOrigin="55,55">
-                                            <Path.RenderTransform>
-                                                <RotateTransform Angle="-90" />
-                                            </Path.RenderTransform>
-                                            <Path.Data>
-                                                <EllipseGeometry Center="55,55" RadiusX="48" RadiusY="48" />
-                                            </Path.Data>
-                                        </Path>
-                                        <!-- Center Icon -->
-                                        <PathIcon Data="{Binding IconData}" Width="28" Height="28"
-                                                  Canvas.Left="41" Canvas.Top="41"
-                                                  Foreground="{Binding StatusBrush}" Opacity="0.95" />
-                                        <!-- Charging Bolt Badge -->
-                                        <TextBlock Text="⚡" FontSize="18" Canvas.Left="72" Canvas.Top="6"
-                                                   Foreground="#34C759" IsVisible="{Binding IsCharging}" />
-                                    </Canvas>
-                                </Viewbox>
-
-                                <!-- Percentage -->
-                                <TextBlock Text="{Binding PercentText}" FontSize="11" FontWeight="SemiBold"
-                                           HorizontalAlignment="Center" />
-                            </StackPanel>
+    <Viewbox x:Name="ScaleHost" Stretch="Uniform" StretchDirection="Both">
+        <Grid x:Name="Board">
+            <!-- Slot 0: Main Device -->
+            <Grid x:Name="Item0" x:DataType="vm:BatteryDeviceItem" Margin="6"
+                  ToolTip.Tip="{Binding TooltipText}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                    <Canvas Width="110" Height="110">
+                        <!-- Track -->
+                        <Path Opacity="0.15" StrokeThickness="10"
+                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <!-- Active Arc -->
+                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                              StrokeDashOffset="{Binding StrokeDashOffset}"
+                              Stroke="{Binding StatusBrush}"
+                              IsVisible="{Binding HasDevice}"
+                              RenderTransformOrigin="55,55">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </Path.RenderTransform>
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <!-- Center Icon (enlarged 46x46 centered at 32,32) -->
+                        <PathIcon Data="{Binding IconData}"
+                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  Opacity="0.9"
+                                  IsVisible="{Binding HasDevice}" />
+                        <!-- Charging Badge -->
+                        <Border IsVisible="{Binding IsCharging}"
+                                Canvas.Left="78" Canvas.Top="8"
+                                Width="24" Height="24" CornerRadius="12"
+                                Background="#34C759">
+                            <Path Width="12" Height="14" Stretch="Fill"
+                                  Fill="White"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
                         </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
-
-        <!-- 4x2 Wide Layout: macOS Horizontal Capsule Bars -->
-        <Grid x:Name="WideLayout" RowDefinitions="Auto,*" IsVisible="False" Margin="4,0,4,0">
-            <!-- Header Summary -->
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <TextBlock Text="电池与外设" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SystemControlForegroundAccentBrush}" />
-                    <TextBlock Text="·" FontSize="11" Opacity="0.4" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding SummaryText}" FontSize="11" Opacity="0.6" VerticalAlignment="Center" />
-                </StackPanel>
+                    </Canvas>
+                </Viewbox>
+                <Grid x:Name="ValueContainer0" Grid.Row="1" Height="32" Margin="0,4,0,0">
+                    <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="22" FontWeight="SemiBold"
+                               Text="{Binding PercentText}"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               Opacity="0.9" />
+                </Grid>
             </Grid>
 
-            <!-- Device Capsule Bars List -->
-            <ScrollViewer Grid.Row="1">
-                <ItemsControl ItemsSource="{Binding Devices}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="vm:BatteryDeviceItem">
-                            <Border Classes="device-bar-card">
-                                <Grid ColumnDefinitions="Auto,90,*,Auto" VerticalAlignment="Center">
-                                    <!-- Device Icon -->
-                                    <PathIcon Grid.Column="0" Data="{Binding IconData}" Width="16" Height="16"
-                                              Foreground="{Binding StatusBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+            <!-- Slot 1: Peripheral 1 -->
+            <Grid x:Name="Item1" x:DataType="vm:BatteryDeviceItem" Margin="6"
+                  ToolTip.Tip="{Binding TooltipText}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                    <Canvas Width="110" Height="110">
+                        <Path Opacity="0.15" StrokeThickness="10"
+                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                              StrokeDashOffset="{Binding StrokeDashOffset}"
+                              Stroke="{Binding StatusBrush}"
+                              IsVisible="{Binding HasDevice}"
+                              RenderTransformOrigin="55,55">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </Path.RenderTransform>
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <PathIcon Data="{Binding IconData}"
+                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  Opacity="0.9"
+                                  IsVisible="{Binding HasDevice}" />
+                        <Border IsVisible="{Binding IsCharging}"
+                                Canvas.Left="78" Canvas.Top="8"
+                                Width="24" Height="24" CornerRadius="12"
+                                Background="#34C759">
+                            <Path Width="12" Height="14" Stretch="Fill"
+                                  Fill="White"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
+                        </Border>
+                    </Canvas>
+                </Viewbox>
+                <Grid x:Name="ValueContainer1" Grid.Row="1" Height="32" Margin="0,4,0,0">
+                    <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="22" FontWeight="SemiBold"
+                               Text="{Binding PercentText}"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               Opacity="0.9" />
+                </Grid>
+            </Grid>
 
-                                    <!-- Device Name -->
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="11" FontWeight="Medium"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <!-- Slot 2: Peripheral 2 -->
+            <Grid x:Name="Item2" x:DataType="vm:BatteryDeviceItem" Margin="6"
+                  ToolTip.Tip="{Binding TooltipText}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                    <Canvas Width="110" Height="110">
+                        <Path Opacity="0.15" StrokeThickness="10"
+                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                              StrokeDashOffset="{Binding StrokeDashOffset}"
+                              Stroke="{Binding StatusBrush}"
+                              IsVisible="{Binding HasDevice}"
+                              RenderTransformOrigin="55,55">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </Path.RenderTransform>
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <PathIcon Data="{Binding IconData}"
+                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  Opacity="0.9"
+                                  IsVisible="{Binding HasDevice}" />
+                        <Border IsVisible="{Binding IsCharging}"
+                                Canvas.Left="78" Canvas.Top="8"
+                                Width="24" Height="24" CornerRadius="12"
+                                Background="#34C759">
+                            <Path Width="12" Height="14" Stretch="Fill"
+                                  Fill="White"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
+                        </Border>
+                    </Canvas>
+                </Viewbox>
+                <Grid x:Name="ValueContainer2" Grid.Row="1" Height="32" Margin="0,4,0,0">
+                    <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="22" FontWeight="SemiBold"
+                               Text="{Binding PercentText}"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               Opacity="0.9" />
+                </Grid>
+            </Grid>
 
-                                    <!-- Capsule Progress Bar -->
-                                    <Grid Grid.Column="2" Margin="6,0,10,0" Height="10" VerticalAlignment="Center">
-                                        <!-- Bar Background -->
-                                        <Border Background="#20808080" CornerRadius="5" />
-                                        <!-- Bar Filled -->
-                                        <ProgressBar Value="{Binding Percentage}" Minimum="0" Maximum="100"
-                                                     Foreground="{Binding StatusBrush}" Height="10" CornerRadius="5"
-                                                     Background="Transparent" BorderThickness="0" />
-                                    </Grid>
-
-                                    <!-- Percentage & Charging Icon -->
-                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                        <TextBlock Text="⚡" FontSize="11" Foreground="#34C759" IsVisible="{Binding IsCharging}" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding PercentText}" FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{Binding StatusBrush}" VerticalAlignment="Center" Width="36" TextAlignment="Right" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <!-- Slot 3: Peripheral 3 -->
+            <Grid x:Name="Item3" x:DataType="vm:BatteryDeviceItem" Margin="6"
+                  ToolTip.Tip="{Binding TooltipText}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Viewbox Grid.Row="0" Stretch="Uniform" ClipToBounds="False">
+                    <Canvas Width="110" Height="110">
+                        <Path Opacity="0.15" StrokeThickness="10"
+                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <Path StrokeThickness="10" StrokeDashArray="31.416,31.416" StrokeLineCap="Round"
+                              StrokeDashOffset="{Binding StrokeDashOffset}"
+                              Stroke="{Binding StatusBrush}"
+                              IsVisible="{Binding HasDevice}"
+                              RenderTransformOrigin="55,55">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="-90" />
+                            </Path.RenderTransform>
+                            <Path.Data>
+                                <EllipseGeometry Center="55,55" RadiusX="50" RadiusY="50" />
+                            </Path.Data>
+                        </Path>
+                        <PathIcon Data="{Binding IconData}"
+                                  Canvas.Left="32" Canvas.Top="32" Width="46" Height="46"
+                                  Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  Opacity="0.9"
+                                  IsVisible="{Binding HasDevice}" />
+                        <Border IsVisible="{Binding IsCharging}"
+                                Canvas.Left="78" Canvas.Top="8"
+                                Width="24" Height="24" CornerRadius="12"
+                                Background="#34C759">
+                            <Path Width="12" Height="14" Stretch="Fill"
+                                  Fill="White"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
+                        </Border>
+                    </Canvas>
+                </Viewbox>
+                <Grid x:Name="ValueContainer3" Grid.Row="1" Height="32" Margin="0,4,0,0">
+                    <TextBlock HorizontalAlignment="Stretch" TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="22" FontWeight="SemiBold"
+                               Text="{Binding PercentText}"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               Opacity="0.9" />
+                </Grid>
+            </Grid>
         </Grid>
-    </Panel>
+    </Viewbox>
 </UserControl>

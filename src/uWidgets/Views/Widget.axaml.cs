@@ -356,8 +356,8 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private bool IsOutlined =>
         !isFrameless
-        && appSettingsProvider.Get().Theme.IsGlass
-        && (appSettingsProvider.Get().Theme.OutlineWidth > 0 || appSettingsProvider.Get().Theme.IsColorful)
+        && ((appSettingsProvider.Get().Theme.IsGlass && appSettingsProvider.Get().Theme.OutlineWidth > 0)
+            || appSettingsProvider.Get().Theme.IsColorful)
         && !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     /// <summary>Highlight ring thickness (DIPs), 0 when the surface is not outlined glass.</summary>
@@ -456,6 +456,19 @@ public partial class Widget : Window, INotifyPropertyChanged
                     if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
                         return pb;
                 }
+                else if (contentName == "AnalogI")
+                {
+                    // Clock Style 1 (AnalogI):
+                    // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
+                    return new SolidColorBrush(Color.Parse("#1C1C1E"));
+                }
+
+                // Explicit fallback guarantee for Colorful theme to ensure pure white (light) or charcoal (dark)
+                if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
+                    return cbrush;
+                return variant == Avalonia.Styling.ThemeVariant.Dark
+                    ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                    : Brushes.White;
             }
             return this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush
                 ? brush

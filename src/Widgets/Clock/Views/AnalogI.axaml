@@ -12,7 +12,7 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="#Strokes > Ellipse">
-            <Setter Property="Stroke" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="Stroke" Value="{DynamicResource ClockStrokesBrush}" />
             <Setter Property="StrokeThickness" Value="30" />
             <Setter Property="Canvas.Left" Value="30" />
             <Setter Property="Canvas.Top" Value="30" />
@@ -23,8 +23,8 @@
     
     <Viewbox Stretch="Uniform">
         <Canvas Width="1000" Height="1000">
-            <Ellipse Width="1000" Height="1000" Opacity="0.2"
-                     Fill="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Ellipse Width="1000" Height="1000"
+                     Fill="{DynamicResource ClockDialBackgroundBrush}" />
             <Canvas Name="Strokes">
                 <Ellipse StrokeDashArray="0.3,7.64" />
                 <Ellipse StrokeDashArray="0.3,1.288" Opacity="0.25" />

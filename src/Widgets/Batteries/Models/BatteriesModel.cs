@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Batteries.Models;
 
 public enum DeviceKind
@@ -6,11 +8,14 @@ public enum DeviceKind
     Mouse,
     Keyboard,
     Headphones,
-    Phone
+    Phone,
+    Gamepad,
+    Other
 }
 
 public record BatteriesModel(
     bool ShowPercentage = true,
     bool ShowPeripherals = true,
-    bool ShowRemainingTime = true
+    bool ShowRemainingTime = true,
+    Dictionary<string, DeviceKind>? DeviceTypeOverrides = null
 );

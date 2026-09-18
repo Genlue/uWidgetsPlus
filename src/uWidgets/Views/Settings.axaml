@@ -5,6 +5,7 @@
         Width="1000" Height="650" MinWidth="600" MinHeight="300"
         x:Class="uWidgets.Views.Settings"
         Background="{DynamicResource SettingsWindowBackground}"
+        TransparencyLevelHint="Mica, None"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="50"
         WindowStartupLocation="CenterScreen"

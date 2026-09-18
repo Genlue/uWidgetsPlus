@@ -78,18 +78,15 @@ public partial class Settings : Window
     }
 
     /// <summary>
-    /// Native transparency of the settings window, kept consistent with the
-    /// active surface (AcrylicBlur for glass, Transparent for solid). Local
-    /// value, so runtime surface switches reconfigures the existing window.
+    /// Fixed stable window transparency for the settings window. Uses Mica with fallback
+    /// to None (fully opaque) to prevent DWM composition resets and transparency dropouts.
     /// </summary>
     private void ApplyTransparencyHint()
     {
         var theme = appSettingsProvider.Get().Theme;
         GlassSurface.Material = theme;
         GlassSurface.IsVisible = false;
-        TransparencyLevelHint = (theme.UsesNativeBlur || theme.IsColorful || theme.IsLiquidGlass)
-            ? [WindowTransparencyLevel.AcrylicBlur]
-            : [WindowTransparencyLevel.Transparent];
+        TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.None];
     }
 
     /// <summary>

@@ -46,6 +46,9 @@
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#15000000" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="{DynamicResource SystemAccentColorLight2}" />
@@ -83,6 +86,9 @@
                     <SolidColorBrush x:Key="WeatherForegroundBrush" Color="{DynamicResource SystemBaseHighColor}" />
                     <SolidColorBrush x:Key="ProgressCardBackground" Color="Transparent" />
                     <SolidColorBrush x:Key="SearchPillBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="WidgetCardBorderBrush" Color="#25FFFFFF" />
+                    <SolidColorBrush x:Key="ClockDialBackgroundBrush" Color="{DynamicResource SystemBaseHighColor}" Opacity="0.2" />
+                    <SolidColorBrush x:Key="ClockStrokesBrush" Color="{DynamicResource SystemBaseHighColor}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

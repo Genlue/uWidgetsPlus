@@ -11,20 +11,20 @@
                 <ResourceDictionary.ThemeDictionaries>
                     <ResourceDictionary x:Key="Default">
                         <SolidColorBrush x:Key="WidgetBackground" Color="{DynamicResource SolidBackgroundLight}" Opacity="{DynamicResource BackgroundOpacity}" />
-                        <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="0.92" />
-                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.92" />
+                        <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="1.0" />
+                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="1.0" />
                     </ResourceDictionary>
                     <ResourceDictionary x:Key="Dark">
                         <SolidColorBrush x:Key="WidgetBackground" Color="{DynamicResource SolidBackgroundDark}" Opacity="{DynamicResource BackgroundOpacity}" />
-                        <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="0.92" />
-                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="0.92" />
+                        <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="1.0" />
+                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="1.0" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
                 <x:Double x:Key="TextOpacity">0.8</x:Double>
             </ResourceDictionary>
         </Style.Resources>
     </Style>
-    <Style Selector="Window">
+    <Style Selector="Window.Widget">
         <Setter Property="TransparencyLevelHint" Value="AcrylicBlur" />
     </Style>
     <Style Selector="TextBlock">

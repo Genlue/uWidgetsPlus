@@ -7,13 +7,31 @@ namespace uWidgets.Core.Services;
 public class AppSettingsProvider() : JsonParser<AppSettings>(Const.AppSettingsFile), IAppSettingsProvider
 {
     /// <inheritdoc />
-    protected override AppSettings Normalize(AppSettings settings) =>
-        settings with
+    protected override AppSettings Normalize(AppSettings settings)
+    {
+        var surface = settings.Theme.EffectiveSurface;
+        var theme = settings.Theme with { Surface = surface };
+        var surfaceThemes = settings.SurfaceThemes != null
+            ? new Dictionary<string, Theme>(settings.SurfaceThemes, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);
+
+        if (!surfaceThemes.ContainsKey(surface.ToString()))
+        {
+            surfaceThemes[surface.ToString()] = theme;
+        }
+
+        var layout = settings.Layout;
+        if ((int)layout.GridMode == 1)
+        {
+            layout = layout with { GridMode = GridMode.Manual };
+        }
+
+        return settings with
         {
             Grid = settings.Grid ?? Grid.Default,
-            // Backfill the surface material from OpacityLevel for configurations
-            // that predate the SurfaceStyle field so old "solid" setups aren't
-            // mistaken for acrylic by the enum default.
-            Theme = settings.Theme with { Surface = settings.Theme.EffectiveSurface }
+            Theme = theme,
+            SurfaceThemes = surfaceThemes,
+            Layout = layout
         };
+    }
 }

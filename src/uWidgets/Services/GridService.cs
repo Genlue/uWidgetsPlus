@@ -23,8 +23,9 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
             return;
         }
 
-        window.Width = GetSize(columns);
-        window.Height = GetSize(rows);
+        // Free mode presets: 80px per unit base
+        window.Width = Math.Max(48, columns * 80);
+        window.Height = Math.Max(48, rows * 80);
     }
 
     public void SnapSize(Widget window)
@@ -34,19 +35,15 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
             var cell = GetGridMetrics(window).cell / GetScaling(window);
             window.Width = Math.Max(cell, (int) Math.Round(window.Width / (double) cell) * cell);
             window.Height = Math.Max(cell, (int) Math.Round(window.Height / (double) cell) * cell);
-            return;
         }
-
-        window.Width = SnapDimension(window.Width);
-        window.Height = SnapDimension(window.Height);
+        // In Free mode: no size snapping
     }
 
     public void SnapPosition(Widget window)
     {
-        var scaling = window.Screens.ScreenFromWindow(window)?.Scaling ?? 1.0;
-
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
         {
+            var scaling = window.Screens.ScreenFromWindow(window)?.Scaling ?? 1.0;
             var (cell, gridX, gridY) = GetGridMetrics(window);
             var x = gridX + SnapToCell(window.Position.X - gridX, cell);
             var y = gridY + SnapToCell(window.Position.Y - gridY, cell);
@@ -58,12 +55,8 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
             x = ClampToGrid(x, gridX, columns * cell, width);
             y = ClampToGrid(y, gridY, rows * cell, height);
             window.Position = new PixelPoint(x, y);
-            return;
         }
-
-        window.Position = new PixelPoint(
-            SnapDimension(window.Position.X, scaling, true, 0),
-            SnapDimension(window.Position.Y, scaling, true, 0));
+        // In Free mode: no position snapping
     }
 
     /// <summary>

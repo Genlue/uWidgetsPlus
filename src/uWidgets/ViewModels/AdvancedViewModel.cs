@@ -217,7 +217,6 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     public GridModeOption[] GridModes =>
     [
         new(Locale.Settings_Advanced_GridMode_Manual, GridModeEnum.Manual),
-        new(Locale.Settings_Advanced_GridMode_Virtual, GridModeEnum.Virtual),
         new(Locale.Settings_Advanced_GridMode_Free, GridModeEnum.Free)
     ];
 

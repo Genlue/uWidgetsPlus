@@ -472,12 +472,32 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            var baseTitle = appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
-                ? Locale.Widget_Size_Grid
-                : Locale.Widget_Size;
-            var (columns, rows) = CurrentSpan;
-            return $"{baseTitle} · {columns}×{rows}";
+            if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual)
+            {
+                var (columns, rows) = CurrentSpan;
+                return $"{Locale.Widget_Size_Grid} · {columns}×{rows}";
+            }
+            return $"{Locale.Widget_Size} · {(int)Width}×{(int)Height} px";
         }
+    }
+
+    public bool IsFreeMode => appSettingsProvider.Get().Layout.GridMode != GridMode.Manual;
+
+    public bool ShowResizeHandle => !isFrameless
+                                    && !appSettingsProvider.Get().Theme.UseNativeFrame
+                                    && !appSettingsProvider.Get().Layout.LockSize
+                                    && appSettingsProvider.Get().Layout.GridMode != GridMode.Manual;
+
+    public void OpenCustomSizeDialog() =>
+        new CustomSizeDialog((int)Width, (int)Height, ApplyCustomSize).ShowDialog(this);
+
+    private void ApplyCustomSize(int w, int h)
+    {
+        SetMinMaxSize(false);
+        Width = w;
+        Height = h;
+        AfterResize();
+        SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
     }
 
     /// <summary>The widget's current cell span for the active grid mode.</summary>
@@ -510,9 +530,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         ? SystemDecorations.BorderOnly
         : SystemDecorations.None;
 
-    public bool ToolTipVisible => !appSettingsProvider.Get().Theme.UseNativeFrame
-                                  && !appSettingsProvider.Get().Layout.LockSize
-                                  && appSettingsProvider.Get().Layout.GridMode != GridMode.Manual;
+    public bool ToolTipVisible => ShowResizeHandle;
     public bool WidgetExtendClientArea => appSettingsProvider.Get().Theme.UseNativeFrame;
     public void EditWidget() => editWidgetWindow?.Invoke().ShowDialog(this);
 
@@ -831,7 +849,12 @@ public partial class Widget : Window, INotifyPropertyChanged
             else
             {
                 manualSpan = null;
+                SetMinMaxSize(newData.Layout.LockSize);
+                AfterResize();
             }
+            Notify(nameof(ShowResizeHandle));
+            Notify(nameof(IsFreeMode));
+            Notify(nameof(SizeMenuTitle));
         }
 
         if (oldData?.Dimensions != newData.Dimensions)
@@ -858,6 +881,8 @@ public partial class Widget : Window, INotifyPropertyChanged
             Notify(nameof(PillRadius));
             Notify(nameof(SizeMenuTitle));
             Notify(nameof(ToolTipVisible));
+            Notify(nameof(ShowResizeHandle));
+            Notify(nameof(IsFreeMode));
             Notify(nameof(WidgetOutlineThickness));
             Notify(nameof(WidgetOutlineBrush));
             UpdateContentSize();
@@ -901,10 +926,10 @@ public partial class Widget : Window, INotifyPropertyChanged
             return;
         }
 
-        var size = appSettingsProvider.Get().Dimensions.Size;
+        var minSize = 48.0;
         
-        MinWidth = lockSize ? Width : size;
-        MinHeight = lockSize ? Height : size;
+        MinWidth = lockSize ? Width : minSize;
+        MinHeight = lockSize ? Height : minSize;
         MaxWidth = lockSize ? Width : double.PositiveInfinity;
         MaxHeight = lockSize ? Height : double.PositiveInfinity;
     }
@@ -1163,7 +1188,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         await Task.Delay(320);
         Transitions = null;
         AfterResize();
-        SetMinMaxSize(true);
+        SetMinMaxSize(appSettingsProvider.Get().Layout.LockSize || appSettingsProvider.Get().Layout.GridMode == GridMode.Manual);
         pendingSpan = null;
     }
 
@@ -1171,18 +1196,23 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         var appSettings = appSettingsProvider.Get();
         
-        if (FixedSizeWidget is { } fixedWidget)
+        if (appSettings.Layout.GridMode == GridMode.Manual)
         {
-            var (c, r) = GetSpan();
-            var (sc, sr) = fixedWidget.SnapSpan(c, r);
-            if (sc != c || sr != r)
+            if (FixedSizeWidget is { } fixedWidget)
             {
-                manualSpan = (sc, sr);
-                gridService.SetSize(this, sc, sr);
+                var (c, r) = GetSpan();
+                var (sc, sr) = fixedWidget.SnapSpan(c, r);
+                if (sc != c || sr != r)
+                {
+                    manualSpan = (sc, sr);
+                    gridService.SetSize(this, sc, sr);
+                }
+            }
+            else
+            {
+                gridService.SnapSize(this);
             }
         }
-        else if (appSettings.Layout.GridMode == GridMode.Manual || appSettings.Layout.SnapSize)
-            gridService.SnapSize(this);
         
         Scale();
         var settings = widgetLayoutProvider.Get();
@@ -1203,7 +1233,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         Close();
     }
 
-    private void Resize(object? sender, PointerPressedEventArgs e)
+    private void OnResizeHandlePressed(object? sender, PointerPressedEventArgs e)
     {
         // Manual grid: widget size is grid-driven, free resizing is disabled.
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual) return;
@@ -1211,16 +1241,27 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         CanResize = true;
         BeginResizeDrag(WindowEdge.SouthEast, e);
+        CanResize = false;
         AfterResize();
         e.Handled = true;
-        CanResize = false;
     }
+
+    private void Resize(object? sender, PointerPressedEventArgs e) => OnResizeHandlePressed(sender, e);
 
     /// <summary>
     /// The widget's cell span (columns, rows) derived from the stored pixel size.
     /// </summary>
     private (int Columns, int Rows) GetSpan()
     {
+        if (appSettingsProvider.Get().Layout.GridMode != GridMode.Manual)
+        {
+            var dimensions = appSettingsProvider.Get().Dimensions;
+            var unit = dimensions.Size + dimensions.Margin;
+            return (
+                Math.Max(1, (int) Math.Round((Width + dimensions.Margin) / unit)),
+                Math.Max(1, (int) Math.Round((Height + dimensions.Margin) / unit)));
+        }
+
         var (cellPx, _, _) = GetGridMetrics();
         var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
         var layout = widgetLayoutProvider.Get();

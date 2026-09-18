@@ -34,9 +34,16 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(GlassDispersion));
             this.RaisePropertyChanged(nameof(GlassLightAngle));
             this.RaisePropertyChanged(nameof(GlassEdgeTint));
+            this.RaisePropertyChanged(nameof(Monochrome));
+            this.RaisePropertyChanged(nameof(MonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowTitleBarSize));
             this.RaisePropertyChanged(nameof(TitleBarSize));
+            this.RaisePropertyChanged(nameof(SolidBackgroundDark));
+            this.RaisePropertyChanged(nameof(SolidBackgroundLight));
+            this.RaisePropertyChanged(nameof(OutlineColor));
+            this.RaisePropertyChanged(nameof(OutlineWidth));
+            this.RaisePropertyChanged(nameof(DarkMode));
             // The accent controls read the settings directly, so they have to announce changes made
             // elsewhere (another settings window, a profile switch, …) instead of keeping a stale
             // colour on screen.
@@ -120,7 +127,14 @@ public class AppearanceViewModel : ReactiveObject
         var settings = appSettingsProvider.Get();
         var glass = update(settings.Theme.EffectiveLiquidGlass).Normalize();
         if (glass == settings.Theme.EffectiveLiquidGlass) return;
-        appSettingsProvider.Save(settings with { Theme = settings.Theme with { LiquidGlass = glass } });
+        SaveTheme(settings.Theme with { LiquidGlass = glass });
+    }
+
+    private void SaveTheme(Theme newTheme)
+    {
+        var settings = appSettingsProvider.Get();
+        var next = settings.WithThemeForSurface(newTheme.EffectiveSurface, newTheme);
+        appSettingsProvider.Save(next with { Theme = newTheme });
     }
 
     public void ResetLiquidGlass() => UpdateGlass(_ => new LiquidGlassSettings());
@@ -200,7 +214,7 @@ public class AppearanceViewModel : ReactiveObject
             if ((value.Value != null) == (settings.Theme.AccentColor != null)) return;
 
             var newTheme = settings.Theme with { AccentColor = value.Value };
-            appSettingsProvider.Save(settings with { Theme = newTheme });
+            SaveTheme(newTheme);
         }
     }
 
@@ -216,7 +230,7 @@ public class AppearanceViewModel : ReactiveObject
             var settings = appSettingsProvider.Get();
             var hex = ToHex(value);
             if (settings.Theme.AccentColor == hex) return;
-            appSettingsProvider.Save(settings with { Theme = settings.Theme with { AccentColor = hex } });
+            SaveTheme(settings.Theme with { AccentColor = hex });
         }
     }
 
@@ -254,9 +268,7 @@ public class AppearanceViewModel : ReactiveObject
             // Controls push their rendered value back on attach; only a real change is saved
             // so that merely opening the settings window never touches the settings file.
             if (settings.Theme.OpacityLevel.Equals(value)) return;
-            var newTheme = settings.Theme with { OpacityLevel = value };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { OpacityLevel = value });
         }
     }
 
@@ -274,9 +286,7 @@ public class AppearanceViewModel : ReactiveObject
             // nothing is stored, and writing that back would materialize it.
             var hex = ToHex(value);
             if (settings.Theme.EffectiveOutlineColor == hex) return;
-            var newTheme = settings.Theme with { OutlineColor = hex };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { OutlineColor = hex });
         }
     }
 
@@ -291,9 +301,7 @@ public class AppearanceViewModel : ReactiveObject
             var settings = appSettingsProvider.Get();
             var width = Math.Clamp(value, 0, 6);
             if (Math.Abs(settings.Theme.OutlineWidth - width) < 0.001) return;
-            var newTheme = settings.Theme with { OutlineWidth = width };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { OutlineWidth = width });
         }
     }
     
@@ -304,9 +312,7 @@ public class AppearanceViewModel : ReactiveObject
         {
             var settings = appSettingsProvider.Get();
             if (settings.Theme.Monochrome == value) return;
-            var newTheme = settings.Theme with { Monochrome = value };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { Monochrome = value });
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
         }
     }
@@ -332,9 +338,7 @@ public class AppearanceViewModel : ReactiveObject
             if (value == null) return;
             var settings = appSettingsProvider.Get();
             if (settings.Theme.EffectiveMonochromeVariant == value.Value) return;
-            var newTheme = settings.Theme with { MonochromeVariant = value.Value };
-            var newSettings = settings with { Theme = newTheme };
-            appSettingsProvider.Save(newSettings);
+            SaveTheme(settings.Theme with { MonochromeVariant = value.Value });
         }
     }
 
@@ -392,7 +396,7 @@ public class AppearanceViewModel : ReactiveObject
             SolidBackgroundDark = SolidBackgroundDark ?? settings.Theme.SolidBackgroundDark,
             SolidBackgroundLight = SolidBackgroundLight ?? settings.Theme.SolidBackgroundLight
         };
-        appSettingsProvider.Save(settings with { Theme = theme });
+        SaveTheme(theme);
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

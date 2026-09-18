@@ -36,8 +36,68 @@ public record AppSettings(
     string? ActiveProfile = null,
     bool ShowTrayIcon = true,
     UpdateCheckInterval UpdateInterval = UpdateCheckInterval.Daily,
-    DateTime? LastUpdateCheckTime = null)
+    DateTime? LastUpdateCheckTime = null,
+    Dictionary<string, Theme>? SurfaceThemes = null)
 {
+    /// <summary>
+    /// Gets the saved theme configuration for the specified surface, falling back to default presets.
+    /// </summary>
+    public Theme GetThemeForSurface(SurfaceStyle surface)
+    {
+        var key = surface.ToString();
+        if (SurfaceThemes != null && SurfaceThemes.TryGetValue(key, out var savedTheme))
+        {
+            return savedTheme;
+        }
+
+        return surface switch
+        {
+            SurfaceStyle.LiquidGlass => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 0.18, Monochrome: true,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.LiquidGlass, MonochromeVariant: MonochromeStyle.BlackWhite,
+                AutoTheme: Theme.AutoTheme, LiquidGlass: new LiquidGlassSettings()),
+
+            SurfaceStyle.Solid => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.Solid, MonochromeVariant: MonochromeStyle.BlackWhite,
+                AutoTheme: Theme.AutoTheme),
+
+            SurfaceStyle.Colorful => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: false,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.Colorful,
+                AutoTheme: Theme.AutoTheme),
+
+            _ => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 0.4, Monochrome: true,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.Acrylic, MonochromeVariant: MonochromeStyle.BlackWhite,
+                AutoTheme: Theme.AutoTheme)
+        };
+    }
+
+    /// <summary>
+    /// Updates the theme configuration for the specified surface, keeping surface-specific
+    /// settings isolated in SurfaceThemes.
+    /// </summary>
+    public AppSettings WithThemeForSurface(SurfaceStyle surface, Theme theme)
+    {
+        var dict = SurfaceThemes != null 
+            ? new Dictionary<string, Theme>(SurfaceThemes, StringComparer.OrdinalIgnoreCase) 
+            : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);
+        
+        dict[surface.ToString()] = theme;
+        
+        var next = this with { SurfaceThemes = dict };
+        if (Theme.EffectiveSurface == surface)
+        {
+            next = next with { Theme = theme };
+        }
+        return next;
+    }
+
     /// <summary>Default profile name.</summary>
     public const string DefaultProfileName = "默认配置";
 

@@ -202,12 +202,25 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     {
         var settings = appSettingsProvider.Get();
         if (IsSelected) return;
-        var newTheme = settings.Theme with
+
+        var currentSurface = settings.Theme.EffectiveSurface;
+        // 1. Save current active theme's customized settings to its surface snapshot
+        var updatedSettings = settings.WithThemeForSurface(currentSurface, settings.Theme);
+
+        // 2. Load target surface theme from SurfaceThemes (or default preset)
+        var targetTheme = updatedSettings.GetThemeForSurface(AppTheme.EffectiveSurface);
+
+        // 3. Keep global preferences synchronized (Font, Frame, DarkMode, AutoTheme)
+        targetTheme = targetTheme with
         {
             Surface = AppTheme.EffectiveSurface,
-            OpacityLevel = AppTheme.OpacityLevel,
-            Monochrome = AppTheme.IsColorful ? false : settings.Theme.Monochrome
+            FontFamily = settings.Theme.FontFamily,
+            UseNativeFrame = settings.Theme.UseNativeFrame,
+            DarkMode = settings.Theme.DarkMode,
+            AutoTheme = settings.Theme.AutoTheme
         };
-        appSettingsProvider.Save(settings with { Theme = newTheme });
+
+        // 4. Save and apply
+        appSettingsProvider.Save(updatedSettings.WithThemeForSurface(AppTheme.EffectiveSurface, targetTheme) with { Theme = targetTheme });
     }
 }

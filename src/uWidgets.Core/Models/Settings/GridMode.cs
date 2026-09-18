@@ -14,13 +14,13 @@ public enum GridMode
     Manual = 0,
 
     /// <summary>
-    /// Virtual grid (official behavior): widgets are sized and positioned
-    /// in multiples of a virtual grid unit (<see cref="Dimensions.Size"/>).
-    /// </summary>
-    Virtual = 1,
-
-    /// <summary>
     /// Free layout: no grid at all, widgets can be positioned and sized freely.
     /// </summary>
-    Free = 2
+    Free = 2,
+
+    /// <summary>
+    /// Deprecated: Virtual grid mode has been removed.
+    /// </summary>
+    [System.Obsolete("Virtual grid has been removed. Use Manual or Free.")]
+    Virtual = 1
 }

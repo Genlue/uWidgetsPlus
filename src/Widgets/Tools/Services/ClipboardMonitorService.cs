@@ -300,12 +300,33 @@ public class ClipboardMonitorService
         return success;
     }
 
+    public void TogglePin(ClipboardItem item)
+    {
+        item.IsPinned = !item.IsPinned;
+        var sorted = History.OrderByDescending(i => i.IsPinned).ThenByDescending(i => i.Timestamp).ToList();
+        History.Clear();
+        foreach (var it in sorted) History.Add(it);
+        SaveHistory();
+        HistoryChanged?.Invoke();
+    }
+
     private void TrimHistory(int maxCount)
     {
         while (History.Count > maxCount)
         {
-            var last = History[^1];
-            History.RemoveAt(History.Count - 1);
+            int dropIndex = -1;
+            for (int i = History.Count - 1; i >= 0; i--)
+            {
+                if (!History[i].IsPinned)
+                {
+                    dropIndex = i;
+                    break;
+                }
+            }
+            if (dropIndex < 0) break;
+
+            var last = History[dropIndex];
+            History.RemoveAt(dropIndex);
             DisposeThumbnails([last]);
             if (last.Type == ClipboardType.Image && !string.IsNullOrEmpty(last.ImagePath) && File.Exists(last.ImagePath))
             {

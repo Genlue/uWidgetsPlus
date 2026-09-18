@@ -1,0 +1,178 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:Tools.Models"
+        xmlns:locales="clr-namespace:Tools.Locales"
+        x:Class="Tools.Views.ClipboardPopupWindow"
+        Title="Clipboard Manager"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Topmost="True"
+        Width="440"
+        Height="540">
+
+    <Window.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Button.tab-pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+        <Style Selector="Button.tab-pill:pointerover">
+            <Setter Property="Background" Value="#15808080" />
+        </Style>
+        <Style Selector="Button.tab-pill.active">
+            <Setter Property="Background" Value="#3034C759" />
+            <Setter Property="Foreground" Value="#34C759" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Border.clip-card">
+            <Setter Property="Background" Value="#12808080" />
+            <Setter Property="BorderBrush" Value="#15ffffff" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.clip-card:pointerover">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="Border.clip-card.pinned">
+            <Setter Property="BorderBrush" Value="#60FF9500" />
+            <Setter Property="Background" Value="#1CFF9500" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <!-- Main Card Border with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <!-- LiquidGlass Background Image (pre-rendered ahead of time) -->
+                <Image x:Name="LiquidGlassBgImage" Stretch="Fill" IsVisible="False" />
+                <Border x:Name="LiquidGlassOverlay" Background="Transparent" IsVisible="False" />
+
+                <!-- Content Grid -->
+                <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16,14,16,12">
+                    <!-- Top Header (Row 0) -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="剪贴板历史管理器" FontSize="15" FontWeight="Bold" />
+                            <Border Background="#20808080" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
+                                <TextBlock x:Name="CountBadge" Text="0 项" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                            </Border>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" x:Name="CloseButton" Classes="icon-btn" Content="✕"
+                                Click="OnCloseClicked" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Search Box (Row 1) -->
+                    <Border Grid.Row="1" Background="#14808080" CornerRadius="10" Padding="8,4" Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Opacity="0.6" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" x:Name="SearchBox"
+                                     Background="Transparent" BorderThickness="0"
+                                     Watermark="搜索剪贴板历史..." FontSize="12"
+                                     Padding="0,2" VerticalAlignment="Center"
+                                     TextChanged="OnSearchTextChanged" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Filter Tabs (Row 2) -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="0,0,0,10">
+                        <Button x:Name="TabAll" Classes="tab-pill active" Content="全部" Click="OnTabClicked" Tag="All" />
+                        <Button x:Name="TabText" Classes="tab-pill" Content="纯文本" Click="OnTabClicked" Tag="Text" />
+                        <Button x:Name="TabCode" Classes="tab-pill" Content="代码" Click="OnTabClicked" Tag="Code" />
+                        <Button x:Name="TabLink" Classes="tab-pill" Content="链接" Click="OnTabClicked" Tag="Link" />
+                    </StackPanel>
+
+                    <!-- History Items List (Row 3) -->
+                    <ScrollViewer Grid.Row="3" x:Name="ItemsScrollViewer">
+                        <StackPanel>
+                            <!-- Empty state placeholder -->
+                            <StackPanel x:Name="EmptyPanel" IsVisible="False" Margin="0,40,0,0" HorizontalAlignment="Center" Spacing="8">
+                                <TextBlock Text="📋" FontSize="36" HorizontalAlignment="Center" Opacity="0.5" />
+                                <TextBlock Text="暂无符合条件的剪贴记录" FontSize="13" HorizontalAlignment="Center" Opacity="0.5" />
+                            </StackPanel>
+
+                            <ItemsControl x:Name="ItemsControl">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ClipboardItem">
+                                        <Border Classes="clip-card" Classes.pinned="{Binding IsPinned}"
+                                                PointerPressed="OnItemCardPointerPressed" DataContext="{Binding}">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                <!-- Type Icon / Thumbnail -->
+                                                <Panel Grid.Column="0" Width="32" Height="32" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                    <Border Background="#20808080" CornerRadius="8" IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
+                                                        <TextBlock Text="{Binding TypeGlyph}"
+                                                                   FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                           IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                </Panel>
+
+                                                <!-- Content Info -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                    <TextBlock Text="{Binding DisplayTitle}" FontSize="12" FontWeight="SemiBold"
+                                                               MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Opacity="0.5" />
+                                                        <TextBlock Text="·" FontSize="10" Opacity="0.4" />
+                                                        <TextBlock Text="{Binding RelativeTime}" FontSize="10" Opacity="0.5" />
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <!-- Action Buttons: Pin & Delete -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                    <Button Classes="icon-btn" Click="OnTogglePinClicked" DataContext="{Binding}"
+                                                            ToolTip.Tip="置顶/取消置顶">
+                                                        <TextBlock Text="📌" FontSize="11" Opacity="{Binding IsPinned, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                    </Button>
+                                                    <Button Classes="icon-btn" Click="OnDeleteItemClicked" DataContext="{Binding}"
+                                                            ToolTip.Tip="删除记录">
+                                                        <TextBlock Text="✕" FontSize="10" Opacity="0.5" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

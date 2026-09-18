@@ -1,9 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -14,87 +13,30 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using Reminders.Locales;
-using Reminders.Models;
-using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
 using uWidgets.Services;
+using Weather.ViewModels;
 
-namespace Reminders.Views;
+namespace Weather.Views;
 
-public class ReminderItemViewModel : INotifyPropertyChanged
+public partial class WeatherPopupWindow : Window
 {
-    private bool completed;
-    private string title;
-
-    public ReminderItemViewModel(ReminderModel model)
-    {
-        completed = model.Completed;
-        title = model.Title;
-    }
-
-    public bool Completed
-    {
-        get => completed;
-        set
-        {
-            if (completed != value)
-            {
-                completed = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(TextOpacity));
-                OnPropertyChanged(nameof(TextDecorations));
-            }
-        }
-    }
-
-    public string Title
-    {
-        get => title;
-        set
-        {
-            if (title != value)
-            {
-                title = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public double TextOpacity => Completed ? 0.45 : 1.0;
-    public TextDecorationCollection? TextDecorations => Completed ? Avalonia.Media.TextDecorations.Strikethrough : null;
-
-    public ReminderModel ToModel() => new(Completed, Title);
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
-}
-
-public partial class RemindersPopupWindow : Window
-{
-    private static RemindersPopupWindow? activePopup;
+    private static WeatherPopupWindow? activePopup;
     private static DateTime lastCloseTime = DateTime.MinValue;
 
-    private RemindersListModel currentModel;
+    private readonly ForecastViewModel viewModel;
     private readonly Point? spawnScreenCenter;
-    private readonly Action<RemindersListModel>? onModelChanged;
-    private readonly ObservableCollection<ReminderItemViewModel> items = [];
     private DateTime loadedTime = DateTime.MinValue;
 
     private ScaleTransform? ZoomTransform => CardBorder.RenderTransform as ScaleTransform;
 
-    public RemindersPopupWindow() : this(new RemindersListModel(null, []), null, null) { }
+    public WeatherPopupWindow() : this(new ForecastViewModel(new Models.ForecastModel("北京", 39.9042, 116.4074, "celsius")), null) { }
 
-    public RemindersPopupWindow(
-        RemindersListModel model,
-        Point? screenCenter = null,
-        Action<RemindersListModel>? onModelChanged = null)
+    public WeatherPopupWindow(ForecastViewModel viewModel, Point? screenCenter = null)
     {
-        currentModel = model;
+        this.viewModel = viewModel;
         spawnScreenCenter = screenCenter;
-        this.onModelChanged = onModelChanged;
 
         InitializeComponent();
 
@@ -105,27 +47,21 @@ public partial class RemindersPopupWindow : Window
             t.ScaleY = 0.90;
         }
 
-        ItemsList.ItemsSource = items;
-
         Loaded += OnWindowLoaded;
         Deactivated += OnWindowDeactivated;
         Closing += OnWindowClosing;
         Closed += OnWindowClosed;
         KeyDown += OnWindowKeyDown;
 
-        TitleBox.Text = !string.IsNullOrWhiteSpace(currentModel.ListName) ? currentModel.ListName : Locale.Reminders_List_Title;
+        HourlyScroll.AddHandler(PointerWheelChangedEvent, OnHourlyWheel, RoutingStrategies.Bubble, true);
 
+        BindData();
         ApplyTheme();
-        PopulateItems();
 
         PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
     }
 
-    public static void ShowPopup(
-        RemindersListModel model,
-        Point? screenCenter,
-        Window? owner = null,
-        Action<RemindersListModel>? onModelChanged = null)
+    public static void ShowPopup(ForecastViewModel viewModel, Point? screenCenter, Window? owner = null)
     {
         if ((DateTime.UtcNow - lastCloseTime).TotalMilliseconds < 250)
             return;
@@ -137,7 +73,7 @@ public partial class RemindersPopupWindow : Window
             return;
         }
 
-        var popup = new RemindersPopupWindow(model, screenCenter, onModelChanged);
+        var popup = new WeatherPopupWindow(viewModel, screenCenter);
         activePopup = popup;
 
         if (owner != null)
@@ -148,12 +84,35 @@ public partial class RemindersPopupWindow : Window
         popup.Activate();
     }
 
+    private void BindData()
+    {
+        CityText.Text = viewModel.CityName;
+        TempText.Text = viewModel.CurrentTemperature;
+        ConditionText.Text = viewModel.CurrentCondition;
+        ConditionIcon.Data = viewModel.CurrentIcon;
+        MinMaxText.Text = $"最高/最低: {viewModel.CurrentMinMax}";
+
+        HourlyList.ItemsSource = viewModel.HourlyForecast;
+        DailyList.ItemsSource = viewModel.DailyForecast;
+
+        UVText.Text = $"{viewModel.UVIndex.Value:0.0}";
+        UVLevelText.Text = viewModel.UVIndex.Value switch
+        {
+            < 3 => "弱 · 无需特殊防护",
+            < 6 => "中等 · 建议涂防晒霜",
+            < 8 => "高 · 建议遮阳伞与防晒",
+            _ => "极高 · 尽量避免直晒"
+        };
+
+        PressureText.Text = $"{viewModel.Pressure.Value:0} hPa";
+        SunText.Text = viewModel.SunsetSunrise.Time;
+    }
+
     private void OnWindowLoaded(object? sender, RoutedEventArgs e)
     {
         loadedTime = DateTime.UtcNow;
         PositionWindow();
         PlayZoomInAnimation();
-        NewItemTextBox.Focus();
     }
 
     private void PositionWindow()
@@ -270,8 +229,8 @@ public partial class RemindersPopupWindow : Window
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
+            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1A2B42") : Color.Parse("#2B6CB0"));
+            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 255, 255, 255));
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
         {
@@ -284,7 +243,7 @@ public partial class RemindersPopupWindow : Window
             CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
         }
-        else // Acrylic (毛玻璃)
+        else // Acrylic
         {
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
             LiquidGlassBgImage.IsVisible = false;
@@ -294,11 +253,11 @@ public partial class RemindersPopupWindow : Window
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
         }
 
-        IBrush textBrush = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
-        IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
-        TitleBox.Foreground = textBrush;
+        IBrush textBrush = (theme.IsColorful || isDark) ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
+        IBrush subTextBrush = (theme.IsColorful || isDark) ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+        CityText.Foreground = textBrush;
+        TempText.Foreground = textBrush;
         CloseButton.Foreground = subTextBrush;
-        ClearCompletedButton.Foreground = subTextBrush;
     }
 
     private async Task TriggerDirectLiquidGlassRender(Theme theme, bool isDark, Screen? screen)
@@ -323,7 +282,7 @@ public partial class RemindersPopupWindow : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[RemindersPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
+            Debug.WriteLine($"[WeatherPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
         }
     }
 
@@ -341,144 +300,23 @@ public partial class RemindersPopupWindow : Window
         }
     }
 
-    private void PopulateItems()
+    private void OnHourlyWheel(object? sender, PointerWheelEventArgs e)
     {
-        items.Clear();
-        foreach (var r in currentModel.Reminders)
-            items.Add(new ReminderItemViewModel(r));
-
-        UpdateStatsAndVisibility();
+        var maxX = HourlyScroll.Extent.Width - HourlyScroll.Viewport.Width;
+        if (maxX <= 0) return;
+        var delta = e.Delta.Y;
+        if (delta == 0) return;
+        HourlyScroll.Offset = new Vector(Math.Clamp(HourlyScroll.Offset.X - delta * 50, 0, maxX), HourlyScroll.Offset.Y);
+        e.Handled = true;
     }
 
-    private void UpdateStatsAndVisibility()
+    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        int total = items.Count;
-        int completed = items.Count(i => i.Completed);
-
-        SubtitleText.Text = $"共 {total} 项" + (completed > 0 ? $" · {completed} 项已完成" : "");
-        EmptyPanel.IsVisible = total == 0;
-        ClearCompletedButton.IsVisible = completed > 0;
-    }
-
-    private void CommitChanges()
-    {
-        var updatedList = items.Select(i => i.ToModel()).ToList();
-        currentModel = currentModel with { Reminders = updatedList };
-        onModelChanged?.Invoke(currentModel);
-        UpdateStatsAndVisibility();
-    }
-
-    // ---------- 条目交互 ----------
-
-    private void OnItemCheckClicked(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.DataContext is ReminderItemViewModel item)
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            item.Completed = !item.Completed;
-            if (item.Completed && currentModel.DeleteOnCheck)
-            {
-                items.Remove(item);
-            }
-            CommitChanges();
+            BeginMoveDrag(e);
         }
     }
-
-    private void OnItemTextLostFocus(object? sender, RoutedEventArgs e)
-    {
-        if (sender is TextBox tb && tb.DataContext is ReminderItemViewModel item)
-        {
-            var text = tb.Text?.Trim() ?? "";
-            if (string.IsNullOrEmpty(text))
-            {
-                items.Remove(item);
-            }
-            else
-            {
-                item.Title = text;
-            }
-            CommitChanges();
-        }
-    }
-
-    private void OnItemTextKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
-            e.Handled = true;
-        }
-    }
-
-    private void OnItemDeleteClicked(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.DataContext is ReminderItemViewModel item)
-        {
-            items.Remove(item);
-            CommitChanges();
-        }
-    }
-
-    private void OnClearCompletedClicked(object? sender, RoutedEventArgs e)
-    {
-        var toRemove = items.Where(i => i.Completed).ToList();
-        foreach (var item in toRemove)
-            items.Remove(item);
-
-        CommitChanges();
-    }
-
-    // ---------- 新建待办 ----------
-
-    private void OnNewItemKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            AddNewItem();
-            e.Handled = true;
-        }
-    }
-
-    private void OnAddClicked(object? sender, RoutedEventArgs e)
-    {
-        AddNewItem();
-    }
-
-    private void AddNewItem()
-    {
-        var text = NewItemTextBox.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(text))
-            return;
-
-        var newItem = new ReminderItemViewModel(new ReminderModel(false, text));
-        items.Add(newItem);
-        NewItemTextBox.Clear();
-        CommitChanges();
-
-        Dispatcher.UIThread.Post(() => NewItemTextBox.Focus());
-    }
-
-    // ---------- 标题修改 ----------
-
-    private void OnTitleLostFocus(object? sender, RoutedEventArgs e)
-    {
-        var title = TitleBox.Text?.Trim();
-        if (title != currentModel.ListName)
-        {
-            currentModel = currentModel with { ListName = title };
-            onModelChanged?.Invoke(currentModel);
-        }
-    }
-
-    private void OnTitleKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
-            e.Handled = true;
-        }
-    }
-
-    // ---------- 窗口生命周期 ----------
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)
     {

@@ -1,0 +1,191 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:viewModels="clr-namespace:Weather.ViewModels"
+        xmlns:locales="clr-namespace:Weather.Locales"
+        x:Class="Weather.Views.WeatherPopupWindow"
+        Title="Weather Detail"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Topmost="True"
+        Width="460"
+        Height="580">
+
+    <Window.Styles>
+        <Style Selector="Button.close-btn">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.close-btn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Border.metric-card">
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="12,10" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent" PointerPressed="OnRootPointerPressed">
+        <!-- Main Card Border with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="20"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Panel>
+                <!-- LiquidGlass Background Image (pre-rendered ahead of time) -->
+                <Image x:Name="LiquidGlassBgImage" Stretch="Fill" IsVisible="False" />
+                <Border x:Name="LiquidGlassOverlay" Background="Transparent" IsVisible="False" />
+
+                <!-- Content Grid -->
+                <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="18,14,18,14">
+                    <!-- Top Header (Row 0) -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock x:Name="CityText" FontSize="20" FontWeight="Bold" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <TextBlock x:Name="TempText" FontSize="36" FontWeight="Bold" LetterSpacing="-1" Margin="0,-2,0,0" />
+                                <PathIcon x:Name="ConditionIcon" Width="28" Height="28" VerticalAlignment="Center"
+                                          Foreground="{DynamicResource WeatherIconBrush}" />
+                                <StackPanel VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock x:Name="ConditionText" FontSize="14" FontWeight="SemiBold" Opacity="0.85" />
+                                    <TextBlock x:Name="MinMaxText" FontSize="12" Opacity="0.6" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" x:Name="CloseButton" Classes="close-btn" Content="✕"
+                                Click="OnCloseClicked" VerticalAlignment="Top" />
+                    </Grid>
+
+                    <!-- Hourly Forecast Strip (Row 1) -->
+                    <Border Grid.Row="1" Background="#12808080" CornerRadius="14" Padding="10,8" Margin="0,0,0,10">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="逐时预报 (24小时)" FontSize="11" FontWeight="SemiBold" Opacity="0.5" />
+                            <ScrollViewer x:Name="HourlyScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="HourlyList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="viewModels:HourlyForecastViewModel">
+                                            <Grid RowDefinitions="Auto,Auto,Auto" MinWidth="54" Margin="2,0">
+                                                <TextBlock Grid.Row="0" Text="{Binding Time}" Opacity="0.6" FontSize="11"
+                                                           HorizontalAlignment="Center" FontWeight="SemiBold" />
+                                                <PathIcon Grid.Row="1" HorizontalAlignment="Center" Margin="0,5"
+                                                          Width="18" Height="18"
+                                                          Foreground="{DynamicResource WeatherIconBrush}" 
+                                                          Data="{Binding Icon}" />
+                                                <TextBlock Grid.Row="2" Text="{Binding Temperature}" FontSize="12"
+                                                           HorizontalAlignment="Center" FontWeight="Bold" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 7-Day Forecast (Row 2) -->
+                    <Border Grid.Row="2" Background="#12808080" CornerRadius="14" Padding="12,8" Margin="0,0,0,10">
+                        <Grid RowDefinitions="Auto,*">
+                            <TextBlock Grid.Row="0" Text="未来 7 天天气预报" FontSize="11" FontWeight="SemiBold" Opacity="0.5" Margin="0,0,0,4" />
+                            <ScrollViewer Grid.Row="1">
+                                <ItemsControl x:Name="DailyList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="viewModels:DailyForecastViewModel">
+                                            <Grid ColumnDefinitions="45,Auto,36,*,36" Margin="0,3">
+                                                <TextBlock Grid.Column="0" Text="{Binding DayOfWeek}" FontSize="12"
+                                                           VerticalAlignment="Center" FontWeight="SemiBold" />
+                                                <PathIcon Grid.Column="1" HorizontalAlignment="Center" Width="16" Height="16"
+                                                          Foreground="{DynamicResource WeatherIconBrush}" 
+                                                          Data="{Binding Icon}" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Min}" Opacity="0.5" FontSize="12"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                <!-- Temperature Range Bar -->
+                                                <Grid Grid.Column="3" Margin="8,0" VerticalAlignment="Center">
+                                                    <Path Height="4" Stretch="Fill" Opacity="0.18" StrokeThickness="4" StrokeLineCap="Round"
+                                                          Stroke="{DynamicResource WeatherForegroundBrush}">
+                                                        <Path.Data>
+                                                            <LineGeometry StartPoint="0,0" EndPoint="1,0" />
+                                                        </Path.Data>
+                                                    </Path>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="{Binding Graph[0]}" />
+                                                            <ColumnDefinition Width="{Binding Graph[1]}" />
+                                                            <ColumnDefinition Width="{Binding Graph[2]}" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Path Grid.Column="1" Height="4" Stretch="Fill" StrokeThickness="4" StrokeLineCap="Round"
+                                                              Stroke="{DynamicResource WeatherTempBarBrush}">
+                                                            <Path.Data>
+                                                                <LineGeometry StartPoint="0,0" EndPoint="1,0" />
+                                                            </Path.Data>
+                                                        </Path>
+                                                    </Grid>
+                                                </Grid>
+                                                <TextBlock Grid.Column="4" Text="{Binding Max}" FontSize="12"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <!-- Environment 4-Grid Metrics (Row 3) -->
+                    <Grid Grid.Row="3" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                        <!-- Air Quality (AQI) / UV Index -->
+                        <Border Grid.Row="0" Grid.Column="0" Classes="metric-card" Margin="0,0,4,4">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="紫外线指数 (UV)" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock x:Name="UVText" FontSize="16" FontWeight="Bold" />
+                                <TextBlock x:Name="UVLevelText" FontSize="10" Opacity="0.7" Text="全天适度" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Classes="metric-card" Margin="4,0,0,4">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="大气压强 (Pressure)" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock x:Name="PressureText" FontSize="16" FontWeight="Bold" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="标准大气压正常" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="0" Classes="metric-card" Margin="0,4,4,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="日出与日落" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock x:Name="SunText" FontSize="16" FontWeight="Bold" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="晨曦与黄昏" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Classes="metric-card" Margin="4,4,0,0">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="空气质量与体感" FontSize="10" Opacity="0.5" FontWeight="SemiBold" />
+                                <TextBlock x:Name="AqiText" FontSize="16" FontWeight="Bold" Text="优良 (AQI 32)" />
+                                <TextBlock FontSize="10" Opacity="0.7" Text="清新宜人" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Panel>
+        </Border>
+    </Panel>
+</Window>

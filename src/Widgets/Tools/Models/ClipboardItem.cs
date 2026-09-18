@@ -16,6 +16,7 @@ public class ClipboardItem
     public int ImageWidth { get; set; }
     public int ImageHeight { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.Now;
+    public bool IsPinned { get; set; }
 
     [JsonIgnore]
     public Bitmap? Thumbnail { get; set; }
@@ -32,6 +33,15 @@ public class ClipboardItem
             return Timestamp.ToString("MM-dd HH:mm");
         }
     }
+
+    [JsonIgnore]
+    public string TypeGlyph => Type switch
+    {
+        ClipboardType.Text => "📝",
+        ClipboardType.Image => "🖼️",
+        ClipboardType.Files => "📁",
+        _ => "📋"
+    };
 
     [JsonIgnore]
     public string DisplayTitle => Type switch

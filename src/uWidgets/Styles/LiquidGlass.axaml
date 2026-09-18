@@ -5,7 +5,7 @@
             <SolidColorBrush x:Key="WidgetBackground" Color="Transparent" />
             <!-- Settings retain a readable coating over the same static optics. -->
             <SolidColorBrush x:Key="SettingsBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.96" />
-            <SolidColorBrush x:Key="SettingsWindowBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="SettingsWindowBackground" Color="{DynamicResource SystemChromeLowColor}" Opacity="0.96" />
             <x:Double x:Key="TextOpacity">1</x:Double>
         </Style.Resources>
     </Style>

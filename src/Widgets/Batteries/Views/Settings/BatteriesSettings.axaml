@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:Batteries.Locales"
+             x:Class="Batteries.Views.Settings.BatteriesSettings">
+
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+            <!-- 显示蓝牙外设电量 -->
+            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPeripherals}">
+                <ToggleSwitch Name="ShowPeripheralsSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 显示百分比数字 -->
+            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowPercentage}">
+                <ToggleSwitch Name="ShowPercentageSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 显示预计剩余时间 -->
+            <controls:Setting Title="{x:Static locales:Locale.Batteries_ShowRemainingTime}">
+                <ToggleSwitch Name="ShowRemainingTimeSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 鼠标模拟电量 -->
+            <controls:Setting Title="外设: 鼠标电量 (%)">
+                <NumericUpDown Name="MouseBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 键盘模拟电量 -->
+            <controls:Setting Title="外设: 键盘电量 (%)">
+                <NumericUpDown Name="KeyboardBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 耳机模拟电量 -->
+            <controls:Setting Title="外设: 耳机电量 (%)">
+                <NumericUpDown Name="HeadphonesBatteryInput" Minimum="0" Maximum="100" Increment="5" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -47,6 +47,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
+        PointerEntered += OnPointerEntered;
 
         RefreshDisplay();
     }
@@ -77,6 +78,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
     {
         monitor.HistoryChanged -= OnHistoryChanged;
         SizeChanged -= OnSizeChanged;
+        PointerEntered -= OnPointerEntered;
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)
@@ -269,5 +271,58 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         ToastBanner.IsVisible = true;
         toastTimer.Stop();
         toastTimer.Start();
+    }
+
+    private void OnPointerEntered(object? sender, PointerEventArgs e)
+    {
+        PreRenderLiquidGlassPopup();
+    }
+
+    private void PreRenderLiquidGlassPopup()
+    {
+        try
+        {
+            var theme = new uWidgets.Core.Services.AppSettingsProvider().Get().Theme;
+            if (theme.IsLiquidGlass)
+            {
+                var (screenCenter, _) = GetScreenCenterAndTopLevel();
+                var window = VisualRoot as Window;
+                var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
+                bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
+                PopupLiquidGlassService.RequestPreRender(screenCenter, 440, 540, 18, theme, isDark, screen, window?.Screens.All);
+            }
+        }
+        catch { }
+    }
+
+    public void OnOpenPopupClicked(object? sender, RoutedEventArgs e)
+    {
+        var (screenCenter, _) = GetScreenCenterAndTopLevel();
+        var owner = VisualRoot as Window;
+        ClipboardPopupWindow.ShowPopup(screenCenter, owner);
+    }
+
+    private void OnOpenBadgePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            OnOpenPopupClicked(sender, e);
+        }
+    }
+
+    private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
+    {
+        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        {
+            var bounds = Bounds;
+            var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
+            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            if (rootPoint.HasValue)
+            {
+                var screenPoint = topLevel.PointToScreen(rootPoint.Value);
+                return (new Point(screenPoint.X, screenPoint.Y), topLevel);
+            }
+        }
+        return (null, null);
     }
 }

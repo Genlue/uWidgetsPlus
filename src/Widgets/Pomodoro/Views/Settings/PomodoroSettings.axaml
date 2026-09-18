@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:Pomodoro.Locales"
+             x:Class="Pomodoro.Views.Settings.PomodoroSettings">
+
+    <ScrollViewer>
+        <StackPanel Orientation="Vertical" Spacing="6" Margin="0,0,10,0">
+            <!-- 专注时长 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_FocusMinutes}">
+                <NumericUpDown Name="FocusMinutesInput" Minimum="1" Maximum="120" Increment="5" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 短休息时长 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_ShortBreakMinutes}">
+                <NumericUpDown Name="ShortBreakMinutesInput" Minimum="1" Maximum="60" Increment="1" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 长休息时长 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_LongBreakMinutes}">
+                <NumericUpDown Name="LongBreakMinutesInput" Minimum="1" Maximum="90" Increment="5" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 长休息间隔 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_LongBreakInterval}">
+                <NumericUpDown Name="LongBreakIntervalInput" Minimum="1" Maximum="12" Increment="1" FormatString="0"
+                               ValueChanged="OnNumericSettingChanged" />
+            </controls:Setting>
+
+            <!-- 自动开始休息 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_AutoStartBreaks}">
+                <ToggleSwitch Name="AutoStartBreaksSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- 自动开始下一个专注 -->
+            <controls:Setting Title="{x:Static locales:Locale.Pomodoro_AutoStartFocus}">
+                <ToggleSwitch Name="AutoStartFocusSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

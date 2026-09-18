@@ -27,6 +27,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
         Content = new ListSmall(this, viewModel);
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
+        PointerEntered += OnPointerEntered;
         InitializeComponent();
     }
 
@@ -42,6 +43,29 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
+        PointerEntered -= OnPointerEntered;
+    }
+
+    private void OnPointerEntered(object? sender, Avalonia.Input.PointerEventArgs e)
+    {
+        PreRenderLiquidGlassPopup();
+    }
+
+    private void PreRenderLiquidGlassPopup()
+    {
+        try
+        {
+            var theme = new uWidgets.Core.Services.AppSettingsProvider().Get().Theme;
+            if (theme.IsLiquidGlass)
+            {
+                var (screenCenter, _) = GetScreenCenterAndTopLevel();
+                var window = VisualRoot as Window;
+                var screen = window?.Screens.ScreenFromWindow(window) ?? window?.Screens.Primary;
+                bool isDark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark || (theme.DarkMode ?? true);
+                PopupLiquidGlassService.RequestPreRender(screenCenter, 400, 490, 18, theme, isDark, screen, window?.Screens.All);
+            }
+        }
+        catch { }
     }
 
     private void OnSizeChanged(object? sender, SizeChangedEventArgs e)

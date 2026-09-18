@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -14,87 +13,33 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using Reminders.Locales;
-using Reminders.Models;
-using uWidgets.Core.Interfaces;
+using Tools.Models;
+using Tools.Services;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
 using uWidgets.Services;
 
-namespace Reminders.Views;
+namespace Tools.Views;
 
-public class ReminderItemViewModel : INotifyPropertyChanged
+public partial class ClipboardPopupWindow : Window
 {
-    private bool completed;
-    private string title;
-
-    public ReminderItemViewModel(ReminderModel model)
-    {
-        completed = model.Completed;
-        title = model.Title;
-    }
-
-    public bool Completed
-    {
-        get => completed;
-        set
-        {
-            if (completed != value)
-            {
-                completed = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(TextOpacity));
-                OnPropertyChanged(nameof(TextDecorations));
-            }
-        }
-    }
-
-    public string Title
-    {
-        get => title;
-        set
-        {
-            if (title != value)
-            {
-                title = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public double TextOpacity => Completed ? 0.45 : 1.0;
-    public TextDecorationCollection? TextDecorations => Completed ? Avalonia.Media.TextDecorations.Strikethrough : null;
-
-    public ReminderModel ToModel() => new(Completed, Title);
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? propName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
-}
-
-public partial class RemindersPopupWindow : Window
-{
-    private static RemindersPopupWindow? activePopup;
+    private static ClipboardPopupWindow? activePopup;
     private static DateTime lastCloseTime = DateTime.MinValue;
 
-    private RemindersListModel currentModel;
+    private readonly ClipboardMonitorService monitor;
     private readonly Point? spawnScreenCenter;
-    private readonly Action<RemindersListModel>? onModelChanged;
-    private readonly ObservableCollection<ReminderItemViewModel> items = [];
+    private string activeCategory = "All";
+    private string searchQuery = string.Empty;
     private DateTime loadedTime = DateTime.MinValue;
 
     private ScaleTransform? ZoomTransform => CardBorder.RenderTransform as ScaleTransform;
 
-    public RemindersPopupWindow() : this(new RemindersListModel(null, []), null, null) { }
+    public ClipboardPopupWindow() : this(null) { }
 
-    public RemindersPopupWindow(
-        RemindersListModel model,
-        Point? screenCenter = null,
-        Action<RemindersListModel>? onModelChanged = null)
+    public ClipboardPopupWindow(Point? screenCenter = null)
     {
-        currentModel = model;
         spawnScreenCenter = screenCenter;
-        this.onModelChanged = onModelChanged;
+        monitor = ClipboardMonitorService.Instance;
 
         InitializeComponent();
 
@@ -105,27 +50,20 @@ public partial class RemindersPopupWindow : Window
             t.ScaleY = 0.90;
         }
 
-        ItemsList.ItemsSource = items;
-
         Loaded += OnWindowLoaded;
         Deactivated += OnWindowDeactivated;
         Closing += OnWindowClosing;
         Closed += OnWindowClosed;
         KeyDown += OnWindowKeyDown;
 
-        TitleBox.Text = !string.IsNullOrWhiteSpace(currentModel.ListName) ? currentModel.ListName : Locale.Reminders_List_Title;
+        monitor.HistoryChanged += OnHistoryChanged;
+        PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
 
         ApplyTheme();
-        PopulateItems();
-
-        PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
+        RefreshList();
     }
 
-    public static void ShowPopup(
-        RemindersListModel model,
-        Point? screenCenter,
-        Window? owner = null,
-        Action<RemindersListModel>? onModelChanged = null)
+    public static void ShowPopup(Point? screenCenter, Window? owner = null)
     {
         if ((DateTime.UtcNow - lastCloseTime).TotalMilliseconds < 250)
             return;
@@ -137,7 +75,7 @@ public partial class RemindersPopupWindow : Window
             return;
         }
 
-        var popup = new RemindersPopupWindow(model, screenCenter, onModelChanged);
+        var popup = new ClipboardPopupWindow(screenCenter);
         activePopup = popup;
 
         if (owner != null)
@@ -153,7 +91,7 @@ public partial class RemindersPopupWindow : Window
         loadedTime = DateTime.UtcNow;
         PositionWindow();
         PlayZoomInAnimation();
-        NewItemTextBox.Focus();
+        SearchBox.Focus();
     }
 
     private void PositionWindow()
@@ -270,8 +208,8 @@ public partial class RemindersPopupWindow : Window
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
-            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1C1C1E") : Color.Parse("#FFFFFF"));
-            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0));
+            CardBorder.Background = new SolidColorBrush(isDark ? Color.Parse("#1A2B42") : Color.Parse("#2B6CB0"));
+            CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(60, 255, 255, 255) : Color.FromArgb(40, 255, 255, 255));
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
         {
@@ -284,7 +222,7 @@ public partial class RemindersPopupWindow : Window
             CardBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B));
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(40, 255, 255, 255) : Color.FromArgb(30, 0, 0, 0));
         }
-        else // Acrylic (毛玻璃)
+        else // Acrylic
         {
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
             LiquidGlassBgImage.IsVisible = false;
@@ -294,11 +232,8 @@ public partial class RemindersPopupWindow : Window
             CardBorder.BorderBrush = new SolidColorBrush(isDark ? Color.FromArgb(55, 255, 255, 255) : Color.FromArgb(35, 0, 0, 0));
         }
 
-        IBrush textBrush = isDark ? Brushes.White : new SolidColorBrush(Color.FromRgb(30, 30, 30));
-        IBrush subTextBrush = isDark ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
-        TitleBox.Foreground = textBrush;
+        IBrush subTextBrush = (theme.IsColorful || isDark) ? new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)) : new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
         CloseButton.Foreground = subTextBrush;
-        ClearCompletedButton.Foreground = subTextBrush;
     }
 
     private async Task TriggerDirectLiquidGlassRender(Theme theme, bool isDark, Screen? screen)
@@ -323,7 +258,7 @@ public partial class RemindersPopupWindow : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[RemindersPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[ClipboardPopupWindow] TriggerDirectLiquidGlassRender failed: {ex.Message}");
         }
     }
 
@@ -341,144 +276,132 @@ public partial class RemindersPopupWindow : Window
         }
     }
 
-    private void PopulateItems()
+    private void OnHistoryChanged()
     {
-        items.Clear();
-        foreach (var r in currentModel.Reminders)
-            items.Add(new ReminderItemViewModel(r));
-
-        UpdateStatsAndVisibility();
+        Dispatcher.UIThread.Post(RefreshList);
     }
 
-    private void UpdateStatsAndVisibility()
+    private void RefreshList()
     {
-        int total = items.Count;
-        int completed = items.Count(i => i.Completed);
+        var items = monitor.History.AsEnumerable();
 
-        SubtitleText.Text = $"共 {total} 项" + (completed > 0 ? $" · {completed} 项已完成" : "");
-        EmptyPanel.IsVisible = total == 0;
-        ClearCompletedButton.IsVisible = completed > 0;
-    }
-
-    private void CommitChanges()
-    {
-        var updatedList = items.Select(i => i.ToModel()).ToList();
-        currentModel = currentModel with { Reminders = updatedList };
-        onModelChanged?.Invoke(currentModel);
-        UpdateStatsAndVisibility();
-    }
-
-    // ---------- 条目交互 ----------
-
-    private void OnItemCheckClicked(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.DataContext is ReminderItemViewModel item)
+        // 1. Filter by category
+        if (activeCategory == "Text")
         {
-            item.Completed = !item.Completed;
-            if (item.Completed && currentModel.DeleteOnCheck)
-            {
-                items.Remove(item);
-            }
-            CommitChanges();
+            items = items.Where(i => i.Type == ClipboardType.Text && !IsLink(i.Text) && !IsCode(i.Text));
+        }
+        else if (activeCategory == "Code")
+        {
+            items = items.Where(i => i.Type == ClipboardType.Text && IsCode(i.Text));
+        }
+        else if (activeCategory == "Link")
+        {
+            items = items.Where(i => i.Type == ClipboardType.Text && IsLink(i.Text));
+        }
+
+        // 2. Filter by search query
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            var query = searchQuery.Trim().ToLowerInvariant();
+            items = items.Where(i =>
+                (!string.IsNullOrEmpty(i.Text) && i.Text.ToLowerInvariant().Contains(query)) ||
+                (!string.IsNullOrEmpty(i.DisplayTitle) && i.DisplayTitle.ToLowerInvariant().Contains(query)) ||
+                (i.FilePaths != null && i.FilePaths.Any(p => p.ToLowerInvariant().Contains(query))));
+        }
+
+        var result = items.OrderByDescending(i => i.IsPinned).ThenByDescending(i => i.Timestamp).ToList();
+        ItemsControl.ItemsSource = result;
+
+        CountBadge.Text = $"{result.Count} 项";
+        EmptyPanel.IsVisible = result.Count == 0;
+    }
+
+    private static bool IsLink(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var trimmed = text.Trim();
+        return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith("www.", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsCode(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        if (IsLink(text)) return false;
+
+        // Check common code patterns
+        if (text.Contains('{') && text.Contains('}')) return true;
+        if (text.Contains("</") || text.Contains("/>")) return true;
+        if (text.Contains("function") || text.Contains("class ") || text.Contains("def ") ||
+            text.Contains("import ") || text.Contains("using ") || text.Contains("public ") ||
+            text.Contains("private ") || text.Contains("const ") || text.Contains("let ") || text.Contains("var "))
+            return true;
+
+        if (text.Contains(';') && text.Contains('\n')) return true;
+
+        return false;
+    }
+
+    private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        searchQuery = SearchBox.Text ?? string.Empty;
+        RefreshList();
+    }
+
+    private void OnTabClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            activeCategory = tag;
+
+            TabAll.Classes.Set("active", tag == "All");
+            TabText.Classes.Set("active", tag == "Text");
+            TabCode.Classes.Set("active", tag == "Code");
+            TabLink.Classes.Set("active", tag == "Link");
+
+            RefreshList();
         }
     }
 
-    private void OnItemTextLostFocus(object? sender, RoutedEventArgs e)
+    private void OnItemCardPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is TextBox tb && tb.DataContext is ReminderItemViewModel item)
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
+
+        if (sender is Border { DataContext: ClipboardItem item })
         {
-            var text = tb.Text?.Trim() ?? "";
-            if (string.IsNullOrEmpty(text))
-            {
-                items.Remove(item);
-            }
-            else
-            {
-                item.Title = text;
-            }
-            CommitChanges();
+            monitor.CopyToClipboard(item);
+            Close();
         }
     }
 
-    private void OnItemTextKeyDown(object? sender, KeyEventArgs e)
+    private void OnTogglePinClicked(object? sender, RoutedEventArgs e)
     {
-        if (e.Key == Key.Enter)
+        e.Handled = true;
+        if (sender is Button { DataContext: ClipboardItem item })
         {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
-            e.Handled = true;
+            monitor.TogglePin(item);
         }
     }
 
-    private void OnItemDeleteClicked(object? sender, RoutedEventArgs e)
+    private void OnDeleteItemClicked(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.DataContext is ReminderItemViewModel item)
+        e.Handled = true;
+        if (sender is Button { DataContext: ClipboardItem item })
         {
-            items.Remove(item);
-            CommitChanges();
+            monitor.RemoveItem(item);
         }
     }
 
-    private void OnClearCompletedClicked(object? sender, RoutedEventArgs e)
+    private void OnRootPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        var toRemove = items.Where(i => i.Completed).ToList();
-        foreach (var item in toRemove)
-            items.Remove(item);
-
-        CommitChanges();
-    }
-
-    // ---------- 新建待办 ----------
-
-    private void OnNewItemKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            AddNewItem();
-            e.Handled = true;
+            BeginMoveDrag(e);
         }
     }
-
-    private void OnAddClicked(object? sender, RoutedEventArgs e)
-    {
-        AddNewItem();
-    }
-
-    private void AddNewItem()
-    {
-        var text = NewItemTextBox.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(text))
-            return;
-
-        var newItem = new ReminderItemViewModel(new ReminderModel(false, text));
-        items.Add(newItem);
-        NewItemTextBox.Clear();
-        CommitChanges();
-
-        Dispatcher.UIThread.Post(() => NewItemTextBox.Focus());
-    }
-
-    // ---------- 标题修改 ----------
-
-    private void OnTitleLostFocus(object? sender, RoutedEventArgs e)
-    {
-        var title = TitleBox.Text?.Trim();
-        if (title != currentModel.ListName)
-        {
-            currentModel = currentModel with { ListName = title };
-            onModelChanged?.Invoke(currentModel);
-        }
-    }
-
-    private void OnTitleKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
-            e.Handled = true;
-        }
-    }
-
-    // ---------- 窗口生命周期 ----------
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e)
     {
@@ -509,6 +432,7 @@ public partial class RemindersPopupWindow : Window
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        monitor.HistoryChanged -= OnHistoryChanged;
         PopupLiquidGlassService.PreRenderCompleted -= OnPreRenderCompleted;
         if (activePopup == this)
             activePopup = null;

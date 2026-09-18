@@ -123,7 +123,8 @@
         <!-- Header -->
         <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6" VerticalAlignment="Center">
             <!-- Title & Count -->
-            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" Cursor="Hand"
+                        PointerPressed="OnOpenBadgePointerPressed" ToolTip.Tip="点击打开剪贴板历史管理器">
                 <TextBlock Text="{x:Static locales:Locale.Tools_Clipboard_Title}" FontWeight="SemiBold" FontSize="13"
                            Foreground="{DynamicResource SystemControlForegroundAccentBrush}" VerticalAlignment="Center" />
                 <Border Background="#20808080" CornerRadius="8" Padding="5,1" VerticalAlignment="Center">
@@ -141,7 +142,7 @@
                 <Button x:Name="FilterFilesBtn" Classes="filter-btn" Content="{x:Static locales:Locale.Tools_Clipboard_Files}" Click="OnFilterClicked" Tag="Files" />
             </StackPanel>
 
-            <!-- Right Controls: Filter dropdown in 2x2 + Clear button -->
+            <!-- Right Controls: Filter dropdown in 2x2 + Expand button + Clear button -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <!-- Compact Filter Menu Button (Visible in Small 2x2 tier) -->
                 <Button x:Name="CompactFilterBtn" Classes="menu-pill" Padding="6,2" VerticalAlignment="Center"
@@ -158,6 +159,11 @@
                             <MenuItem Header="文件" Click="OnSelectFilterMenuItem" Tag="Files" />
                         </ContextMenu>
                     </Button.ContextMenu>
+                </Button>
+
+                <!-- Expand Button -->
+                <Button Classes="icon-btn" Padding="4" VerticalAlignment="Center" Click="OnOpenPopupClicked" ToolTip.Tip="展开管理器">
+                    <PathIcon Data="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" Width="11" Height="11" Opacity="0.7" />
                 </Button>
 
                 <!-- Clear Button -->

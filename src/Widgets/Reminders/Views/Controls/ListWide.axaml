@@ -3,18 +3,50 @@
              xmlns:viewModels="clr-namespace:Reminders.ViewModels"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
              xmlns:models="clr-namespace:Reminders.Models"
+             xmlns:locales="clr-namespace:Reminders.Locales"
              x:Class="Reminders.Views.Controls.ListWide"
              x:DataType="viewModels:RemindersViewModel"
-             Margin="12,6,6,0">
-    <Grid RowDefinitions="*, Auto, Auto" ColumnDefinitions="Auto, *">
-        <TextBlock Grid.Row="1" Grid.Column="0" Name="CountText" Margin="0 -3 6 0" FontSize="32" FontWeight="Bold"
-                   VerticalAlignment="Top" HorizontalAlignment="Left" Text="{Binding Count}"
+             Margin="12,8,6,6">
+    <UserControl.Styles>
+        <Style Selector="Button.RemindersAddBtn">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.RemindersAddBtn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Button.RemindersAddBtn:pressed">
+            <Setter Property="Background" Value="#44808080" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *, Auto" ColumnDefinitions="Auto, *">
+        <!-- Left Action Button -->
+        <Grid Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,4">
+            <Button Name="OpenPopupBtn" Classes="RemindersAddBtn"
+                    Width="24" Height="24" CornerRadius="12" Padding="0"
+                    Background="Transparent" BorderThickness="0"
+                    Click="OpenPopup" ToolTip.Tip="{x:Static locales:Locale.Reminders_List_Title}">
+                <Path Data="M6,1 L6,11 M1,6 L11,6"
+                      Stroke="{DynamicResource RemindersBadgeBrush}"
+                      StrokeThickness="2" StrokeLineCap="Round"
+                      Width="12" Height="12" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- Left Big Counter -->
+        <TextBlock Grid.Row="1" Grid.Column="0" Name="CountText" Margin="0,-3,12,0" FontSize="32" FontWeight="Bold"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Left" Text="{Binding Count}"
                    Foreground="{DynamicResource RemindersBadgeBrush}" />
-        <controls:ClickThroughTextBox Grid.Row="2" Grid.Column="0" Name="ListNameBox" Padding="0" Margin="0 0 8 0" 
-                                      MinHeight="16" MinWidth="90" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"
+
+        <!-- Left List Name -->
+        <controls:ClickThroughTextBox Grid.Row="2" Grid.Column="0" Name="ListNameBox" Padding="0" Margin="0,0,12,2" 
+                                      MinHeight="16" MinWidth="90" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Bottom"
                                       Text="{Binding ListName}" LostFocus="ListNameChanged"
                                       Foreground="{DynamicResource RemindersBadgeBrush}" />
-        <ScrollViewer Grid.Row="0" Grid.Column="1" Grid.RowSpan="2">
+
+        <!-- Right Scrollable List filling full height -->
+        <ScrollViewer Grid.Row="0" Grid.Column="1" Grid.RowSpan="3">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Reminders}">
                     <ItemsControl.ItemTemplate>
@@ -55,12 +87,5 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
-        <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="Auto, *">
-            <Canvas Width="16" Height="16" Margin="1 -1 0 0">
-                <Ellipse Width="16" Height="16" StrokeThickness="1.5" StrokeDashArray="2,2"
-                         Stroke="{DynamicResource RemindersCheckBrush}" Opacity="0.6" />
-            </Canvas>
-            <controls:ClickThroughTextBox Grid.Column="1" LostFocus="CreateReminder" Padding="14,6,0,6" />
-        </Grid>
     </Grid>
 </UserControl>

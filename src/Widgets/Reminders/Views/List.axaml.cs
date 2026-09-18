@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Reminders.Locales;
@@ -82,6 +83,29 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         var listName = (sender as TextBox)!.Text;
         UpdateModel(viewModel.Model with { ListName = listName });
+    }
+
+    public void OpenPopupWindow()
+    {
+        var (screenCenter, _) = GetScreenCenterAndTopLevel();
+        var owner = VisualRoot as Window;
+        RemindersPopupWindow.ShowPopup(viewModel.Model, screenCenter, owner, UpdateModel);
+    }
+
+    private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
+    {
+        if (VisualRoot is Visual rootVisual && VisualRoot is TopLevel topLevel)
+        {
+            var bounds = Bounds;
+            var centerLocal = new Point(bounds.Width / 2, bounds.Height / 2);
+            var rootPoint = this.TranslatePoint(centerLocal, rootVisual);
+            if (rootPoint.HasValue)
+            {
+                var screenPoint = topLevel.PointToScreen(rootPoint.Value);
+                return (new Point(screenPoint.X, screenPoint.Y), topLevel);
+            }
+        }
+        return (null, null);
     }
 
     private void UpdateModel(RemindersListModel newModel)

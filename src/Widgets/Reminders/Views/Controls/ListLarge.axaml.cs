@@ -19,4 +19,5 @@ public partial class ListLarge : UserControl
     public void CompleteReminder(object? sender, RoutedEventArgs e) => owner.CompleteReminder(sender, e);
     public void EditReminder(object? sender, RoutedEventArgs e) => owner.EditReminder(sender, e);
     public void CreateReminder(object? sender, RoutedEventArgs e) => owner.CreateReminder(sender, e);
+    public void OpenPopup(object? sender, RoutedEventArgs e) => owner.OpenPopupWindow();
 }

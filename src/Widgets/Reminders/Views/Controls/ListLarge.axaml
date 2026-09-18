@@ -3,25 +3,53 @@
              xmlns:viewModels="clr-namespace:Reminders.ViewModels"
              xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
              xmlns:models="clr-namespace:Reminders.Models"
+             xmlns:locales="clr-namespace:Reminders.Locales"
              x:Class="Reminders.Views.Controls.ListLarge"
              x:DataType="viewModels:RemindersViewModel"
-             Margin="12,6,6,0">
-    <Grid RowDefinitions="Auto, Auto, Auto, *, Auto" ColumnDefinitions="*, Auto">
-        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0 -3 6 0" FontSize="32" FontWeight="Bold"
+             Margin="12,8,6,6">
+    <UserControl.Styles>
+        <Style Selector="Button.RemindersAddBtn">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.RemindersAddBtn:pointerover">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="Button.RemindersAddBtn:pressed">
+            <Setter Property="Background" Value="#44808080" />
+        </Style>
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto, Auto, Auto, *" ColumnDefinitions="*, Auto">
+        <!-- Big Counter -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,-3,6,0" FontSize="32" FontWeight="Bold"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Text="{Binding Count}"
                    Foreground="{DynamicResource RemindersBadgeBrush}" />
-        <controls:ClickThroughTextBox Grid.Row="1" Grid.Column="0" Padding="0" Margin="0 0 8 0" 
+        <!-- Top Right Action Button -->
+        <Button Grid.Row="0" Grid.Column="1" Name="OpenPopupBtn" Classes="RemindersAddBtn"
+                Width="26" Height="26" CornerRadius="13" Padding="0" Margin="0,0,6,0"
+                Background="Transparent" BorderThickness="0"
+                VerticalAlignment="Top" HorizontalAlignment="Right"
+                Click="OpenPopup" ToolTip.Tip="{x:Static locales:Locale.Reminders_List_Title}">
+            <Path Data="M7,1 L7,13 M1,7 L13,7"
+                  Stroke="{DynamicResource RemindersBadgeBrush}"
+                  StrokeThickness="2" StrokeLineCap="Round"
+                  Width="14" Height="14" Stretch="Uniform"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+        <!-- List Name -->
+        <controls:ClickThroughTextBox Grid.Row="1" Grid.Column="0" Padding="0" Margin="0,0,8,0" 
                                       MinHeight="16" MinWidth="90" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Bottom"
                                       Text="{Binding ListName}" LostFocus="ListNameChanged"
                                       Foreground="{DynamicResource RemindersBadgeBrush}" />
-        <Path Name="Divider" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0 8 8 0" 
-              Height="1" Stretch="Fill" Opacity="0.2"  StrokeThickness="2"
+        <!-- Divider -->
+        <Path Name="Divider" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,8,4" 
+              Height="1" Stretch="Fill" Opacity="0.2" StrokeThickness="2"
               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}" >
             <Path.Data>
                 <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
             </Path.Data>
         </Path>
-        <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.RowSpan="2">
+        <!-- Scrollable List filling all remaining height -->
+        <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Reminders}">
                     <ItemsControl.ItemTemplate>
@@ -62,12 +90,5 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
-        <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="Auto, *">
-            <Canvas Width="16" Height="16" Margin="1 -1 0 0">
-                <Ellipse Width="16" Height="16" StrokeThickness="1.5" StrokeDashArray="2,2"
-                         Stroke="{DynamicResource RemindersCheckBrush}" Opacity="0.6" />
-            </Canvas>
-            <controls:ClickThroughTextBox Grid.Column="1" LostFocus="CreateReminder" Padding="14,6,0,6" />
-        </Grid>
     </Grid>
 </UserControl>

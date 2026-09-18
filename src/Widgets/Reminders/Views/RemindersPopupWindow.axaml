@@ -1,0 +1,269 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:locales="clr-namespace:Reminders.Locales"
+        xmlns:models="clr-namespace:Reminders.Models"
+        xmlns:local="clr-namespace:Reminders.Views"
+        x:Class="Reminders.Views.RemindersPopupWindow"
+        Title="Reminders"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Topmost="True"
+        Width="400"
+        Height="490">
+
+    <Window.Styles>
+        <!-- Circle Icon Button -->
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="#25808080" />
+        </Style>
+        <Style Selector="Button.icon-btn:pressed">
+            <Setter Property="Background" Value="#40808080" />
+        </Style>
+
+        <!-- Pill Action Button -->
+        <Style Selector="Button.pill-btn">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Background" Value="#15808080" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.pill-btn:pointerover">
+            <Setter Property="Background" Value="#30808080" />
+        </Style>
+
+        <!-- Delete Item Button -->
+        <Style Selector="Button.delete-btn">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="0.4" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.delete-btn:pointerover">
+            <Setter Property="Opacity" Value="1.0" />
+            <Setter Property="Background" Value="#30FF3B30" />
+            <Setter Property="Foreground" Value="#FF3B30" />
+        </Style>
+    </Window.Styles>
+
+    <Panel Background="Transparent">
+        <!-- Main Card Border with Zoom Transform -->
+        <Border x:Name="CardBorder"
+                Margin="0"
+                CornerRadius="18"
+                BorderThickness="1"
+                RenderTransformOrigin="0.5,0.5"
+                ClipToBounds="True">
+            <Border.RenderTransform>
+                <ScaleTransform ScaleX="0.95" ScaleY="0.95" />
+            </Border.RenderTransform>
+
+            <Grid RowDefinitions="Auto,*,Auto">
+                <!-- Header (Row 0) -->
+                <Grid Grid.Row="0" Margin="18,14,14,10" ColumnDefinitions="*,Auto,Auto">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                        <TextBox x:Name="TitleBox"
+                                 FontSize="16"
+                                 FontWeight="Bold"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Padding="0"
+                                 MinHeight="22"
+                                 Watermark="{x:Static locales:Locale.Reminders_List_Title}"
+                                 LostFocus="OnTitleLostFocus"
+                                 KeyDown="OnTitleKeyDown" />
+                        <TextBlock x:Name="SubtitleText"
+                                   FontSize="11"
+                                   Opacity="0.6"
+                                   Text="0 项" />
+                    </StackPanel>
+
+                    <!-- Clear Completed Button 🧹 -->
+                    <Button Grid.Column="1"
+                            x:Name="ClearCompletedButton"
+                            Classes="pill-btn"
+                            Content="{x:Static locales:Locale.Reminders_DeleteCompleted}"
+                            Click="OnClearCompletedClicked"
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Center" />
+
+                    <!-- Close Button ✕ -->
+                    <Button Grid.Column="2"
+                            x:Name="CloseButton"
+                            Classes="icon-btn"
+                            Content="✕"
+                            Click="OnCloseClicked"
+                            VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Divider -->
+                <Path Grid.Row="0" VerticalAlignment="Bottom" Height="1" Stretch="Fill" Opacity="0.15"
+                      StrokeThickness="1" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                    <Path.Data>
+                        <LineGeometry StartPoint="0,0" EndPoint="1,0"/>
+                    </Path.Data>
+                </Path>
+
+                <!-- Center: Reminders Scroll List (Row 1) -->
+                <ScrollViewer Grid.Row="1" Padding="14,8,14,8">
+                    <Panel>
+                        <!-- Empty State Notice -->
+                        <StackPanel x:Name="EmptyPanel"
+                                    IsVisible="False"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Spacing="8"
+                                    Margin="0,40">
+                            <Canvas Width="32" Height="32" HorizontalAlignment="Center">
+                                <Ellipse Width="32" Height="32" StrokeThickness="2" StrokeDashArray="3,3"
+                                         Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.4" />
+                                <Path Data="M10,16 L14,20 L22,12" Stroke="{DynamicResource RemindersBadgeBrush}"
+                                      StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Opacity="0.4" />
+                            </Canvas>
+                            <TextBlock Text="暂无待办事项"
+                                       FontSize="13"
+                                       Opacity="0.5"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="在下方快速输入添加新事项"
+                                       FontSize="11"
+                                       Opacity="0.35"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Items List -->
+                        <ItemsControl x:Name="ItemsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:ReminderItemViewModel">
+                                    <Border Margin="0,2,0,2"
+                                            Padding="6,4,4,4"
+                                            CornerRadius="8"
+                                            Background="Transparent">
+                                        <Border.Styles>
+                                            <Style Selector="Border:pointerover">
+                                                <Setter Property="Background" Value="#12808080" />
+                                            </Style>
+                                        </Border.Styles>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                            <!-- Checkbox Button -->
+                                            <Button Grid.Column="0"
+                                                    Width="20" Height="20"
+                                                    Padding="0" Margin="0,0,8,0"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    CornerRadius="10"
+                                                    Click="OnItemCheckClicked"
+                                                    DataContext="{Binding}"
+                                                    Cursor="Hand">
+                                                <Canvas Width="18" Height="18">
+                                                    <Ellipse Width="18" Height="18" StrokeThickness="1.5"
+                                                             Stroke="{DynamicResource RemindersCheckBrush}" />
+                                                    <Path Canvas.Left="3" Canvas.Top="4" Width="12" Height="10" Stretch="Fill"
+                                                          IsVisible="{Binding Completed}" Data="M0,5 L4,9 L12,0"
+                                                          StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                                                          Stroke="{DynamicResource RemindersCheckBrush}" />
+                                                </Canvas>
+                                            </Button>
+
+                                            <!-- Reminder Title TextBox with strikethrough overlay -->
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBox Text="{Binding Title}"
+                                                         DataContext="{Binding}"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Padding="0,2,4,2"
+                                                         FontSize="13"
+                                                         VerticalAlignment="Center"
+                                                         Opacity="{Binding TextOpacity}"
+                                                         LostFocus="OnItemTextLostFocus"
+                                                         KeyDown="OnItemTextKeyDown" />
+                                                <Rectangle Height="1.5"
+                                                           Fill="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,1,8,0"
+                                                           IsHitTestVisible="False"
+                                                           IsVisible="{Binding Completed}"
+                                                           Opacity="0.6" />
+                                            </Grid>
+
+                                            <!-- Delete Button ✕ -->
+                                            <Button Grid.Column="2"
+                                                    Classes="delete-btn"
+                                                    Content="✕"
+                                                    DataContext="{Binding}"
+                                                    Click="OnItemDeleteClicked"
+                                                    ToolTip.Tip="{x:Static locales:Locale.Reminders_Delete}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Panel>
+                </ScrollViewer>
+
+                <!-- Bottom Add Bar (Row 2) -->
+                <Border Grid.Row="2"
+                        BorderThickness="0,1,0,0"
+                        BorderBrush="#20808080"
+                        Padding="14,10,14,12">
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                        <!-- Plus Symbol Icon -->
+                        <Canvas Grid.Column="0" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
+                            <Ellipse Width="18" Height="18" StrokeThickness="1.5" StrokeDashArray="2,2"
+                                     Stroke="{DynamicResource RemindersBadgeBrush}" Opacity="0.7" />
+                            <Path Data="M5,9 L13,9 M9,5 L9,13"
+                                  Stroke="{DynamicResource RemindersBadgeBrush}"
+                                  StrokeThickness="1.5" StrokeLineCap="Round" />
+                        </Canvas>
+
+                        <!-- Input TextBox -->
+                        <TextBox Grid.Column="1"
+                                 x:Name="NewItemTextBox"
+                                 Height="32"
+                                 FontSize="13"
+                                 CornerRadius="8"
+                                 Padding="10,6"
+                                 Watermark="添加新事项... (按 Enter 添加)"
+                                 KeyDown="OnNewItemKeyDown" />
+
+                        <!-- Add Button -->
+                        <Button Grid.Column="2"
+                                x:Name="AddButton"
+                                Classes="pill-btn"
+                                Height="32"
+                                CornerRadius="8"
+                                Padding="12,0"
+                                Margin="8,0,0,0"
+                                Content="添加"
+                                FontWeight="SemiBold"
+                                Click="OnAddClicked" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Panel>
+</Window>

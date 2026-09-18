@@ -350,13 +350,21 @@ public partial class Widget : Window, INotifyPropertyChanged
     public Theme GlassMaterial => appSettingsProvider.Get().Theme;
     public bool IsLiquidGlass => !isFrameless && GlassMaterial.IsLiquidGlass;
 
-    private bool IsFlushWidget
+    /// <summary>
+    /// Widgets that provide their own edge-to-edge background or tiles (e.g. Note, MapView),
+    /// which should suppress the window card outline and background in Colorful theme to avoid
+    /// double borders or background leakage.
+    /// Note: Flush widgets like AggregateView rely on the window card background and must NOT be suppressed.
+    /// </summary>
+    private bool IsSelfFramingWidget
     {
         get
         {
-            var content = ContentPresenter?.Content;
-            var name = content?.GetType().Name ?? widgetLayoutProvider?.Get()?.Type;
-            return name is "Note" or "MapView" || (content as StyledElement)?.Classes.Contains("Flush") == true;
+            var contentName = ContentPresenter?.Content?.GetType().Name;
+            var layout = widgetLayoutProvider?.Get();
+            return contentName is "Note" or "MapView"
+                   || layout?.SubType is "Note" or "MapView"
+                   || layout?.Type is "Notes" or "Map";
         }
     }
 
@@ -376,7 +384,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined) return new Thickness(0);
-            if (appSettingsProvider.Get().Theme.IsColorful && IsFlushWidget)
+            if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
                 return new Thickness(0);
             var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
             if (width <= 0 && appSettingsProvider.Get().Theme.IsColorful)
@@ -399,7 +407,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         get
         {
             if (!IsOutlined) return null;
-            if (appSettingsProvider.Get().Theme.IsColorful && IsFlushWidget)
+            if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
                 return null;
             if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
                 return BuildOutlineBrush();
@@ -476,7 +484,7 @@ public partial class Widget : Window, INotifyPropertyChanged
                     // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
                     return new SolidColorBrush(Color.Parse("#1C1C1E"));
                 }
-                else if (IsFlushWidget)
+                else if (IsSelfFramingWidget)
                 {
                     return Brushes.Transparent;
                 }

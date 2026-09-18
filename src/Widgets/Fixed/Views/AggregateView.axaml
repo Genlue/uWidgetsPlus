@@ -89,7 +89,8 @@
         <!-- ===================== 中央微光分割线 (上下对齐内边距) ===================== -->
         <Rectangle Grid.Column="1"
                    Width="1"
-                   Fill="#25FFFFFF"
+                   Fill="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                   Opacity="0.15"
                    VerticalAlignment="Stretch"
                    Margin="{Binding DividerMargin}" />
 

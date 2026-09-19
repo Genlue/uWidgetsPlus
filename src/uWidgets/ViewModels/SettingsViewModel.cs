@@ -82,10 +82,11 @@ public class SettingsViewModel : ReactiveObject
         var mediaAssemblies = GetAssemblies("Music", "Picture");
         var toolsAssemblies = GetAssemblies("Tools", "Search");
         var fixedAssemblies = GetAssemblies("FixedWidgets");
+        var stackAssemblies = GetAssemblies("StackWidgets");
 
         var knownNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Clock", "Calendar", "Progress", "Pomodoro", "Weather", "Map", "Notes", "Reminders", "Folders", "Monitor", "Batteries", "Music", "Picture", "Tools", "Search", "FixedWidgets"
+            "Clock", "Calendar", "Progress", "Pomodoro", "Weather", "Map", "Notes", "Reminders", "Folders", "Monitor", "Batteries", "Music", "Picture", "Tools", "Search", "FixedWidgets", "StackWidgets"
         };
         var otherAssemblies = loadedAssemblies.Values
             .Where(a => !knownNames.Contains(a.AssemblyName))
@@ -118,6 +119,7 @@ public class SettingsViewModel : ReactiveObject
             new(typeof(Gallery), SafeParseIcon("M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"), "媒体与相册", null, mediaAssemblies),
             new(typeof(Gallery), SafeParseIcon("M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.7 4.7C.6 7.1 1 10.1 3 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.4-.4.4-1 0-1.4z"), "实用工具", null, toolsAssemblies),
             new(typeof(Gallery), SafeParseIcon("M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"), "全景聚合", null, fixedAssemblies),
+            new(typeof(Gallery), SafeParseIcon("M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9.07l-9-7-9 7 1.63 1.2L12 16z"), "重叠组件", null, stackAssemblies),
         };
 
         if (otherAssemblies.Count > 0)

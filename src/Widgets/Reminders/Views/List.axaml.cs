@@ -149,9 +149,22 @@ public partial class List : UserControl, IWidgetSelfRefreshing
 
         var completed = !viewModel.Reminders[index].Completed;
         if (completed && viewModel.Model.DeleteOnCheck)
+        {
             viewModel.Reminders.RemoveAt(index);
+        }
         else
-            viewModel.Reminders[index] = viewModel.Reminders[index] with { Completed = completed };
+        {
+            var updated = viewModel.Reminders[index] with { Completed = completed };
+            if (completed && index < viewModel.Reminders.Count - 1)
+            {
+                viewModel.Reminders.RemoveAt(index);
+                viewModel.Reminders.Add(updated);
+            }
+            else
+            {
+                viewModel.Reminders[index] = updated;
+            }
+        }
         UpdateModel(viewModel.Model);
     }
     

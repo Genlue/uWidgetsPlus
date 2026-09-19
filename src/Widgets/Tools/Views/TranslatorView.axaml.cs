@@ -121,6 +121,10 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         RebuildMenus();
         UpdatePillLabels();
         UpdateAdaptiveCornerRadii();
+        if (size.Width > 0)
+        {
+            AdaptControlBar(size.Width);
+        }
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -147,6 +151,20 @@ public partial class TranslatorView : UserControl, IWidgetSelfRefreshing
         var tier = ResolveTier(size);
         ApplyTier(tier);
         UpdateAdaptiveCornerRadii();
+        AdaptControlBar(size.Width);
+    }
+
+    private void AdaptControlBar(double width)
+    {
+        bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
+        if (isSmall)
+        {
+            EngineBtn.IsVisible = width >= 135;
+        }
+        else
+        {
+            EngineBtn.IsVisible = true;
+        }
     }
 
     private WidgetTier ResolveTier(Size size)

@@ -46,12 +46,16 @@
                                       Foreground="{DynamicResource RemindersBadgeBrush}" />
 
         <!-- Right Scrollable List filling full height -->
-        <ScrollViewer Grid.Row="0" Grid.Column="1" Grid.RowSpan="3">
+        <ScrollViewer Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Reminders}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="models:ReminderModel">
-                            <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto,Auto">
+                            <Grid RowDefinitions="Auto,Auto">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="0" />
+                                </Grid.ColumnDefinitions>
                                 <Button Grid.Row="0" Grid.Column="0" Padding="0" Margin="0,-2,0,0" 
                                         DataContext="{Binding}" Click="CompleteReminder" 
                                         Background="Transparent" CornerRadius="12">
@@ -67,6 +71,8 @@
                                 </Button>
                                 <controls:ClickThroughTextBox Grid.Row="0" Grid.Column="1" Padding="8,6,0,6" 
                                                               Text="{Binding Title}" 
+                                                              TextWrapping="Wrap"
+                                                              MinWidth="0"
                                                               x:DataType="models:ReminderModel" DataContext="{Binding}" 
                                                               LostFocus="EditReminder" />
                                 <Path Grid.Row="1" Grid.Column="1" Height="1" Stretch="Fill" Opacity="0.2" Margin="8,0"

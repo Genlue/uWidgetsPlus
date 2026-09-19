@@ -52,7 +52,7 @@ class Program
         catch (Exception e)
         {
             var fileName = Path.Combine(Const.DataFolder, "crash_log.txt");
-            File.WriteAllText(fileName, $"{e.Message}{Environment.NewLine}{e.StackTrace}");
+            File.WriteAllText(fileName, e.ToString());
             throw;
         }
     }

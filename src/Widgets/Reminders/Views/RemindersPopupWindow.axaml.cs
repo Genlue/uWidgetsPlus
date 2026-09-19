@@ -379,6 +379,15 @@ public partial class RemindersPopupWindow : Window
             {
                 items.Remove(item);
             }
+            else if (item.Completed)
+            {
+                var index = items.IndexOf(item);
+                if (index >= 0 && index < items.Count - 1)
+                {
+                    items.RemoveAt(index);
+                    items.Add(item);
+                }
+            }
             CommitChanges();
         }
     }

@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:uWidgets.Views.Controls;assembly=uWidgets"
+             xmlns:locales="clr-namespace:StackWidgets.Locales"
+             xmlns:models="clr-namespace:StackWidgets.Models"
+             x:Class="StackWidgets.Views.Settings.WidgetStackSettings">
+
+    <ScrollViewer Margin="0,4">
+        <StackPanel Orientation="Vertical" Spacing="10" Margin="10,0">
+
+            <!-- Enable wheel switching toggle -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_Allow_Wheel}">
+                <ToggleSwitch Name="AllowWheelSwitch" IsCheckedChanged="OnToggleChanged" />
+            </controls:Setting>
+
+            <!-- Add new widget to stack -->
+            <controls:Setting Title="{x:Static locales:Locale.Setting_Add_Widget}">
+                <Grid ColumnDefinitions="*,Auto" Width="260">
+                    <ComboBox Name="AvailableWidgetsCombo" Grid.Column="0" Margin="0,0,6,0" HorizontalAlignment="Stretch" />
+                    <Button Grid.Column="1" Content="{x:Static locales:Locale.Setting_Add_Widget}" Click="OnAddWidgetClicked" />
+                </Grid>
+            </controls:Setting>
+
+            <!-- Current Stacked Widgets List -->
+            <TextBlock Text="已叠放的小组件列表（支持单独设置与顺序调整）" FontWeight="SemiBold" FontSize="13" Margin="4,6,0,2" />
+            <Border Background="#10808080" CornerRadius="8" Padding="6">
+                <ItemsControl Name="ItemsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:StackedWidgetSettingItem">
+                            <Border Margin="0,2" Padding="8,6" Background="#15808080" CornerRadius="6">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding DisplayTitle}" VerticalAlignment="Center" FontWeight="Medium" />
+                                    <Button Grid.Column="1" Content="⚙ 设置" Margin="3,0" Padding="6,2" ToolTip.Tip="配置此组件" Click="OnEditChildClicked" Tag="{Binding}" IsVisible="{Binding HasSettings}" />
+                                    <Button Grid.Column="2" Content="↑" Margin="3,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Up}" Click="OnMoveUpClicked" Tag="{Binding}" />
+                                    <Button Grid.Column="3" Content="↓" Margin="3,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Move_Down}" Click="OnMoveDownClicked" Tag="{Binding}" />
+                                    <Button Grid.Column="4" Content="✕" Margin="3,0" Padding="6,2" ToolTip.Tip="{x:Static locales:Locale.Setting_Remove_Widget}" Click="OnRemoveClicked" Tag="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

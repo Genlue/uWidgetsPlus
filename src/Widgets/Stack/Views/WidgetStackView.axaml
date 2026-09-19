@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="StackWidgets.Views.WidgetStackView"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Margin="0">
+
+    <Grid ClipToBounds="True">
+        <!-- Persistent host area for all stacked widgets: all children remain attached to visual tree, never unloaded -->
+        <Grid x:Name="WidgetsHost"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              ClipToBounds="True" />
+    </Grid>
+</UserControl>

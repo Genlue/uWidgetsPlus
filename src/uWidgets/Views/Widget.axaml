@@ -3,6 +3,7 @@
         xmlns:locales="clr-namespace:uWidgets.Locales"
         xmlns:views="clr-namespace:uWidgets.Views"
         xmlns:controls="clr-namespace:uWidgets.Views.Controls"
+        xmlns:interfaces="clr-namespace:uWidgets.Core.Interfaces;assembly=uWidgets.Core"
         x:Class="uWidgets.Views.Widget"
         Background="Transparent"
         ShowInTaskbar="False"
@@ -15,10 +16,11 @@
         CanResize="False"
         x:DataType="views:Widget"
         Classes="Widget">
-
     <Window.ContextMenu>
         <ContextMenu Classes="WidgetContextMenu">
-            <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowEditButton}" />
+            <MenuItem Header="{Binding EditStackChildTitle}" Command="{Binding EditCurrentStackedWidget}" IsVisible="{Binding CanEditStackedWidgetChild}" />
+            <MenuItem Header="重叠组件设置…" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
+            <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowNormalEditButton}" />
             <MenuItem Header="{Binding SizeMenuTitle}">
                 <MenuItem Header="自定义尺寸…" Command="{Binding OpenCustomSizeDialog}" IsVisible="{Binding IsFreeMode}" />
                 <Separator IsVisible="{Binding IsFreeMode}" />
@@ -142,6 +144,57 @@
                     </DataTemplate>
                 </ContentPresenter.ContentTemplate>
             </ContentPresenter>
+        </Border>
+
+        <!-- Right-side vertical pagination indicator dots for Stack widget (outside card, in rightmost margin of grid cell) -->
+        <Border Name="StackIndicatorsHost"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Margin="0,0,1,0"
+                IsVisible="{Binding HasStackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}"
+                PointerWheelChanged="OnStackIndicatorsWheelChanged"
+                ZIndex="85">
+            <ItemsControl ItemsSource="{Binding StackIndicators, RelativeSource={RelativeSource AncestorType=views:Widget}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical" Spacing="2" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="interfaces:StackWidgetIndicatorItem">
+                        <Button Width="12" Height="12"
+                                CornerRadius="6"
+                                Padding="0"
+                                Margin="0,1"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="OnStackIndicatorClicked"
+                                Tag="{Binding Index}"
+                                ToolTip.Tip="{Binding Title}">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="RenderTransform" Value="scale(1.25)" />
+                                </Style>
+                            </Button.Styles>
+                            <Panel Width="12" Height="12">
+                                <!-- Subtle dark shadow outline for contrast on bright/dark backgrounds -->
+                                <Ellipse Width="6" Height="6"
+                                         Stroke="#40000000"
+                                         StrokeThickness="0.8"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                                <!-- Pure white dot with active/inactive opacity -->
+                                <Ellipse Width="6" Height="6"
+                                         Fill="White"
+                                         Opacity="{Binding Opacity}"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                            </Panel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </Border>
 
         <!-- Bottom-right corner resize handle (visible in Free mode when not locked) -->

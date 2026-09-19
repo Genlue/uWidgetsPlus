@@ -135,7 +135,7 @@
                 </Path>
 
                 <!-- Center: Reminders Scroll List (Row 1) -->
-                <ScrollViewer Grid.Row="1" Padding="14,8,14,8" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="1" Padding="14,8,18,8" HorizontalScrollBarVisibility="Disabled">
                     <Panel>
                         <!-- Empty State Notice -->
                         <StackPanel x:Name="EmptyPanel"
@@ -161,26 +161,31 @@
                         </StackPanel>
 
                         <!-- Items List -->
-                        <ItemsControl x:Name="ItemsList">
+                        <ItemsControl x:Name="ItemsList" HorizontalAlignment="Stretch">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="local:ReminderItemViewModel">
                                     <Border Margin="0,2,0,2"
                                             Padding="6,4,4,4"
                                             CornerRadius="8"
-                                            Background="Transparent">
+                                            Background="Transparent"
+                                            Width="356"
+                                            HorizontalAlignment="Left"
+                                            ClipToBounds="True">
                                         <Border.Styles>
                                             <Style Selector="Border:pointerover">
                                                 <Setter Property="Background" Value="#12808080" />
                                             </Style>
                                         </Border.Styles>
-                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                            <!-- Checkbox Button -->
+                                        <Grid ColumnDefinitions="28,*,30" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                            <!-- Checkbox Button: Col 0 (固定最左侧) -->
                                             <Button Grid.Column="0"
                                                     Width="20" Height="20"
                                                     Padding="0" Margin="0,0,8,0"
                                                     Background="Transparent"
                                                     BorderThickness="0"
                                                     CornerRadius="10"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
                                                     Click="OnItemCheckClicked"
                                                     DataContext="{Binding}"
                                                     Cursor="Hand">
@@ -194,8 +199,8 @@
                                                 </Canvas>
                                             </Button>
 
-                                            <!-- Reminder Title TextBox with strikethrough overlay -->
-                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <!-- Reminder Title TextBox with strikethrough overlay: Col 1 (弹性填充，硬性锁定最大宽度并自动换行) -->
+                                            <Grid Grid.Column="1" MinWidth="0" VerticalAlignment="Center" Margin="0,0,4,0" HorizontalAlignment="Stretch">
                                                 <TextBox Text="{Binding Title}"
                                                          DataContext="{Binding}"
                                                          Background="Transparent"
@@ -204,6 +209,9 @@
                                                          FontSize="13"
                                                          TextWrapping="Wrap"
                                                          AcceptsReturn="False"
+                                                         MinWidth="0"
+                                                         MaxWidth="275"
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                          VerticalAlignment="Center"
                                                          Opacity="{Binding TextOpacity}"
                                                          LostFocus="OnItemTextLostFocus"
@@ -217,10 +225,14 @@
                                                            Opacity="0.6" />
                                             </Grid>
 
-                                            <!-- Delete Button ✕ -->
+                                            <!-- Delete Button ✕: Col 2 (严格固定在最右列，绝对不可能被挤出) -->
                                             <Button Grid.Column="2"
                                                     Classes="delete-btn"
                                                     Content="✕"
+                                                    Width="22" Height="22"
+                                                    Margin="0"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center"
                                                     DataContext="{Binding}"
                                                     Click="OnItemDeleteClicked"
                                                     ToolTip.Tip="{x:Static locales:Locale.Reminders_Delete}" />

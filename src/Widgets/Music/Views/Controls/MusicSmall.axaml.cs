@@ -47,11 +47,19 @@ public partial class MusicSmall : UserControl
             ArtistBlock.FontSize = 11.5;
             ControlsSection.Spacing = 22;
         }
-        else
+        else if (w >= 145)
         {
             TitleBlock.FontSize = 12.0;
             ArtistBlock.FontSize = 10.0;
             ControlsSection.Spacing = 16;
+        }
+        else
+        {
+            TitleBlock.FontSize = 11.0;
+            ArtistBlock.FontSize = 9.5;
+            // Buttons: Prev(26) + Play(32) + Next(26) = 84px total width.
+            var availSpacing = Math.Max(4.0, (w - 84 - padX * 2) / 2.0);
+            ControlsSection.Spacing = Math.Clamp(Math.Round(availSpacing), 4.0, 14.0);
         }
     }
 

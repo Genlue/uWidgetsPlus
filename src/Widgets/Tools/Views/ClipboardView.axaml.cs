@@ -69,6 +69,7 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
                 currentTier = initialTier;
                 ApplyTier(initialTier);
             }
+            AdaptCompactControls(Bounds.Width);
         }
 
         RefreshDisplay();
@@ -87,10 +88,13 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
         if (size.Width <= 0 || size.Height <= 0) return;
 
         var tier = ResolveTier(size);
-        if (tier == currentTier) return;
-        currentTier = tier;
+        if (tier != currentTier)
+        {
+            currentTier = tier;
+            ApplyTier(tier);
+        }
 
-        ApplyTier(tier);
+        AdaptCompactControls(size.Width);
     }
 
     private WidgetTier ResolveTier(Size size)
@@ -127,7 +131,50 @@ public partial class ClipboardView : UserControl, IWidgetSelfRefreshing
 
         Classes.Set("tier-small", isSmall);
         InlineFilterPanel.IsVisible = !isSmall;
-        CompactFilterBtn.IsVisible = isSmall;
+        if (!isSmall)
+        {
+            CompactFilterBtn.IsVisible = false;
+        }
+        else
+        {
+            AdaptCompactControls(Bounds.Width > 0 ? Bounds.Width : 160);
+        }
+    }
+
+    private void AdaptCompactControls(double width)
+    {
+        bool isSmall = currentTier == WidgetTier.Small || currentTier == WidgetTier.Cell;
+        if (!isSmall)
+        {
+            CompactFilterBtn.IsVisible = false;
+            return;
+        }
+
+        // When user increases widget margin, 2x2 width shrinks (down to 110~140 DIPs).
+        // Responsive rules:
+        // width >= 165: Full pill button with text and arrow ("全部 ▾")
+        // 135 <= width < 165: Compact icon button (funnel icon, only 18px wide)
+        // width < 135: Hide filter button completely to ensure Expand & Clear buttons have 100% visible room
+        if (width >= 165)
+        {
+            CompactFilterBtn.IsVisible = true;
+            CompactFilterIcon.IsVisible = false;
+            CompactFilterText.IsVisible = true;
+            CompactFilterArrow.IsVisible = true;
+            CompactFilterBtn.Padding = new Thickness(4, 2);
+        }
+        else if (width >= 135)
+        {
+            CompactFilterBtn.IsVisible = true;
+            CompactFilterIcon.IsVisible = true;
+            CompactFilterText.IsVisible = false;
+            CompactFilterArrow.IsVisible = false;
+            CompactFilterBtn.Padding = new Thickness(3, 2);
+        }
+        else
+        {
+            CompactFilterBtn.IsVisible = false;
+        }
     }
 
     private void OnHistoryChanged()

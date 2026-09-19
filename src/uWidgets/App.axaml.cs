@@ -16,6 +16,8 @@ namespace uWidgets;
 
 public class App : Application
 {
+    public static IServiceProvider? Services { get; private set; }
+
     public override void Initialize()
     {
         HorizontalScrollHelper.RegisterGlobal();
@@ -45,6 +47,8 @@ public class App : Application
             .AddSingleton<Func<Settings>>(sp => () => sp.GetRequiredService<Settings>())
             .AddSingleton<UpdateService, UpdateService>()
             .BuildServiceProvider();
+
+        Services = services;
 
         var appSettingsProvider = services
             .GetRequiredService<IAppSettingsProvider>();

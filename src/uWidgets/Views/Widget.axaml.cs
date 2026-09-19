@@ -122,6 +122,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         if ((control is IFixedSizeWidget && control.GetType().Name == "AggregateView") || control.GetType().Name == "Note")
             control.Classes.Add("Flush");
         ContentPresenter.Content = control;
+        AttachStackWidget(control);
         
         // The native transparency level is a LOCAL value, not a style: a runtime
         // surface switch then deterministically reconfigures the existing window
@@ -228,6 +229,21 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     public bool ShowEditButton => editWidgetWindow != null;
     public string Edit => $"{Locale.Widget_Edit} \"{widgetLayoutProvider.Get().Type}\"";
+
+    public bool IsStackWidget =>
+        StackWidget != null
+        || widgetLayoutProvider.Get().Type is "Stack" or "StackWidgets"
+        || widgetLayoutProvider.Get().SubType is "WidgetStackView" or "WidgetStack";
+
+    public bool ShowNormalEditButton => !IsStackWidget && ShowEditButton;
+    public bool ShowStackEditButton => IsStackWidget && ShowEditButton;
+    public bool CanEditStackedWidgetChild => StackWidget?.CanEditCurrentChild == true;
+    public string EditStackChildTitle => $"{Locale.Widget_Edit} \"{StackWidget?.CurrentChildTitle ?? ""}\"";
+
+    public void EditCurrentStackedWidget()
+    {
+        StackWidget?.EditCurrentChild(this);
+    }
 
     /// <summary>
     /// Adaptively scale corner radius for widgets of different sizes.
@@ -368,6 +384,103 @@ public partial class Widget : Window, INotifyPropertyChanged
         }
     }
 
+    private uWidgets.Core.Interfaces.IStackWidget? activeStackWidget;
+
+    private void AttachStackWidget(object? content)
+    {
+        if (activeStackWidget != null)
+        {
+            activeStackWidget.IndicatorItemsChanged -= OnStackIndicatorsChanged;
+            activeStackWidget = null;
+        }
+
+        if (content is uWidgets.Core.Interfaces.IStackWidget stack)
+        {
+            activeStackWidget = stack;
+            activeStackWidget.IndicatorItemsChanged += OnStackIndicatorsChanged;
+        }
+
+        Notify(nameof(HasStackIndicators));
+        Notify(nameof(StackIndicators));
+        Notify(nameof(IsStackWidget));
+        Notify(nameof(ShowNormalEditButton));
+        Notify(nameof(ShowStackEditButton));
+        Notify(nameof(CanEditStackedWidgetChild));
+        Notify(nameof(EditStackChildTitle));
+    }
+
+    private void OnStackIndicatorsChanged(object? sender, EventArgs e)
+    {
+        try
+        {
+            Notify(nameof(HasStackIndicators));
+            Notify(nameof(StackIndicators));
+            Notify(nameof(CanEditStackedWidgetChild));
+            Notify(nameof(EditStackChildTitle));
+            ApplyWidgetRegion();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackIndicatorsChanged error: {ex.Message}");
+        }
+    }
+
+    public uWidgets.Core.Interfaces.IStackWidget? StackWidget =>
+        activeStackWidget ?? (ContentPresenter?.Content as uWidgets.Core.Interfaces.IStackWidget);
+
+    public bool HasStackIndicators => StackWidget != null && (StackWidget.IndicatorItems?.Count ?? 0) > 1;
+
+    public IReadOnlyList<uWidgets.Core.Interfaces.StackWidgetIndicatorItem>? StackIndicators =>
+        StackWidget?.IndicatorItems;
+
+    public void OnStackIndicatorClicked(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button btn && btn.Tag is int index && StackWidget != null)
+            {
+                StackWidget.SwitchToIndex(index);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackIndicatorClicked error: {ex.Message}");
+        }
+    }
+
+    public void OnStackIndicatorsWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        try
+        {
+            if (StackWidget is { } stack && StackIndicators is { Count: > 1 } list)
+            {
+                if (stack.IsTransitionActive)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
+                var currentIndex = list.FirstOrDefault(i => i.IsActive)?.Index ?? 0;
+                if (e.Delta.Y > 0)
+                {
+                    var nextIndex = (currentIndex - 1 + list.Count) % list.Count;
+                    stack.SwitchToIndex(nextIndex);
+                    e.Handled = true;
+                }
+                else if (e.Delta.Y < 0)
+                {
+                    var nextIndex = (currentIndex + 1) % list.Count;
+                    stack.SwitchToIndex(nextIndex);
+                    e.Handled = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Widget] OnStackIndicatorsWheelChanged error: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// True when the card should render the outline highlight ring: glass surface
     /// with the outline width &gt; 0, no native frame.
@@ -467,6 +580,14 @@ public partial class Widget : Window, INotifyPropertyChanged
             var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
+                // Stack widgets specifically adopt frosted glass (Acrylic Blur) in Colorful mode
+                if (IsStackWidget)
+                {
+                    return this.TryFindResource("WidgetBackground", variant, out var sb) && sb is IBrush sbrush
+                        ? sbrush
+                        : Brushes.Transparent;
+                }
+
                 var contentName = ContentPresenter?.Content?.GetType().Name;
                 if (contentName == "Forecast")
                 {
@@ -815,6 +936,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         Notify(nameof(WidgetOutlineBrush));
     }
 
+    private (int m, int cw, int ch, int cr, int ex, int ey, int ew, int eh, bool extra)? lastAppliedRegion;
+
     /// <summary>
     /// Clip the native window (and therefore the OS-level acrylic backdrop) to the
     /// card rectangle: the grid cell inset by the widget margin, with the corner
@@ -830,7 +953,11 @@ public partial class Widget : Window, INotifyPropertyChanged
         // Native frame: no custom clipping.
         if (appSettingsProvider.Get().Theme.UseNativeFrame)
         {
-            InteropService.ClearWidgetRegion(this);
+            if (lastAppliedRegion != null)
+            {
+                InteropService.ClearWidgetRegion(this);
+                lastAppliedRegion = null;
+            }
             return;
         }
 
@@ -839,9 +966,17 @@ public partial class Widget : Window, INotifyPropertyChanged
         // Liquid glass and solid surfaces do NOT use native blur; their transparent
         // margins and anti-aliased rounded corners composite via 32-bit per-pixel alpha,
         // so applying a 1-bit GDI region truncates the anti-aliased curved edge and creates jaggedness.
-        if (!appSettingsProvider.Get().Theme.UsesNativeBlur)
+        // Stack widgets in colorful mode also adopt AcrylicBlur.
+        bool needsClipping = appSettingsProvider.Get().Theme.UsesNativeBlur
+                             || (IsStackWidget && appSettingsProvider.Get().Theme.IsColorful);
+
+        if (!needsClipping)
         {
-            InteropService.ClearWidgetRegion(this);
+            if (lastAppliedRegion != null)
+            {
+                InteropService.ClearWidgetRegion(this);
+                lastAppliedRegion = null;
+            }
             return;
         }
 
@@ -852,14 +987,51 @@ public partial class Widget : Window, INotifyPropertyChanged
 
         var cardWidth = Math.Max(1, width - 2 * margin);
         var cardHeight = Math.Max(1, height - 2 * margin);
+        var cardRadius = (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius));
 
-        InteropService.SetWidgetRegion(
-            this,
-            margin,
-            margin,
-            cardWidth,
-            cardHeight,
-            (int) Math.Round(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius)));
+        if (HasStackIndicators && StackIndicators is { Count: > 1 } dots)
+        {
+            int dotsCount = dots.Count;
+            int totalDotsHDip = dotsCount * 14 + 6;
+            double dotsYDip = Math.Max(0, (ClientSize.Height - totalDotsHDip) / 2);
+            double dotsXDip = Math.Max(0, ClientSize.Width - Math.Max(14, WidgetMargin.Right));
+            double dotsWDip = Math.Max(14, WidgetMargin.Right);
+
+            int extraX = (int) Math.Round(dotsXDip * scaling);
+            int extraY = (int) Math.Round(dotsYDip * scaling);
+            int extraW = (int) Math.Round(dotsWDip * scaling);
+            int extraH = (int) Math.Round(totalDotsHDip * scaling);
+
+            var key = (margin, cardWidth, cardHeight, cardRadius, extraX, extraY, extraW, extraH, true);
+            if (lastAppliedRegion == key) return;
+            lastAppliedRegion = key;
+
+            InteropService.SetWidgetRegionWithExtra(
+                this,
+                margin,
+                margin,
+                cardWidth,
+                cardHeight,
+                cardRadius,
+                extraX,
+                extraY,
+                extraW,
+                extraH);
+        }
+        else
+        {
+            var key = (margin, cardWidth, cardHeight, cardRadius, 0, 0, 0, 0, false);
+            if (lastAppliedRegion == key) return;
+            lastAppliedRegion = key;
+
+            InteropService.SetWidgetRegion(
+                this,
+                margin,
+                margin,
+                cardWidth,
+                cardHeight,
+                cardRadius);
+        }
     }
 
     private void OnAppSettingsUpdated(object sender, AppSettings? oldData, AppSettings newData)
@@ -980,6 +1152,11 @@ public partial class Widget : Window, INotifyPropertyChanged
     private void OnContextMenuOpened(object? sender, RoutedEventArgs e)
     {
         Notify(nameof(ProfileMenuItems));
+        Notify(nameof(IsStackWidget));
+        Notify(nameof(ShowNormalEditButton));
+        Notify(nameof(ShowStackEditButton));
+        Notify(nameof(CanEditStackedWidgetChild));
+        Notify(nameof(EditStackChildTitle));
         if (sender is ContextMenu cm)
         {
             var r = appSettingsProvider.Get().Theme.UseNativeFrame ? 0 : appSettingsProvider.Get().Dimensions.Radius;
@@ -1035,6 +1212,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         profileService.ActiveProfileChanged -= OnProfilesChanged;
         profileService.ProfilesListChanged -= OnProfilesChanged;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        AttachStackWidget(null);
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
@@ -1054,7 +1232,11 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (ContentPresenter.Content is IWidgetSelfRefreshing selfRefreshing)
                 selfRefreshing.Refresh(newLayout);
             else
-                ContentPresenter.Content = userControl();
+            {
+                var newCtrl = userControl();
+                ContentPresenter.Content = newCtrl;
+                AttachStackWidget(newCtrl);
+            }
         }
 
         if (oldLayout?.ContentScale != newLayout.ContentScale)

@@ -80,6 +80,8 @@ public partial class Forecast : UserControl
         catch { }
     }
 
+    private WidgetTier? currentTier;
+
     /// <summary>
     /// The view can be detached and re-added later (the settings window caches pages and the
     /// Gallery keeps a live preview control), so everything <see cref="OnUnloaded"/> released
@@ -95,6 +97,7 @@ public partial class Forecast : UserControl
         var vm = new ForecastViewModel(model);
         viewModel = vm;
 
+        currentTier = null;
         // A re-added view keeps the size it already had, so SizeChanged will not fire again
         // to pick the tier content: resolve it from the size the card has right now.
         Content = CreateTierContent(Bounds.Size, vm);
@@ -110,6 +113,7 @@ public partial class Forecast : UserControl
         SizeChanged -= OnSizeChanged;
         PointerEntered -= OnCardPointerEntered;
         DoubleTapped -= OnCardDoubleTapped;
+        currentTier = null;
         viewModel?.Dispose();
         viewModel = null;
     }
@@ -119,8 +123,14 @@ public partial class Forecast : UserControl
         // Detached (unloaded) views have no view model to bind the tier content to.
         var current = viewModel;
         if (current == null) return;
+        if (e.NewSize.Width <= 0 || e.NewSize.Height <= 0) return;
 
-        Content = CreateTierContent(e.NewSize, current);
+        var tier = SizeTiers.ResolveTier(this, e.NewSize);
+        if (tier != currentTier || Content == null)
+        {
+            currentTier = tier;
+            Content = CreateTierContent(e.NewSize, current);
+        }
     }
 
     /// <summary>

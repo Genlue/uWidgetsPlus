@@ -453,13 +453,13 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         var variant = ActualThemeVariant;
         bool isDark = variant == ThemeVariant.Dark || (theme?.DarkMode ?? false);
 
-        if (viewTypeName is "Note" or "MapView")
-        {
-            return Brushes.Transparent;
-        }
-
         if (theme?.IsColorful == true)
         {
+            if (viewTypeName is "Note" or "MapView")
+            {
+                return Brushes.Transparent;
+            }
+
             if (viewTypeName == "AnalogI")
             {
                 // Clock Style 1 (AnalogI):

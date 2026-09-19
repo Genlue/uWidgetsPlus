@@ -967,9 +967,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         // Liquid glass and solid surfaces do NOT use native blur; their transparent
         // margins and anti-aliased rounded corners composite via 32-bit per-pixel alpha,
         // so applying a 1-bit GDI region truncates the anti-aliased curved edge and creates jaggedness.
-        // Stack widgets in colorful mode also adopt AcrylicBlur.
-        bool needsClipping = appSettingsProvider.Get().Theme.UsesNativeBlur
-                             || (IsStackWidget && appSettingsProvider.Get().Theme.IsColorful);
+        bool needsClipping = appSettingsProvider.Get().Theme.UsesNativeBlur;
 
         if (!needsClipping)
         {

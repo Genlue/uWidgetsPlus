@@ -19,6 +19,7 @@ using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Attributes;
 using uWidgets.Core.Models.Settings;
+using AppTheme = uWidgets.Core.Models.Settings.Theme;
 using uWidgets.Views;
 
 namespace StackWidgets.Views;
@@ -425,25 +426,38 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         var theme = appSettingsProvider?.Get()?.Theme;
         var variant = ActualThemeVariant;
+        bool isDark = variant == ThemeVariant.Dark || (theme?.DarkMode ?? false);
+
         if (theme?.IsColorful == true)
         {
             if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
                 return cbrush;
-            return variant == ThemeVariant.Dark
+            return isDark
                 ? new SolidColorBrush(Color.Parse("#1C1C1E"))
                 : Brushes.White;
         }
 
-        if (this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush)
-            return brush;
+        if (theme?.IsLiquidGlass == true)
+            return Brushes.Transparent;
 
-        return Brushes.Transparent;
+        var darkColorHex = theme?.EffectiveSolidBackgroundDark ?? AppTheme.DefaultSolidBackgroundDark;
+        var lightColorHex = theme?.EffectiveSolidBackgroundLight ?? AppTheme.DefaultSolidBackgroundLight;
+        var baseColor = isDark ? ParseColor(darkColorHex, "#2E2E2E") : ParseColor(lightColorHex, "#FFFFFF");
+        var opacity = Math.Clamp(theme?.OpacityLevel ?? 1.0, 0.0, 1.0);
+        return new SolidColorBrush(baseColor, opacity);
     }
 
     private IBrush ResolveCardBackground(string viewTypeName)
     {
         var theme = appSettingsProvider?.Get()?.Theme;
         var variant = ActualThemeVariant;
+        bool isDark = variant == ThemeVariant.Dark || (theme?.DarkMode ?? false);
+
+        if (viewTypeName is "Note" or "MapView")
+        {
+            return Brushes.Transparent;
+        }
+
         if (theme?.IsColorful == true)
         {
             if (viewTypeName == "AnalogI")
@@ -456,30 +470,48 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             {
                 if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
                     return wb;
+                return BuildWeatherCardBackground(isDark);
             }
             if (viewTypeName is "Progress" or "ProgressView")
             {
                 if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
                     return pb;
             }
-            if (viewTypeName is "Note" or "MapView")
-            {
-                return Brushes.Transparent;
-            }
 
             if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
                 return cbrush;
 
-            return variant == ThemeVariant.Dark
+            return isDark
                 ? new SolidColorBrush(Color.Parse("#1C1C1E"))
                 : Brushes.White;
         }
 
-        if (this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush)
-            return brush;
+        if (theme?.IsLiquidGlass == true)
+            return Brushes.Transparent;
 
-        return Brushes.Transparent;
+        var darkColorHex = theme?.EffectiveSolidBackgroundDark ?? AppTheme.DefaultSolidBackgroundDark;
+        var lightColorHex = theme?.EffectiveSolidBackgroundLight ?? AppTheme.DefaultSolidBackgroundLight;
+        var baseColor = isDark ? ParseColor(darkColorHex, "#2E2E2E") : ParseColor(lightColorHex, "#FFFFFF");
+        var opacity = Math.Clamp(theme?.OpacityLevel ?? 1.0, 0.0, 1.0);
+        return new SolidColorBrush(baseColor, opacity);
     }
+
+    private static LinearGradientBrush BuildWeatherCardBackground(bool isDark)
+    {
+        return new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(Color.Parse(isDark ? "#121E31" : "#1B71BE"), 0.0),
+                new GradientStop(Color.Parse(isDark ? "#1E314F" : "#509CEB"), 1.0)
+            }
+        };
+    }
+
+    private static Color ParseColor(string hex, string fallbackHex) =>
+        Color.TryParse(hex, out var color) ? color : Color.Parse(fallbackHex);
 
     private Thickness ResolveOutlineThickness(string? viewTypeName)
     {
@@ -519,8 +551,13 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             return BuildConicOutlineBrush(theme, size);
         }
 
-        if (theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
-            return b;
+        if (theme.IsColorful)
+        {
+            if (this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
+                return b;
+            var isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? false);
+            return isDark ? new SolidColorBrush(Color.Parse("#25FFFFFF")) : new SolidColorBrush(Color.Parse("#15000000"));
+        }
 
         return null;
     }

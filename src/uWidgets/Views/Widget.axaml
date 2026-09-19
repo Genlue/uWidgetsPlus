@@ -19,7 +19,7 @@
     <Window.ContextMenu>
         <ContextMenu Classes="WidgetContextMenu">
             <MenuItem Header="{Binding EditStackChildTitle}" Command="{Binding EditCurrentStackedWidget}" IsVisible="{Binding CanEditStackedWidgetChild}" />
-            <MenuItem Header="重叠组件设置…" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
+            <MenuItem Header="编辑重叠组件…" Command="{Binding EditWidget}" IsVisible="{Binding ShowStackEditButton}" />
             <MenuItem Header="{Binding Edit}" Command="{Binding EditWidget}" IsVisible="{Binding ShowNormalEditButton}" />
             <MenuItem Header="{Binding SizeMenuTitle}">
                 <MenuItem Header="自定义尺寸…" Command="{Binding OpenCustomSizeDialog}" IsVisible="{Binding IsFreeMode}" />

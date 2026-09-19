@@ -18,6 +18,7 @@ using StackWidgets.Models;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Attributes;
+using uWidgets.Core.Models.Settings;
 using uWidgets.Views;
 
 namespace StackWidgets.Views;
@@ -26,11 +27,14 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
     private readonly IAssemblyProvider assemblyProvider;
+    private readonly IAppSettingsProvider? appSettingsProvider;
     private WidgetStackModel model;
     private DispatcherTimer? saveDebounceTimer;
     private bool isSavingSelf;
 
+    private readonly Dictionary<int, Border> childCards = new();
     private readonly Dictionary<int, UserControl?> childControls = new();
+    private Border? emptyCard;
     private int currentActiveIndex = 0;
     private DispatcherTimer? activeTransitionTimer;
     private int transitionTargetIndex = -1;
@@ -39,13 +43,14 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
     public WidgetStackModel Model => model;
 
-    public bool CanEditCurrentChild => CanEditChildAt(model.SelectedIndex);
+    public bool CanEditCurrentChild => model.Entries.Count > 0 && CanEditChildAt(model.SelectedIndex);
 
     public string? CurrentChildTitle
     {
         get
         {
-            if (model?.Entries == null || model.SelectedIndex < 0 || model.SelectedIndex >= model.Entries.Count) return null;
+            if (model?.Entries == null || model.Entries.Count == 0) return null;
+            if (model.SelectedIndex < 0 || model.SelectedIndex >= model.Entries.Count) return null;
             return model.Entries[model.SelectedIndex].DisplayTitle;
         }
     }
@@ -82,11 +87,12 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
     }
 
-    public WidgetStackView(WidgetStackModel model, IWidgetLayoutProvider widgetLayoutProvider, IAssemblyProvider assemblyProvider)
+    public WidgetStackView(WidgetStackModel model, IWidgetLayoutProvider widgetLayoutProvider, IAssemblyProvider assemblyProvider, IAppSettingsProvider? appSettingsProvider = null)
     {
         this.model = model ?? new WidgetStackModel();
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.assemblyProvider = assemblyProvider;
+        this.appSettingsProvider = appSettingsProvider ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider);
 
         InitializeComponent();
         Classes.Add("Flush");
@@ -94,13 +100,33 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         EnsureValidModel();
         RenderCurrentState();
 
-        Loaded += (_, _) => RenderCurrentState();
+        Loaded += (_, _) =>
+        {
+            UpdateAllCardStyles();
+            RenderCurrentState();
+        };
+
         Unloaded += (_, _) =>
         {
             if (saveDebounceTimer?.IsEnabled == true)
             {
                 saveDebounceTimer.Stop();
                 SaveModelDirect();
+            }
+        };
+
+        ActualThemeVariantChanged += (_, _) => UpdateAllCardStyles();
+
+        if (appSettingsProvider != null)
+        {
+            appSettingsProvider.DataChanged += (_, _, _) => Dispatcher.UIThread.Post(UpdateAllCardStyles);
+        }
+
+        PropertyChanged += (s, e) =>
+        {
+            if (e.Property == BoundsProperty)
+            {
+                UpdateAllCardStyles();
             }
         };
     }
@@ -112,14 +138,21 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             model = new WidgetStackModel();
         }
 
-        if (model.Entries == null || model.Entries.Count == 0)
+        if (model.Entries == null)
         {
-            model = model with { Entries = WidgetStackModel.GetDefaultEntries(), SelectedIndex = 0 };
+            model = model with { Entries = [] };
         }
 
-        if (model.SelectedIndex < 0 || model.SelectedIndex >= model.Entries.Count)
+        if (model.Entries.Count > 0)
         {
-            model = model with { SelectedIndex = Math.Clamp(model.SelectedIndex, 0, Math.Max(0, model.Entries.Count - 1)) };
+            if (model.SelectedIndex < 0 || model.SelectedIndex >= model.Entries.Count)
+            {
+                model = model with { SelectedIndex = Math.Clamp(model.SelectedIndex, 0, model.Entries.Count - 1) };
+            }
+        }
+        else
+        {
+            model = model with { SelectedIndex = 0 };
         }
     }
 
@@ -146,15 +179,35 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         EnsureValidModel();
         if (WidgetsHost == null) return;
+
         if (model?.Entries == null || model.Entries.Count == 0)
         {
-            WidgetsHost.Children.Clear();
+            EnsureEmptyCard();
+            if (emptyCard != null)
+            {
+                emptyCard.IsVisible = true;
+                if (!WidgetsHost.Children.Contains(emptyCard))
+                {
+                    WidgetsHost.Children.Add(emptyCard);
+                }
+            }
+
+            // Hide any leftover child cards
+            foreach (var card in childCards.Values)
+            {
+                if (card != null) card.IsVisible = false;
+            }
             return;
+        }
+
+        if (emptyCard != null)
+        {
+            emptyCard.IsVisible = false;
         }
 
         for (int i = 0; i < model.Entries.Count; i++)
         {
-            GetOrCreateChildControl(i);
+            GetOrCreateChildCard(i);
         }
 
         currentActiveIndex = model.SelectedIndex;
@@ -163,45 +216,70 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
     private void EnforceOnlyActiveVisible(int activeIndex)
     {
-        if (model?.Entries == null) return;
+        if (model?.Entries == null || model.Entries.Count == 0)
+        {
+            if (emptyCard != null) emptyCard.IsVisible = true;
+            return;
+        }
+
+        if (emptyCard != null) emptyCard.IsVisible = false;
+
         for (int i = 0; i < model.Entries.Count; i++)
         {
-            if (childControls.TryGetValue(i, out var c) && c != null)
+            if (childCards.TryGetValue(i, out var card) && card != null)
             {
                 bool isActive = (i == activeIndex);
-                c.IsVisible = isActive;
-                c.IsHitTestVisible = isActive;
-                c.Opacity = 1.0;
-                c.RenderTransform = null;
-                c.ZIndex = isActive ? 1 : 0;
+                card.IsVisible = isActive;
+                card.IsHitTestVisible = isActive;
+                card.Opacity = 1.0;
+                card.RenderTransform = null;
+                card.ZIndex = isActive ? 1 : 0;
             }
         }
     }
 
-    private UserControl? GetOrCreateChildControl(int index)
+    private Border? GetOrCreateChildCard(int index)
     {
-        if (index < 0 || index >= model.Entries.Count) return null;
+        if (index < 0 || model?.Entries == null || index >= model.Entries.Count) return null;
 
-        if (!childControls.TryGetValue(index, out var control) || control == null)
+        if (!childCards.TryGetValue(index, out var card) || card == null)
         {
-            control = CreateChildControl(index, model.Entries[index]);
-            if (control != null)
+            var entry = model.Entries[index];
+            var control = CreateChildControl(index, entry);
+            if (control == null) return null;
+
+            childControls[index] = control;
+
+            if (entry.ContentScale.HasValue && Math.Abs(entry.ContentScale.Value - 1.0) > 0.001)
             {
-                control.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
-                control.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
-                childControls[index] = control;
-                if (!WidgetsHost.Children.Contains(control))
-                {
-                    WidgetsHost.Children.Add(control);
-                }
+                control.RenderTransform = new ScaleTransform(entry.ContentScale.Value, entry.ContentScale.Value);
+                control.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+            }
+
+            card = new Border
+            {
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+                CornerRadius = ResolveCornerRadius(),
+                Background = ResolveCardBackground(entry.ViewTypeName),
+                BorderThickness = ResolveOutlineThickness(entry.ViewTypeName),
+                BorderBrush = ResolveOutlineBrush(entry.ViewTypeName),
+                ClipToBounds = true,
+                Child = control
+            };
+
+            childCards[index] = card;
+            if (!WidgetsHost.Children.Contains(card))
+            {
+                WidgetsHost.Children.Add(card);
             }
         }
-        else if (!WidgetsHost.Children.Contains(control))
+        else if (!WidgetsHost.Children.Contains(card))
         {
-            WidgetsHost.Children.Add(control);
+            WidgetsHost.Children.Add(card);
         }
 
-        return control;
+        return card;
     }
 
     private UserControl? CreateChildControl(int index, StackedWidgetEntry entry)
@@ -249,6 +327,228 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             System.Diagnostics.Debug.WriteLine($"[WidgetStack] Failed to create child control: {ex.Message}");
             return null;
         }
+    }
+
+    private void EnsureEmptyCard()
+    {
+        if (emptyCard != null)
+        {
+            UpdateCardStyle(emptyCard, null);
+            return;
+        }
+
+        var stackIcon = new PathIcon
+        {
+            Data = Geometry.Parse("M4 6h16M4 12h16M4 18h16"),
+            Width = 24,
+            Height = 24,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+
+        var titleBlock = new TextBlock
+        {
+            Text = "空白重叠卡片",
+            FontSize = 12,
+            FontWeight = FontWeight.SemiBold,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+
+        var hintBlock = new TextBlock
+        {
+            Text = "右键编辑以添加组件",
+            FontSize = 10,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            Opacity = 0.8
+        };
+
+        var panel = new StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Vertical,
+            Spacing = 6,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Opacity = 0.35,
+            Children = { stackIcon, titleBlock, hintBlock }
+        };
+
+        emptyCard = new Border
+        {
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+            CornerRadius = ResolveCornerRadius(),
+            Background = ResolveDefaultCardBackground(),
+            BorderThickness = ResolveOutlineThickness(null),
+            BorderBrush = ResolveOutlineBrush(null),
+            ClipToBounds = true,
+            Child = panel
+        };
+    }
+
+    private void UpdateCardStyle(Border card, string? viewTypeName)
+    {
+        card.CornerRadius = ResolveCornerRadius();
+        card.Background = viewTypeName != null ? ResolveCardBackground(viewTypeName) : ResolveDefaultCardBackground();
+        card.BorderThickness = ResolveOutlineThickness(viewTypeName);
+        card.BorderBrush = ResolveOutlineBrush(viewTypeName);
+    }
+
+    private void UpdateAllCardStyles()
+    {
+        if (emptyCard != null)
+        {
+            UpdateCardStyle(emptyCard, null);
+        }
+
+        if (model?.Entries != null)
+        {
+            for (int i = 0; i < model.Entries.Count; i++)
+            {
+                if (childCards.TryGetValue(i, out var card) && card != null)
+                {
+                    UpdateCardStyle(card, model.Entries[i].ViewTypeName);
+                }
+            }
+        }
+    }
+
+    private CornerRadius ResolveCornerRadius()
+    {
+        if (this.TryFindResource("WidgetCardCornerRadius", out var cr) && cr is CornerRadius r)
+            return r;
+        if (Application.Current?.TryFindResource("WidgetCardCornerRadius", out var acr) == true && acr is CornerRadius ar)
+            return ar;
+        var rad = appSettingsProvider?.Get()?.Dimensions?.Radius ?? 16;
+        return new CornerRadius(rad);
+    }
+
+    private IBrush ResolveDefaultCardBackground()
+    {
+        var theme = appSettingsProvider?.Get()?.Theme;
+        var variant = ActualThemeVariant;
+        if (theme?.IsColorful == true)
+        {
+            if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
+                return cbrush;
+            return variant == ThemeVariant.Dark
+                ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                : Brushes.White;
+        }
+
+        if (this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush)
+            return brush;
+
+        return Brushes.Transparent;
+    }
+
+    private IBrush ResolveCardBackground(string viewTypeName)
+    {
+        var theme = appSettingsProvider?.Get()?.Theme;
+        var variant = ActualThemeVariant;
+        if (theme?.IsColorful == true)
+        {
+            if (viewTypeName == "AnalogI")
+            {
+                // Clock Style 1 (AnalogI):
+                // Outer perimeter background is always authentic dark mode charcoal (#1C1C1E)
+                return new SolidColorBrush(Color.Parse("#1C1C1E"));
+            }
+            if (viewTypeName == "Forecast")
+            {
+                if (this.TryFindResource("WeatherCardBackground", variant, out var wcb) && wcb is IBrush wb)
+                    return wb;
+            }
+            if (viewTypeName is "Progress" or "ProgressView")
+            {
+                if (this.TryFindResource("ProgressCardBackground", variant, out var pcb) && pcb is IBrush pb)
+                    return pb;
+            }
+            if (viewTypeName is "Note" or "MapView")
+            {
+                return Brushes.Transparent;
+            }
+
+            if (this.TryFindResource("WidgetBackground", variant, out var cb) && cb is IBrush cbrush)
+                return cbrush;
+
+            return variant == ThemeVariant.Dark
+                ? new SolidColorBrush(Color.Parse("#1C1C1E"))
+                : Brushes.White;
+        }
+
+        if (this.TryFindResource("WidgetBackground", variant, out var res) && res is IBrush brush)
+            return brush;
+
+        return Brushes.Transparent;
+    }
+
+    private Thickness ResolveOutlineThickness(string? viewTypeName)
+    {
+        var theme = appSettingsProvider?.Get()?.Theme;
+        if (theme == null || theme.UseNativeFrame) return new Thickness(0);
+
+        bool isOutlined = (theme.IsGlass && theme.OutlineWidth > 0) || theme.IsColorful;
+        if (!isOutlined) return new Thickness(0);
+
+        if (theme.IsColorful && (viewTypeName is "Note" or "MapView"))
+            return new Thickness(0);
+
+        var width = Math.Clamp(theme.OutlineWidth, 0, 6);
+        if (width <= 0 && theme.IsColorful)
+            return new Thickness(1);
+
+        return new Thickness(width);
+    }
+
+    private IBrush? ResolveOutlineBrush(string? viewTypeName)
+    {
+        var theme = appSettingsProvider?.Get()?.Theme;
+        if (theme == null || theme.UseNativeFrame) return null;
+
+        bool isOutlined = (theme.IsGlass && theme.OutlineWidth > 0) || theme.IsColorful;
+        if (!isOutlined) return null;
+
+        if (theme.IsColorful && (viewTypeName is "Note" or "MapView"))
+            return null;
+
+        if (theme.OutlineWidth > 0)
+        {
+            var size = new Size(
+                Bounds.Width > 0 ? Bounds.Width : (widgetLayoutProvider?.Get()?.Width ?? 150),
+                Bounds.Height > 0 ? Bounds.Height : (widgetLayoutProvider?.Get()?.Height ?? 150)
+            );
+            return BuildConicOutlineBrush(theme, size);
+        }
+
+        if (theme.IsColorful && this.TryFindResource("WidgetCardBorderBrush", out var res) && res is IBrush b)
+            return b;
+
+        return null;
+    }
+
+    private static ConicGradientBrush BuildConicOutlineBrush(Theme theme, Size size)
+    {
+        var width = Math.Max(1, size.Width);
+        var height = Math.Max(1, size.Height);
+        var cornerAngle = Math.Atan2(width / 2.0, height / 2.0) * 180.0 / Math.PI;
+        var startAngle = 360.0 - cornerAngle;
+        var color = Color.TryParse(theme.EffectiveOutlineColor, out var parsed)
+            ? parsed
+            : Color.Parse(uWidgets.Core.Models.Settings.Theme.DefaultOutlineColor);
+        var clear = Colors.Transparent;
+
+        return new ConicGradientBrush
+        {
+            Angle = startAngle,
+            Center = RelativePoint.Center,
+            GradientStops =
+            {
+                new GradientStop(color, 0),
+                new GradientStop(clear, 2 * cornerAngle / 360.0),
+                new GradientStop(color, 0.5),
+                new GradientStop(clear, 0.5 + 2 * cornerAngle / 360.0),
+                new GradientStop(color, 1.0)
+            }
+        };
     }
 
     private static bool NeedsWidgetLayoutProvider(Type type) =>
@@ -314,7 +614,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         try
         {
-            if (model?.Entries == null || model.Entries.Count == 0) return;
+            if (model?.Entries == null || model.Entries.Count <= 1) return;
             if (index < 0 || index >= model.Entries.Count || index == currentActiveIndex) return;
 
             // Stop any previous running transition
@@ -338,10 +638,10 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             RequestSaveModel();
             UpdateDots();
 
-            var fromControl = GetOrCreateChildControl(fromIndex);
-            var toControl = GetOrCreateChildControl(toIndex);
+            var fromCard = GetOrCreateChildCard(fromIndex);
+            var toCard = GetOrCreateChildCard(toIndex);
 
-            if (toControl == null || fromControl == null || fromControl == toControl || WidgetsHost == null)
+            if (toCard == null || fromCard == null || fromCard == toCard || WidgetsHost == null)
             {
                 EnforceOnlyActiveVisible(toIndex);
                 return;
@@ -352,32 +652,35 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             if (height <= 0) height = widgetLayoutProvider?.Get()?.Height ?? 0;
             if (height <= 0) height = 150;
 
-            // Immediately ensure any third control is hidden and has no transforms
+            // Immediately ensure any third card is hidden and has no transforms
             for (int i = 0; i < model.Entries.Count; i++)
             {
-                if (i != fromIndex && i != toIndex && childControls.TryGetValue(i, out var other) && other != null)
+                if (i != fromIndex && i != toIndex && childCards.TryGetValue(i, out var other) && other != null)
                 {
                     other.IsVisible = false;
                     other.RenderTransform = null;
+                    other.Opacity = 0.0;
                 }
             }
 
+            // OUTGOING CARD: on top (ZIndex 10), starting at (0, 0) and Opacity 1.0
             var fromTransform = new TranslateTransform(0, 0);
-            var toTransform = new TranslateTransform(0, forward ? height : -height);
+            fromCard.RenderTransform = fromTransform;
+            fromCard.IsVisible = true;
+            fromCard.IsHitTestVisible = false;
+            fromCard.Opacity = 1.0;
+            fromCard.ZIndex = 10;
 
-            fromControl.RenderTransform = fromTransform;
-            fromControl.IsVisible = true;
-            fromControl.IsHitTestVisible = false;
-            fromControl.Opacity = 1.0;
-            fromControl.ZIndex = 0;
+            // INCOMING CARD: underneath (ZIndex 5), slightly offset by 15% parallax, starting Opacity 0.4
+            double toOffset = forward ? (height * 0.15) : (-height * 0.15);
+            var toTransform = new TranslateTransform(0, toOffset);
+            toCard.RenderTransform = toTransform;
+            toCard.IsVisible = true;
+            toCard.IsHitTestVisible = false;
+            toCard.Opacity = 0.4;
+            toCard.ZIndex = 5;
 
-            toControl.RenderTransform = toTransform;
-            toControl.IsVisible = true;
-            toControl.IsHitTestVisible = false;
-            toControl.Opacity = 1.0;
-            toControl.ZIndex = 1;
-
-            const double durationMs = 220.0;
+            const double durationMs = 240.0;
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             var timer = new DispatcherTimer(DispatcherPriority.Render)
@@ -401,8 +704,14 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                     // CubicEaseOut curve
                     double ease = 1.0 - Math.Pow(1.0 - progress, 3.0);
 
-                    fromTransform.Y = forward ? -height * ease : height * ease;
-                    toTransform.Y = forward ? height * (1.0 - ease) : -height * (1.0 - ease);
+                    // Outgoing card slides away (up or down) and dissolves away
+                    double slideTarget = forward ? -height * 0.85 : height * 0.85;
+                    fromTransform.Y = slideTarget * ease;
+                    fromCard.Opacity = Math.Clamp(1.0 - ease, 0.0, 1.0);
+
+                    // Incoming card gently rises into place and fades in
+                    toTransform.Y = toOffset * (1.0 - ease);
+                    toCard.Opacity = Math.Clamp(0.4 + 0.6 * ease, 0.0, 1.0);
 
                     if (progress >= 1.0)
                     {
@@ -413,15 +722,16 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                             transitionTargetIndex = -1;
                         }
 
-                        // Offscreen now: hide first, do not clear transform so it never flashes at (0,0)
-                        fromControl.IsVisible = false;
-                        fromControl.Opacity = 1.0;
+                        // Offscreen now: hide outgoing card
+                        fromCard.IsVisible = false;
+                        fromCard.Opacity = 1.0;
+                        fromCard.RenderTransform = null;
 
-                        toControl.RenderTransform = null;
-                        toControl.IsVisible = true;
-                        toControl.IsHitTestVisible = true;
-                        toControl.Opacity = 1.0;
-                        toControl.ZIndex = 1;
+                        toCard.RenderTransform = null;
+                        toCard.IsVisible = true;
+                        toCard.IsHitTestVisible = true;
+                        toCard.Opacity = 1.0;
+                        toCard.ZIndex = 1;
 
                         EnforceOnlyActiveVisible(toIndex);
                     }
@@ -513,20 +823,21 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             }
             else if (forceRecreateIfNotSelfRefreshing)
             {
-                if (ctrl != null)
+                if (childCards.TryGetValue(index, out var oldCard) && oldCard != null)
                 {
-                    WidgetsHost.Children.Remove(ctrl);
+                    WidgetsHost.Children.Remove(oldCard);
                 }
+                childCards.Remove(index);
                 childControls.Remove(index);
-                var newCtrl = GetOrCreateChildControl(index);
-                if (newCtrl != null)
+                var newCard = GetOrCreateChildCard(index);
+                if (newCard != null)
                 {
                     bool isActive = (index == currentActiveIndex);
-                    newCtrl.IsVisible = isActive;
-                    newCtrl.IsHitTestVisible = isActive;
-                    newCtrl.Opacity = 1.0;
-                    newCtrl.ZIndex = isActive ? 1 : 0;
-                    newCtrl.RenderTransform = null;
+                    newCard.IsVisible = isActive;
+                    newCard.IsHitTestVisible = isActive;
+                    newCard.Opacity = 1.0;
+                    newCard.ZIndex = isActive ? 1 : 0;
+                    newCard.RenderTransform = null;
                 }
             }
         }
@@ -536,7 +847,9 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
     {
         saveDebounceTimer?.Stop();
         WidgetsHost.Children.Clear();
+        childCards.Clear();
         childControls.Clear();
+        emptyCard = null;
         model = newModel;
         SaveModelDirect();
         RenderCurrentState();
@@ -606,12 +919,13 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                     }
                     else
                     {
-                        if (ctrl != null)
+                        if (childCards.TryGetValue(i, out var oldCard) && oldCard != null)
                         {
-                            WidgetsHost.Children.Remove(ctrl);
+                            WidgetsHost.Children.Remove(oldCard);
                         }
+                        childCards.Remove(i);
                         childControls.Remove(i);
-                        GetOrCreateChildControl(i);
+                        GetOrCreateChildCard(i);
                     }
                 }
             }
@@ -627,10 +941,12 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
             return;
         }
 
-        // Only recreate if widgets were added/removed/reordered
+        // Recreate if widgets were added/removed/reordered
         model = newModel;
         WidgetsHost.Children.Clear();
+        childCards.Clear();
         childControls.Clear();
+        emptyCard = null;
         RenderCurrentState();
     }
 
@@ -676,7 +992,7 @@ public class StackedChildLayoutProvider(Action<StackedWidgetEntry, string?> onSa
         {
             try { settings = JsonDocument.Parse(entry.SettingsJson).RootElement.Clone(); } catch { }
         }
-        return new WidgetLayout(entry.AssemblyName, entry.ViewTypeName, parent.X, parent.Y, parent.Width, parent.Height, settings, parent.ContentScale);
+        return new WidgetLayout(entry.AssemblyName, entry.ViewTypeName, parent.X, parent.Y, parent.Width, parent.Height, settings, entry.ContentScale ?? parent.ContentScale);
     }
 
     public void Save(WidgetLayout data)

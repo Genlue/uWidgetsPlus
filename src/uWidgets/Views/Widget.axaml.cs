@@ -496,7 +496,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            if (!IsOutlined) return new Thickness(0);
+            if (!IsOutlined || IsStackWidget) return new Thickness(0);
             if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
                 return new Thickness(0);
             var width = Math.Clamp(appSettingsProvider.Get().Theme.OutlineWidth, 0, 6);
@@ -519,7 +519,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            if (!IsOutlined) return null;
+            if (!IsOutlined || IsStackWidget) return null;
             if (appSettingsProvider.Get().Theme.IsColorful && IsSelfFramingWidget)
                 return null;
             if (appSettingsProvider.Get().Theme.OutlineWidth > 0)
@@ -575,19 +575,11 @@ public partial class Widget : Window, INotifyPropertyChanged
     {
         get
         {
-            if (isFrameless) return Brushes.Transparent;
+            if (isFrameless || IsStackWidget) return Brushes.Transparent;
             var theme = appSettingsProvider.Get().Theme;
             var variant = ActualThemeVariant;
             if (theme.IsColorful)
             {
-                // Stack widgets specifically adopt frosted glass (Acrylic Blur) in Colorful mode
-                if (IsStackWidget)
-                {
-                    return this.TryFindResource("WidgetBackground", variant, out var sb) && sb is IBrush sbrush
-                        ? sbrush
-                        : Brushes.Transparent;
-                }
-
                 var contentName = ContentPresenter?.Content?.GetType().Name;
                 if (contentName == "Forecast")
                 {
@@ -919,6 +911,15 @@ public partial class Widget : Window, INotifyPropertyChanged
         Border.Width = cardW;
         Border.Height = cardH;
 
+        if (IsStackWidget)
+        {
+            ContentPresenter.Width = cardW;
+            ContentPresenter.Height = cardH;
+            ContentPresenter.Clip = null;
+            UpdateAdaptiveRadiusResources();
+            return;
+        }
+
         var outline = WidgetOutlineThickness;
         var innerW = Math.Max(1, cardW - outline.Left - outline.Right);
         var innerH = Math.Max(1, cardH - outline.Top - outline.Bottom);
@@ -1223,6 +1224,13 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void OnWidgetLayoutUpdated(object? sender, WidgetLayout? oldLayout, WidgetLayout newLayout)
     {
+        if (oldLayout != null && (Math.Abs(oldLayout.Width - newLayout.Width) > 0.5 || Math.Abs(oldLayout.Height - newLayout.Height) > 0.5))
+        {
+            Width = newLayout.Width;
+            Height = newLayout.Height;
+            AfterResize();
+        }
+
         if (!Equals(oldLayout?.Settings, newLayout.Settings))
         {
             // Views that manage their own state (Reminders, Notes) refresh in
@@ -1248,6 +1256,12 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     [DllImport("user32.dll")]
     private static extern short GetKeyState(int nVirtKey);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X; public int Y; }
 
     private void OnPreviewPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -1299,6 +1313,28 @@ public partial class Widget : Window, INotifyPropertyChanged
 
     private void AfterMove()
     {
+        // If a Stack edit window is open, check if this desktop widget was dropped into it
+        if (StackDropCoordinator.IsActive && !IsStackWidget)
+        {
+            POINT pt = default;
+            var cursorValid = OperatingSystem.IsWindows() && GetCursorPos(out pt);
+            var cursorPos = cursorValid ? new PixelPoint(pt.X, pt.Y) : (PixelPoint?)null;
+            var scaling = Screens.ScreenFromWindow(this)?.Scaling ?? 1.0;
+            var centerPos = new PixelPoint(Position.X + (int)(ClientSize.Width * scaling / 2),
+                                           Position.Y + (int)(ClientSize.Height * scaling / 2));
+
+            if ((cursorPos.HasValue && StackDropCoordinator.ContainsScreenPoint(cursorPos.Value))
+                || StackDropCoordinator.ContainsScreenPoint(centerPos))
+            {
+                var layout = widgetLayoutProvider.Get();
+                if (layout.Type is not "Stack" and not "StackWidgets" && StackDropCoordinator.TryAccept(layout))
+                {
+                    Remove();
+                    return;
+                }
+            }
+        }
+
         var appSettings = appSettingsProvider.Get();
         
         // Manual grid: snapping is always enforced.

@@ -78,15 +78,13 @@ public partial class Settings : Window
     }
 
     /// <summary>
-    /// Fixed stable window transparency for the settings window. Uses Mica with fallback
-    /// to None (fully opaque) to prevent DWM composition resets and transparency dropouts.
+    /// Fixed stable window transparency for the settings window across all themes. Uses OS-level AcrylicBlur
+    /// with fallback to None.
     /// </summary>
     private void ApplyTransparencyHint()
     {
-        var theme = appSettingsProvider.Get().Theme;
-        GlassSurface.Material = theme;
         GlassSurface.IsVisible = false;
-        TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.None];
+        TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None];
     }
 
     /// <summary>

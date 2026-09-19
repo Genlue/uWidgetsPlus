@@ -7,11 +7,11 @@
                 <ResourceDictionary.ThemeDictionaries>
                     <ResourceDictionary x:Key="Default">
                         <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="1.0" />
-                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="1.0" />
+                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.80" />
                     </ResourceDictionary>
                     <ResourceDictionary x:Key="Dark">
                         <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="1.0" />
-                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="1.0" />
+                        <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="0.80" />
                     </ResourceDictionary>
                 </ResourceDictionary.ThemeDictionaries>
                 <SolidColorBrush x:Key="WidgetBackground" Color="Transparent" />

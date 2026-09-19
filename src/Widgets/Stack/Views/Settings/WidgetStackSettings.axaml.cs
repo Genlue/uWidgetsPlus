@@ -5,10 +5,12 @@ using System.Reflection;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using StackWidgets.Models;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
 using uWidgets.Core.Models.Attributes;
+using uWidgets.Services;
 using uWidgets.Views;
 
 namespace StackWidgets.Views.Settings;
@@ -58,6 +60,86 @@ public partial class WidgetStackSettings : UserControl
 
         LoadFromModel();
         isInitializing = false;
+
+        Loaded += (_, _) =>
+        {
+            if (VisualRoot is Window win)
+            {
+                StackDropCoordinator.ActiveTargetWindow = win;
+                StackDropCoordinator.ActiveDropHandler = OnDesktopWidgetDropped;
+            }
+        };
+
+        Unloaded += (_, _) =>
+        {
+            if (VisualRoot is Window win && StackDropCoordinator.ActiveTargetWindow == win)
+            {
+                StackDropCoordinator.ActiveTargetWindow = null;
+                StackDropCoordinator.ActiveDropHandler = null;
+            }
+        };
+    }
+
+    private bool OnDesktopWidgetDropped(WidgetLayout layout)
+    {
+        try
+        {
+            if (layout.Type is "Stack" or "StackWidgets") return false;
+
+            var opt = AvailableOptions.FirstOrDefault(o => o.AssemblyName == layout.Type && o.ViewTypeName == layout.SubType);
+            string title = opt?.Title ?? ResolveDynamicTitle(layout);
+            string? settingsJson = layout.Settings?.GetRawText();
+
+            bool wasEmpty = model.Entries.Count == 0;
+
+            var newEntry = new StackedWidgetEntry(layout.Type, layout.SubType, title, settingsJson, layout.ContentScale);
+            var list = model.Entries.ToList();
+            list.Add(newEntry);
+            model = model with { Entries = list };
+
+            SaveModel();
+
+            if (wasEmpty)
+            {
+                var cur = widgetLayoutProvider.Get();
+                widgetLayoutProvider.Save(cur with
+                {
+                    Width = layout.Width,
+                    Height = layout.Height,
+                    ContentScale = layout.ContentScale
+                });
+            }
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                RefreshList();
+            });
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WidgetStackSettings] OnDesktopWidgetDropped error: {ex.Message}");
+            return false;
+        }
+    }
+
+    private string ResolveDynamicTitle(WidgetLayout layout)
+    {
+        try
+        {
+            var assembly = assemblyProvider?.LoadAssembly(layout.Type);
+            var widgetInfo = assembly?
+                .GetCustomAttributes<WidgetInfoAttribute>()
+                .FirstOrDefault(a => a.ViewType.Name == layout.SubType);
+            if (widgetInfo != null && !string.IsNullOrEmpty(widgetInfo.Title))
+            {
+                return widgetInfo.Title;
+            }
+        }
+        catch { }
+
+        return $"{layout.Type} - {layout.SubType}";
     }
 
     private void LoadFromModel()
@@ -97,6 +179,11 @@ public partial class WidgetStackSettings : UserControl
         }
         ItemsList.ItemsSource = null;
         ItemsList.ItemsSource = items;
+
+        if (EmptyHintText != null)
+        {
+            EmptyHintText.IsVisible = model.Entries.Count == 0;
+        }
     }
 
     private void OnToggleChanged(object? sender, RoutedEventArgs e)
@@ -157,6 +244,61 @@ public partial class WidgetStackSettings : UserControl
         RefreshList();
     }
 
+    private void OnExtractToDesktopClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: StackedWidgetSettingItem item }) return;
+
+        try
+        {
+            var layoutProvider = uWidgets.App.Services?.GetService(typeof(ILayoutProvider)) as ILayoutProvider;
+            if (layoutProvider != null)
+            {
+                var screens = layoutProvider.Get();
+                var curLayout = widgetLayoutProvider.Get();
+                var screenId = widgetLayoutProvider.ScreenId;
+                var targetScreen = screens.FindById(screenId) ?? screens.Screens.FirstOrDefault();
+
+                if (targetScreen != null)
+                {
+                    JsonElement? settings = null;
+                    if (!string.IsNullOrEmpty(item.Entry.SettingsJson))
+                    {
+                        try { settings = JsonDocument.Parse(item.Entry.SettingsJson).RootElement.Clone(); } catch { }
+                    }
+
+                    var newWidget = new WidgetLayout(
+                        item.Entry.AssemblyName,
+                        item.Entry.ViewTypeName,
+                        curLayout.X + 24,
+                        curLayout.Y + 24,
+                        curLayout.Width,
+                        curLayout.Height,
+                        settings,
+                        item.Entry.ContentScale ?? curLayout.ContentScale
+                    );
+
+                    var updatedScreen = targetScreen with { Layout = [.. targetScreen.Layout, newWidget] };
+                    layoutProvider.Save(screens.UpsertScreen(updatedScreen));
+                }
+            }
+
+            var list = model.Entries.ToList();
+            if (item.Index >= 0 && item.Index < list.Count)
+            {
+                list.RemoveAt(item.Index);
+                int newSelected = model.SelectedIndex;
+                if (newSelected >= list.Count) newSelected = Math.Max(0, list.Count - 1);
+                model = model with { Entries = list, SelectedIndex = newSelected };
+                SaveModel();
+                RefreshList();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WidgetStackSettings] OnExtractToDesktopClicked error: {ex.Message}");
+        }
+    }
+
     private void OnMoveUpClicked(object? sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is StackedWidgetSettingItem item)
@@ -198,14 +340,12 @@ public partial class WidgetStackSettings : UserControl
         if (sender is Button btn && btn.Tag is StackedWidgetSettingItem item)
         {
             var list = model.Entries.ToList();
-            if (list.Count <= 1) return; // Keep at least one widget
-
             int idx = item.Index;
             if (idx >= 0 && idx < list.Count)
             {
                 list.RemoveAt(idx);
                 int newSelected = model.SelectedIndex;
-                if (newSelected >= list.Count) newSelected = list.Count - 1;
+                if (newSelected >= list.Count) newSelected = Math.Max(0, list.Count - 1);
                 model = model with { Entries = list, SelectedIndex = newSelected };
                 SaveModel();
                 RefreshList();

@@ -9,7 +9,8 @@ public record StackedWidgetEntry(
     string AssemblyName,
     string ViewTypeName,
     string DisplayTitle,
-    string? SettingsJson = null
+    string? SettingsJson = null,
+    double? ContentScale = null
 );
 
 public class StackedWidgetSettingItem
@@ -24,16 +25,14 @@ public class StackedWidgetSettingItem
 /// Stored configuration for the Widget Stack component.
 /// </summary>
 public record WidgetStackModel(
-    List<StackedWidgetEntry> Entries,
+    List<StackedWidgetEntry>? Entries = null,
     int SelectedIndex = 0,
     bool AllowWheelSwitch = true
 )
 {
-    public WidgetStackModel() : this(GetDefaultEntries(), 0, true) {}
+    public List<StackedWidgetEntry> Entries { get; init; } = Entries ?? [];
 
-    public static List<StackedWidgetEntry> GetDefaultEntries() =>
-    [
-        new StackedWidgetEntry("Clock", "AnalogI", "时钟"),
-        new StackedWidgetEntry("Notes", "Note", "便签")
-    ];
+    public WidgetStackModel() : this([], 0, true) {}
+
+    public static List<StackedWidgetEntry> GetDefaultEntries() => [];
 }

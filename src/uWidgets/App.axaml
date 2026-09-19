@@ -76,7 +76,7 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#F5F5F7" Opacity="0.80" />
                     <SolidColorBrush x:Key="SettingsBackground" Color="#F5F5F7" Opacity="1.0" />
                     <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#FFFFFF" Opacity="0.88" />
                     <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#E5E5EA" Opacity="0.8" />
@@ -84,7 +84,7 @@
                     <SolidColorBrush x:Key="TrayMenuSurfaceBorder" Color="#E5E5EA" Opacity="1.0" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="1.0" />
+                    <SolidColorBrush x:Key="SettingsWindowBackground" Color="#1C1C1E" Opacity="0.80" />
                     <SolidColorBrush x:Key="SettingsBackground" Color="#1C1C1E" Opacity="1.0" />
                     <SolidColorBrush x:Key="MenuSurfaceBackground" Color="#1C1C1E" Opacity="0.88" />
                     <SolidColorBrush x:Key="MenuSurfaceBorder" Color="#38383A" Opacity="0.8" />

@@ -6,9 +6,57 @@
         ShowInTaskbar="False"
         Topmost="True"
         CanResize="False"
-        WindowStartupLocation="Manual">
+        WindowStartupLocation="Manual"
+        RequestedThemeVariant="Light">
 
-    <Panel>
+    <Window.Styles>
+        <!--
+          The editor is an overlay on the desktop, not a normal app window: its surfaces are
+          hard-coded (dark scrim + light sheet), so every control inside the parameters panel
+          declares its own colors. Relying on the app/OS theme variant here produced dark text
+          on dark chips — unreadable.
+        -->
+        <Style Selector="Button.panelButton">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="#1C1C1E" />
+            <Setter Property="BorderBrush" Value="#33000000" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.panelButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#ECECF1" />
+            <Setter Property="BorderBrush" Value="#33000000" />
+            <Setter Property="TextElement.Foreground" Value="#1C1C1E" />
+        </Style>
+        <Style Selector="Button.panelButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#DCDCE3" />
+            <Setter Property="BorderBrush" Value="#33000000" />
+            <Setter Property="TextElement.Foreground" Value="#1C1C1E" />
+        </Style>
+        <!-- Primary action (Save & close): bright accent so it can never be mistaken for a blank chip. -->
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="#007AFF" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#26000000" />
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1A85FF" />
+            <Setter Property="BorderBrush" Value="#26000000" />
+            <Setter Property="TextElement.Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#0069DB" />
+            <Setter Property="BorderBrush" Value="#26000000" />
+            <Setter Property="TextElement.Foreground" Value="#FFFFFF" />
+        </Style>
+    </Window.Styles>
+
+    <Panel PointerPressed="OnRootPressed">
         <!-- Full-screen dim overlay -->
         <Border Background="#66000000" />
 
@@ -27,35 +75,40 @@
             </Border>
         </Canvas>
 
-        <!-- Parameters panel (right-click on the grid to show it) -->
+        <!-- Parameters panel: shown from the start (right-click anywhere re-opens it) -->
         <Border Name="ParamPanel"
-                IsVisible="False"
+                IsVisible="True"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Center"
-                Background="#EE202028"
-                CornerRadius="8"
+                Background="#F7FFFFFF"
+                BorderBrush="#33000000"
+                BorderThickness="1"
+                CornerRadius="10"
                 Padding="16"
                 Margin="16"
-                BoxShadow="0 4 16 0 #80000000">
+                BoxShadow="0 8 24 0 #59000000">
             <StackPanel Spacing="6" Width="240">
-                <TextBlock Name="ParamTitle" FontWeight="Bold" Foreground="White" FontSize="14" />
-                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="列数 (Columns)" />
-                <NumericUpDown Name="ColumnsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
-                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="行数 (Rows)" />
-                <NumericUpDown Name="RowsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" />
-                <TextBlock Foreground="#A0FFFFFF" FontSize="12" Text="格子边长 (%)" />
-                <NumericUpDown Name="CellInput" Minimum="0.01" Increment="0.1" FormatString="0.##" />
-                <Separator Margin="0 6" />
-                <Button Name="CenterButton" Click="OnCenterClicked" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Button Name="NudgeLeftButton" Click="OnNudgeLeftClicked" />
-                    <Button Name="NudgeRightButton" Click="OnNudgeRightClicked" />
-                    <Button Name="NudgeUpButton" Click="OnNudgeUpClicked" />
-                    <Button Name="NudgeDownButton" Click="OnNudgeDownClicked" />
-                </StackPanel>
-                <Separator Margin="0 6" />
-                <Button Name="SaveButton" Click="OnSaveClicked" />
-                <Button Click="OnCloseClicked" />
+                <TextBlock Name="ParamTitle" FontWeight="Bold" Foreground="#1C1C1E" FontSize="14" />
+                <TextBlock Foreground="#8A000000" FontSize="12" Text="列数 (Columns)" />
+                <NumericUpDown Name="ColumnsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                               Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
+                <TextBlock Foreground="#8A000000" FontSize="12" Text="行数 (Rows)" />
+                <NumericUpDown Name="RowsInput" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer"
+                               Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
+                <TextBlock Foreground="#8A000000" FontSize="12" Text="格子边长 (%)" />
+                <NumericUpDown Name="CellInput" Minimum="0.01" Increment="0.1" FormatString="0.##"
+                               Background="#FFFFFF" BorderBrush="#33000000" BorderThickness="1" Foreground="#1C1C1E" />
+                <Separator Margin="0 6" Height="1" Background="#26000000" />
+                <Button Name="CenterButton" Classes="panelButton" Click="OnCenterClicked" HorizontalAlignment="Stretch" />
+                <Grid ColumnDefinitions="*,*,*,*">
+                    <Button Name="NudgeLeftButton" Classes="panelButton" Grid.Column="0" Margin="0 0 3 0" Click="OnNudgeLeftClicked" />
+                    <Button Name="NudgeRightButton" Classes="panelButton" Grid.Column="1" Margin="3 0 3 0" Click="OnNudgeRightClicked" />
+                    <Button Name="NudgeUpButton" Classes="panelButton" Grid.Column="2" Margin="3 0 3 0" Click="OnNudgeUpClicked" />
+                    <Button Name="NudgeDownButton" Classes="panelButton" Grid.Column="3" Margin="3 0 0 0" Click="OnNudgeDownClicked" />
+                </Grid>
+                <Separator Margin="0 6" Height="1" Background="#26000000" />
+                <Button Name="SaveButton" Classes="panelButton primary" Click="OnSaveClicked" HorizontalAlignment="Stretch" />
+                <Button Name="CloseButton" Classes="panelButton" Click="OnCloseClicked" HorizontalAlignment="Stretch" />
             </StackPanel>
         </Border>
 
@@ -68,15 +121,19 @@
                 IsHitTestVisible="False">
             <StackPanel Orientation="Horizontal" Spacing="14">
                 <TextBlock Name="HintText" Foreground="White" FontSize="12" VerticalAlignment="Center" />
-                <TextBlock Name="InfoText" Foreground="#80FFFFFF" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Name="InfoText" Foreground="#B0FFFFFF" FontSize="12" VerticalAlignment="Center" />
             </StackPanel>
         </Border>
 
         <!-- Close button -->
         <Button HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="8" Padding="8"
-                Background="#66101018"
+                Margin="8" Padding="10 6"
+                Background="#CC101018"
+                Foreground="#FFFFFFFF"
+                BorderBrush="#40FFFFFF"
+                BorderThickness="1"
                 CornerRadius="8"
+                FontWeight="SemiBold"
                 Content="✕"
                 Click="OnCloseClicked" />
     </Panel>

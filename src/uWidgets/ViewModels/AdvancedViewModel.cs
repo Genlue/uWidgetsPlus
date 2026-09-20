@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia.Threading;
 using ReactiveUI;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models;
@@ -39,6 +40,12 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     private readonly ProfileService? profileService;
     private ScreenGridTargetOption? selectedScreenTarget;
 
+    /// <summary>True while a coalesced <see cref="RaiseAllProperties"/> burst is queued.</summary>
+    private bool raiseAllScheduled;
+
+    /// <summary>True while a burst is being raised (guards against re-entrant raise).</summary>
+    private bool raisingAllProperties;
+
     public AdvancedViewModel(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, ProfileService? profileService = null)
     {
         this.appSettingsProvider = appSettingsProvider;
@@ -72,7 +79,53 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     private void OnLayoutDataChanged(object? sender, ScreensLayout? oldData, ScreensLayout newData) => RaiseAllProperties();
     private void OnAppSettingsDataChanged(object? sender, AppSettings? oldData, AppSettings newData) => RaiseAllProperties();
 
+    /// <summary>
+    /// Coalesced, reentrancy-safe property-change burst.
+    /// <para>
+    /// Every notification source below (settings save, layout save, screen change, profile
+    /// switch) can fire <i>inside</i> a two-way binding write: editing a grid field calls
+    /// <see cref="SaveGrid"/>, which saves the settings, which makes every live widget
+    /// re-save its layout, which raises the layout's <c>DataChanged</c> here — all before
+    /// the binding that started it has finished. Raising <see cref="ScreenTargets"/> at
+    /// that point replaces a <c>ComboBox</c>'s <c>ItemsSource</c> while Avalonia is still
+    /// updating that control's selection, and <c>SelectionModel.SetSource</c> throws
+    /// <c>InvalidOperationException: Cannot change source while update is in progress</c>.
+    /// </para>
+    /// <para>
+    /// Deferring the burst to the dispatcher queue keeps the observable behaviour (the page
+    /// still refreshes on every change) while guaranteeing it never runs in the middle of a
+    /// binding/layout pass; the flag also collapses the N-per-edit bursts coming from the
+    /// widgets into a single one.
+    /// </para>
+    /// </summary>
     private void RaiseAllProperties()
+    {
+        if (raiseAllScheduled) return;
+        raiseAllScheduled = true;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            raiseAllScheduled = false;
+            RaiseAllPropertiesCore();
+        }, DispatcherPriority.Background);
+    }
+
+    /// <summary>Guards against a synchronous re-entry coming from a binding write-back.</summary>
+    private void RaiseAllPropertiesCore()
+    {
+        if (raisingAllProperties) return;
+        raisingAllProperties = true;
+        try
+        {
+            RaiseAllPropertiesUnsafe();
+        }
+        finally
+        {
+            raisingAllProperties = false;
+        }
+    }
+
+    private void RaiseAllPropertiesUnsafe()
     {
         this.RaisePropertyChanged(nameof(GridMode));
         this.RaisePropertyChanged(nameof(IsManualGrid));

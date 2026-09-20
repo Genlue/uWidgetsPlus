@@ -520,7 +520,7 @@
         <value>在桌面上拖动网格可移动位置，拖动右下角手柄可调整格子大小</value>
     </data>
     <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
-        <value>拖动网格移动位置 · 右键编辑行列与格子大小 · Esc 关闭</value>
+        <value>拖动网格移动位置 · 在右侧面板编辑行列与格子大小 · Esc 关闭</value>
     </data>
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · 格子 {2} px</value>

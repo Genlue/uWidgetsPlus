@@ -42,6 +42,9 @@ public partial class GridEditor : Window
     private double startLeft;
     private double startTop;
 
+    /// <summary>True while the parameter inputs are being populated from the model.</summary>
+    private bool syncingInputs;
+
     public GridEditor(IAppSettingsProvider appSettingsProvider, ILayoutProvider layoutProvider,
         DisplayMonitorService displayMonitor, string? screenId = null, Screen? targetScreen = null)
     {
@@ -61,6 +64,8 @@ public partial class GridEditor : Window
 
         HintText.Text = Locale.Settings_Advanced_GridEditorHint;
         SaveButton.Content = Locale.Settings_Advanced_GridEditorSave;
+        // The dismiss button used to be left without content, so it rendered as a blank chip.
+        CloseButton.Content = Locale.Settings_Appearance_Glass_Align_Close;
         CenterButton.Content = Locale.Settings_Advanced_GridEditorCenterX;
         NudgeLeftButton.Content = Locale.Settings_Advanced_GridEditorNudgeLeft;
         NudgeRightButton.Content = Locale.Settings_Advanced_GridEditorNudgeRight;
@@ -74,8 +79,8 @@ public partial class GridEditor : Window
         if (screen != null)
         {
             Position = new PixelPoint(screen.Bounds.X, screen.Bounds.Y);
-            Width = screen.Bounds.Width / Scaling;
-            Height = screen.Bounds.Height / Scaling;
+            Width = screen.Bounds.Width / ScreenScaling;
+            Height = screen.Bounds.Height / ScreenScaling;
         }
         else
         {
@@ -100,8 +105,27 @@ public partial class GridEditor : Window
         }
     }
 
-    /// <summary>DPI scale of the target screen (window and canvas work in DIPs).</summary>
-    private double Scaling => ResolveTargetScreen()?.Scaling ?? 1.0;
+    /// <summary>
+    /// DPI scale used to convert the target screen's physical geometry into this window's DIPs.
+    /// <para>
+    /// The window's own <see cref="Visual.RenderScaling"/> is authoritative once the platform
+    /// window exists; the screen model can disagree with it (remote-desktop sessions, mixed-DPI
+    /// multi-monitor setups, a monitor list captured before a resolution change). A DIP width
+    /// larger than the physical screen is exactly what pushes the right-aligned parameter panel
+    /// and the ✕ button outside the visible area, so this prefers the window value.
+    /// </para>
+    /// </summary>
+    private double Scaling => RenderScaling > 0 ? RenderScaling : ScreenScaling;
+
+    /// <summary>DPI scale reported by the target screen model (used before the window is shown).</summary>
+    private double ScreenScaling
+    {
+        get
+        {
+            var scaling = ResolveTargetScreen()?.Scaling ?? 1.0;
+            return scaling > 0 ? scaling : 1.0;
+        }
+    }
 
     /// <summary>The attached screen this editor covers (targetScreen → per-screen config → primary fallback).</summary>
     private AttachedScreen? GetTargetScreen()
@@ -160,12 +184,16 @@ public partial class GridEditor : Window
     {
         ApplyScreenPlacement();
         ApplyGrid();
-        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyScreenPlacement, Avalonia.Threading.DispatcherPriority.Loaded);
+        SyncParamInputs();
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => { ApplyScreenPlacement(); SyncParamInputs(); },
+            Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>
     /// Force native physical window position and dimensions via Win32 SetWindowPosition
     /// to guarantee full coverage of the target display without DPI mismatch or clamping.
+    /// The DIP size is then derived from the window's own render scaling so the laid-out
+    /// content matches the forced physical rectangle (see <see cref="Scaling"/>).
     /// </summary>
     private void ApplyScreenPlacement()
     {
@@ -173,13 +201,12 @@ public partial class GridEditor : Window
         if (screen == null) return;
 
         var bounds = screen.Bounds;
-        var scaling = screen.Scaling;
-
-        Position = new PixelPoint(bounds.X, bounds.Y);
-        Width = bounds.Width / scaling;
-        Height = bounds.Height / scaling;
 
         InteropService.SetWindowPosition(this, bounds.X, bounds.Y, bounds.Width, bounds.Height, topmost: true);
+
+        Width = bounds.Width / Scaling;
+        Height = bounds.Height / Scaling;
+        Position = new PixelPoint(bounds.X, bounds.Y);
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -247,19 +274,50 @@ public partial class GridEditor : Window
 
     // ---------- Parameters panel ----------
 
+    /// <summary>
+    /// Right-click anywhere (grid or surrounding dim area) brings the parameters panel back
+    /// if it was hidden. The panel is visible from the start, so the position buttons and
+    /// "Save &amp; close" are always reachable — right-clicking the grid used to be the only way
+    /// to reveal them, which read as "the buttons disappeared".
+    /// </summary>
+    private void OnRootPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
+        OpenParamPanel();
+        e.Handled = true;
+    }
+
     private void OpenParamPanel()
     {
-        var grid = CurrentGrid;
         ParamPanel.IsVisible = true;
-        ColumnsInput.Value = grid.Columns;
-        RowsInput.Value = grid.Rows;
-        CellInput.Value = (decimal) grid.CellPercent;
+        SyncParamInputs();
+    }
+
+    /// <summary>
+    /// Populate the panel's inputs from the current grid without treating the assignment as a
+    /// user edit (otherwise opening the panel would immediately re-save the grid).
+    /// </summary>
+    private void SyncParamInputs()
+    {
+        var grid = CurrentGrid;
+        syncingInputs = true;
+        try
+        {
+            ColumnsInput.Value = grid.Columns;
+            RowsInput.Value = grid.Rows;
+            CellInput.Value = (decimal) grid.CellPercent;
+        }
+        finally
+        {
+            syncingInputs = false;
+        }
+
         ParamTitle.Text = Locale.Settings_Advanced_GridEdit;
     }
 
     private void OnCellParameterChanged(object? sender, NumericUpDownValueChangedEventArgs e)
     {
-        if (!ParamPanel.IsVisible) return;
+        if (syncingInputs) return;
         if (ColumnsInput.Value is not { } columns || RowsInput.Value is not { } rows || CellInput.Value is not { } cell)
             return;
 

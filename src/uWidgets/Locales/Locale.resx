@@ -421,7 +421,7 @@
         <value>Drag the grid on the desktop to move it, drag the corner handle to resize cells</value>
     </data>
     <data name="Settings_Advanced_GridEditorHint" xml:space="preserve">
-        <value>Drag the grid to move it · right-click to edit rows/columns/cell size · Esc to close</value>
+        <value>Drag the grid to move it · edit rows / columns / cell size in the panel · Esc to close</value>
     </data>
     <data name="Settings_Advanced_GridEditorInfo" xml:space="preserve">
         <value>{0} × {1} · cell {2} px</value>

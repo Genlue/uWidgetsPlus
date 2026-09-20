@@ -23,7 +23,7 @@
                 <Rectangle Width="120" Height="90" RadiusX="4" RadiusY="4" IsVisible="{Binding DimWallpaper}"
                            Fill="#40000000"/>
                 <Border Canvas.Left="70" Canvas.Top="40" Width="45" Height="45" 
-                        IsVisible="{Binding !IsLiquidGlass}"
+                        IsVisible="{Binding !IsRenderedGlass}"
                         CornerRadius="{Binding WidgetCornerRadius}"
                         Background="{Binding WidgetBackground}"
                         BorderThickness="{Binding PreviewBorderThickness}"
@@ -31,7 +31,7 @@
                         BoxShadow="{Binding WidgetShadow}" />
                 <controls:LiquidGlassSurface Canvas.Left="70" Canvas.Top="40" Width="45" Height="45"
                                             Preview="True" Material="{Binding GlassMaterial}"
-                                            CornerRadius="10" IsVisible="{Binding IsLiquidGlass}" />
+                                            CornerRadius="10" IsVisible="{Binding IsRenderedGlass}" />
                 <TextBlock Canvas.Left="70" Canvas.Top="48" Width="45"
                            TextAlignment="Center" VerticalAlignment="Center"
                            FontSize="28" LineHeight="24" Text="Aa"

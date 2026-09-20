@@ -120,6 +120,31 @@ public class HollowTodayMark : Control
             : new CombinedGeometry(GeometryCombineMode.Exclude, disc, glyph);
 
         context.DrawGeometry(brush, null, marker);
+
+        // A hairline along the edge of the hole, in the colour that contrasts the disc: the
+        // numeral stays transparent (the surface behind shows through it) but can no longer
+        // disappear when that surface happens to match the disc colour — which is what a white
+        // marker disc over a bright wallpaper used to look like.
+        if (glyph != null)
+        {
+            var rim = BuildHoleRimBrush(brush);
+            context.DrawGeometry(null, new Pen(rim, Math.Max(1.0, radius * 0.11)), glyph);
+        }
+    }
+
+    /// <summary>
+    /// The hairline colour for the punched-out numeral: the opposite of the disc's brightness,
+    /// at partial alpha, so it reads as the edge of a hole rather than as an outline.
+    /// </summary>
+    private static IBrush BuildHoleRimBrush(IBrush discBrush)
+    {
+        if (discBrush is not ISolidColorBrush solid) return new SolidColorBrush(Colors.White, 0.35);
+
+        var color = solid.Color;
+        var luminance = (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) / 255.0;
+        return luminance > 0.55
+            ? new SolidColorBrush(Colors.Black, 0.32)
+            : new SolidColorBrush(Colors.White, 0.38);
     }
 
     /// <summary>

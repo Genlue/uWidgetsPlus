@@ -23,6 +23,15 @@ namespace uWidgets.Locales {
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Locale {
         public static string Settings_Appearance_Surface_LiquidGlass => ResourceManager.GetString("Settings_Appearance_Surface_LiquidGlass", resourceCulture);
+        public static string Settings_Appearance_Surface_SoftGlow => ResourceManager.GetString("Settings_Appearance_Surface_SoftGlow", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_Title => ResourceManager.GetString("Settings_Appearance_SoftGlow_Title", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_Description => ResourceManager.GetString("Settings_Appearance_SoftGlow_Description", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_Glow => ResourceManager.GetString("Settings_Appearance_SoftGlow_Glow", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_GlowHint => ResourceManager.GetString("Settings_Appearance_SoftGlow_GlowHint", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_Spectrum => ResourceManager.GetString("Settings_Appearance_SoftGlow_Spectrum", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_SpectrumHint => ResourceManager.GetString("Settings_Appearance_SoftGlow_SpectrumHint", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_DyeSpread => ResourceManager.GetString("Settings_Appearance_SoftGlow_DyeSpread", resourceCulture);
+        public static string Settings_Appearance_SoftGlow_DyeSpreadHint => ResourceManager.GetString("Settings_Appearance_SoftGlow_DyeSpreadHint", resourceCulture);
         public static string Settings_Appearance_Glass_Title => ResourceManager.GetString("Settings_Appearance_Glass_Title", resourceCulture);
         public static string Settings_Appearance_Glass_Description => ResourceManager.GetString("Settings_Appearance_Glass_Description", resourceCulture);
         public static string Settings_Appearance_Glass_Blur => ResourceManager.GetString("Settings_Appearance_Glass_Blur", resourceCulture);

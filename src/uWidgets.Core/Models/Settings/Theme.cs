@@ -88,6 +88,9 @@ public record Theme(
     /// <summary>Default monochrome color source (强调色, the historic look).</summary>
     public const MonochromeStyle DefaultMonochromeVariant = MonochromeStyle.Accent;
 
+    /// <summary>Default 柔光玻璃 coating opacity (a touch lighter than 液态玻璃, whose glow adds its own light).</summary>
+    public const double DefaultSoftGlowOpacity = 0.14;
+
     /// <summary>
     /// The effective surface material. Falls back to deriving it from
     /// <see cref="OpacityLevel"/> when <see cref="Surface"/> is not set
@@ -98,12 +101,25 @@ public record Theme(
 
     /// <summary>
     /// True for surfaces that use a translucent, blur-capable backdrop
-    /// (frosted glass and its outlined variant); false for <see cref="SurfaceStyle.Solid"/> and <see cref="SurfaceStyle.Colorful"/>.
+    /// (frosted glass, its outlined variant, 液态玻璃 and 柔光玻璃); false for
+    /// <see cref="SurfaceStyle.Solid"/> and <see cref="SurfaceStyle.Colorful"/>.
     /// </summary>
-    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass;
+    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow;
 
     /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
+
+    /// <summary>Static wallpaper material with the soft, luminous recipe (see <see cref="SurfaceStyle.SoftGlow"/>).</summary>
+    public bool IsSoftGlow => EffectiveSurface == SurfaceStyle.SoftGlow;
+
+    /// <summary>
+    /// True for the two materials that are drawn by the app from a desktop snapshot
+    /// (<see cref="SurfaceStyle.LiquidGlass"/> and <see cref="SurfaceStyle.SoftGlow"/>):
+    /// they share <see cref="LiquidGlassSettings"/> and the whole render pipeline, and
+    /// only differ by the recipe the renderer picks. Widgets use this to know that the
+    /// card itself must stay transparent so the rendered material shows through.
+    /// </summary>
+    public bool UsesRenderedGlass => EffectiveSurface is SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow;
 
     /// <summary>Only frosted glass (毛玻璃) uses the native, fixed-radius acrylic backdrop.</summary>
     public bool UsesNativeBlur => EffectiveSurface == SurfaceStyle.Acrylic;

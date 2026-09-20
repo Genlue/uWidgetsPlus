@@ -101,6 +101,18 @@ if ($Msi) {
     $wxsContent = Get-Content $wxsPath -Raw
     $verMatch = [regex]::Match($wxsContent, 'Version="([0-9\.]+)"')
     $wxsVer = if ($verMatch.Success) { $verMatch.Groups[1].Value } else { "1.8.1" }
+
+    # Keep the installer's version in step with the app. The app version lives in
+    # src\uWidgets\AssemblyInfo.cs, so reading it here means a release can never ship an MSI
+    # that claims the previous version (which is exactly what happened with 1.9.3).
+    $assemblyInfo = Get-Content (Join-Path $root "src\uWidgets\AssemblyInfo.cs") -Raw
+    $appVerMatch = [regex]::Match($assemblyInfo, 'AssemblyVersion\("([0-9\.]+)"\)')
+    if ($appVerMatch.Success -and $appVerMatch.Groups[1].Value -ne $wxsVer) {
+        $appVer = $appVerMatch.Groups[1].Value
+        Set-Content -Path $wxsPath -Value ($wxsContent -replace 'Version="[0-9\.]+"', "Version=`"$appVer`"") -NoNewline
+        Write-Host "==> Synced installer version $wxsVer -> $appVer" -ForegroundColor Yellow
+        $wxsVer = $appVer
+    }
     $msiDir = Join-Path $root "dist\installer"
     if (-not (Test-Path $msiDir)) { New-Item -ItemType Directory -Path $msiDir -Force | Out-Null }
     $msiOut = Join-Path $msiDir "uWidgetsPlus-$wxsVer-$Runtime.msi"

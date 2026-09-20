@@ -144,6 +144,9 @@
     <data name="Clock_ThemeMode_LiquidGlass" xml:space="preserve">
         <value>Liquid Glass</value>
     </data>
+    <data name="Clock_ThemeMode_SoftGlow" xml:space="preserve">
+        <value>Soft Glow Glass</value>
+    </data>
     <data name="Clock_ThemeMode_Solid" xml:space="preserve">
         <value>Solid Fill</value>
     </data>

@@ -203,7 +203,7 @@ public partial class WeatherPopupWindow : Window
 
         bool isDark = ActualThemeVariant == ThemeVariant.Dark || (theme.DarkMode ?? true);
 
-        if (theme.IsLiquidGlass)
+        if (theme.UsesRenderedGlass)
         {
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = true;

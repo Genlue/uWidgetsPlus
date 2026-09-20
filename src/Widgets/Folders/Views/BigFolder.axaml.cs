@@ -492,7 +492,7 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
             }
 
             var appSettings = new uWidgets.Core.Services.AppSettingsProvider().Get();
-            if (appSettings.Theme.IsLiquidGlass)
+            if (appSettings.Theme.UsesRenderedGlass)
             {
                 var (screenCenter, topLevel) = GetScreenCenterAndTopLevel();
                 var window = VisualRoot as Window ?? topLevel as Window;

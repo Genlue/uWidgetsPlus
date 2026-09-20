@@ -364,7 +364,14 @@ public partial class Widget : Window, INotifyPropertyChanged
     }
 
     public Theme GlassMaterial => appSettingsProvider.Get().Theme;
-    public bool IsLiquidGlass => !isFrameless && GlassMaterial.IsLiquidGlass;
+
+    /// <summary>
+    /// True when the card is drawn by the app itself from a desktop snapshot
+    /// (液态玻璃 / 柔光玻璃), so the <see cref="Controls.LiquidGlassSurface"/> layer is shown
+    /// and the plain card background must stay transparent. Frameless widgets render
+    /// their own glyph material instead.
+    /// </summary>
+    public bool ShowsGlassMaterial => !isFrameless && GlassMaterial.UsesRenderedGlass;
 
     /// <summary>
     /// Widgets that provide their own edge-to-edge background or tiles (e.g. Note, MapView),
@@ -1083,7 +1090,7 @@ public partial class Widget : Window, INotifyPropertyChanged
             if (oldData?.Theme?.UsesNativeBlur != newData.Theme.UsesNativeBlur)
                 ApplyTransparencyHint();
             Notify(nameof(GlassMaterial));
-            Notify(nameof(IsLiquidGlass));
+            Notify(nameof(ShowsGlassMaterial));
             Notify(nameof(WidgetMargin));
             Notify(nameof(WidgetCardBackground));
             Notify(nameof(Radius));

@@ -198,7 +198,7 @@ public class MapViewModel : INotifyPropertyChanged
     }
 
     public bool IsAcrylicTheme => Surface is SurfaceStyle.Acrylic or SurfaceStyle.OutlinedAcrylic;
-    public bool IsLiquidGlassTheme => Surface == SurfaceStyle.LiquidGlass;
+    public bool IsLiquidGlassTheme => Surface is SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow;
     public bool IsSolidTheme => Surface == SurfaceStyle.Solid;
     public bool IsVibrantTheme => Surface == SurfaceStyle.Colorful;
 

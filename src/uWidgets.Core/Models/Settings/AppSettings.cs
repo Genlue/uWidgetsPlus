@@ -58,6 +58,12 @@ public record AppSettings(
                 Surface: SurfaceStyle.LiquidGlass, MonochromeVariant: MonochromeStyle.BlackWhite,
                 AutoTheme: Theme.AutoTheme, LiquidGlass: new LiquidGlassSettings()),
 
+            SurfaceStyle.SoftGlow => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: Theme.DefaultSoftGlowOpacity, Monochrome: true,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.SoftGlow, MonochromeVariant: MonochromeStyle.BlackWhite,
+                AutoTheme: Theme.AutoTheme, LiquidGlass: LiquidGlassSettings.SoftGlowPreset),
+
             SurfaceStyle.Solid => new Theme(
                 DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
                 UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,

@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
     <ProjectReference Include="..\..\src\uWidgets\uWidgets.csproj" />
     <ProjectReference Include="..\..\src\Widgets\Calendar\Calendar.csproj" />
+    <ProjectReference Include="..\..\src\Widgets\Fixed\Fixed.csproj" />
   </ItemGroup>
 
   <ItemGroup>

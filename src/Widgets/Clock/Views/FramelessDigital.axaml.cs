@@ -294,16 +294,16 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
     }
 
+    /// <summary>
+    /// The clock's material, resolved from its own <c>ThemeMode</c> against the global theme
+    /// (see <see cref="FramelessThemeResolver"/>): 0 follows the global theme — including the
+    /// rendered-glass materials (液态玻璃 / 柔光玻璃), which is what makes the numerals lens
+    /// rather than frost — while 1/2/3 force acrylic / liquid glass / solid.
+    /// </summary>
     private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
     {
-        var globalTheme = appSettingsProvider?.Get().Theme;
-        return model.ThemeMode switch
-        {
-            1 => (true, false, false),  // Acrylic
-            2 => (false, true, false),  // Liquid Glass
-            3 => (false, false, true),  // Solid
-            _ => (globalTheme?.UsesNativeBlur ?? true, globalTheme?.IsLiquidGlass ?? false, !(globalTheme?.UsesNativeBlur ?? true) && !(globalTheme?.IsLiquidGlass ?? false))
-        };
+        var material = FramelessThemeResolver.Resolve(model.ThemeMode, appSettingsProvider?.Get().Theme);
+        return (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
     }
 
     private void UpdateTransparencyLevel()
@@ -456,7 +456,24 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         byte[] glyphMask = ExtractGlyphMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
 
         var effectiveTheme = theme ?? appSettingsProvider?.Get().Theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
-        var lg = (effectiveTheme.LiquidGlass ?? new LiquidGlassSettings()) with { EdgeTint = model.DyeIntensity };
+
+        // An explicit theme mode has to pick the *recipe*, not just the branch: the renderer
+        // decides between the crisp and the soft optics from the theme's surface, so mode 4
+        // (柔光玻璃) under a global 液态玻璃 must hand it a SoftGlow surface — and mode 2 the
+        // other way round. "Follow global" (0) already carries the right surface.
+        if (model.ThemeMode == 4 && !effectiveTheme.IsSoftGlow)
+            effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.SoftGlow };
+        else if (model.ThemeMode == 2 && effectiveTheme.IsSoftGlow)
+            effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.LiquidGlass };
+
+        // The widget's own 染色强度 is a legacy override of the theme's edge tint. On 柔光玻璃 the
+        // dye *is* the material — the bloomed colour along the rim — so a low widget value (the
+        // default is 10%) would leave the numerals looking like plain frosted glass while the
+        // desktop around them is 柔光玻璃. There the theme's tint is the floor; more is still
+        // allowed, less is not.
+        var themeTint = effectiveTheme.EffectiveLiquidGlass.EdgeTint;
+        var dyeTint = effectiveTheme.IsSoftGlow ? Math.Max(model.DyeIntensity, themeTint) : model.DyeIntensity;
+        var lg = (effectiveTheme.LiquidGlass ?? new LiquidGlassSettings()) with { EdgeTint = dyeTint };
         effectiveTheme = effectiveTheme with { LiquidGlass = lg };
 
         if (model.EnableOverlay)

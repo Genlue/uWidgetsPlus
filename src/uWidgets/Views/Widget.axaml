@@ -109,11 +109,11 @@
     </Window.Styles>
     
     <Grid>
-        <!-- Liquid glass surface (iOS 26 optics: refraction, highlight, vibrancy, wallpaper sampling) -->
+        <!-- Rendered glass surface (液态玻璃 / 柔光玻璃: refraction, glow, vibrancy, wallpaper sampling) -->
         <controls:LiquidGlassSurface Material="{Binding GlassMaterial, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                                      CornerRadius="{Binding Radius, RelativeSource={RelativeSource AncestorType=views:Widget}}"
                                      Margin="{Binding WidgetMargin, RelativeSource={RelativeSource AncestorType=views:Widget}}"
-                                     IsVisible="{Binding IsLiquidGlass, RelativeSource={RelativeSource AncestorType=views:Widget}}" />
+                                     IsVisible="{Binding ShowsGlassMaterial, RelativeSource={RelativeSource AncestorType=views:Widget}}" />
         <!-- Card (frosted glass, OS-level acrylic): fills the grid cell minus the
              configured margin, with the configured corner radius. The blur comes
              from the OS backdrop (AcrylicBlur hint set by Styles/Transparent.axaml),

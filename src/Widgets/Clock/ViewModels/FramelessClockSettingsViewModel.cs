@@ -96,6 +96,7 @@ public class FramelessClockSettingsViewModel : ReactiveObject
         new(0, Locale.Clock_ThemeMode_FollowGlobal),
         new(1, Locale.Clock_ThemeMode_Acrylic),
         new(2, Locale.Clock_ThemeMode_LiquidGlass),
+        new(4, Locale.Clock_ThemeMode_SoftGlow),
         new(3, Locale.Clock_ThemeMode_Solid),
     ];
 

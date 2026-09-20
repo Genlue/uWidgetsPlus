@@ -68,7 +68,7 @@ public partial class Forecast : UserControl
         try
         {
             var theme = new uWidgets.Core.Services.AppSettingsProvider().Get().Theme;
-            if (theme.IsLiquidGlass)
+            if (theme.UsesRenderedGlass)
             {
                 var (screenCenter, _) = GetScreenCenterAndTopLevel();
                 var window = VisualRoot as Window;

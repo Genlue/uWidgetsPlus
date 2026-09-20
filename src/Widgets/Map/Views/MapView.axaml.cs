@@ -201,10 +201,10 @@ public partial class MapView : UserControl, IWidgetSelfRefreshing
             ZoomOutBtn.Classes.Remove("DarkMode");
         }
 
-        // 4 种主题卡片与悬浮按钮样式类切换
+        // 4 种主题卡片与悬浮按钮样式类切换（柔光玻璃与液态玻璃同属自绘材质，共用透明卡片样式）
         string themeClass = surface switch
         {
-            SurfaceStyle.LiquidGlass => "LiquidGlass",
+            SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow => "LiquidGlass",
             SurfaceStyle.Solid => "Solid",
             SurfaceStyle.Colorful => "Vibrant",
             _ => "Acrylic"

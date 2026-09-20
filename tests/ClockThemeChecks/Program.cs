@@ -82,7 +82,21 @@ class Program
 
         var mode0 = Render(settings, layout, outputDir, "mode0-follow-global", ThemeMode: 0, rendered: true);
         var mode2 = Render(settings, layout, outputDir, "mode2-liquidglass", ThemeMode: 2, rendered: true);
+        var mode4 = Render(settings, layout, outputDir, "mode4-softglow", ThemeMode: 4, rendered: true);
         Render(settings, layout, outputDir, "mode1-acrylic", ThemeMode: 1, rendered: false);
+
+        if (mode2 != null && mode4 != null)
+        {
+            // The global theme here is 液态玻璃: mode 4 must still render the *soft* material,
+            // which only works if the explicit mode also switches the recipe's surface.
+            var explicitSoft = MeanAbsoluteDifference(mode2, mode4);
+            Console.WriteLine($"  mean |delta| explicit 柔光玻璃 vs 液态玻璃: {explicitSoft:F2}/255");
+            Check("ThemeMode=4 renders the soft material, not the global one", explicitSoft > 1.0);
+        }
+        else
+        {
+            Check("both explicit-glass renders produced pixels", false);
+        }
 
         if (mode0 != null && mode2 != null)
         {
@@ -237,6 +251,104 @@ class Program
         Console.WriteLine($"  after : {Describe(ResolveTheme(switched))}");
         Check("the same instance follows the switch to liquid glass", ResolveTheme(switched) == (false, true, false));
         Check("and it renders a liquid glass frame afterwards", WaitForFrame(switched));
+
+        // ---- Part 7: follow-global must also cover 柔光玻璃 (the soft material) ----
+        // "跟随全局主题" is a promise about the *global* material: a global 柔光玻璃 has to reach
+        // the numerals through the glyph pipeline, soft recipe included. Two things are pinned
+        // here: the resolver mapping (a pure function) and that the soft recipe actually changes
+        // the rendered numerals when the optics are otherwise identical.
+        Console.WriteLine();
+        Console.WriteLine("--- follow-global material resolution ---");
+
+        Theme ThemeFor(SurfaceStyle surface) => BuildSettings(surface).Theme;
+
+        Check("ThemeMode=0 + global 毛玻璃 resolves Acrylic",
+            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Acrylic)).IsAcrylic);
+        Check("ThemeMode=0 + global 纯色 resolves Solid",
+            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Solid)).IsSolid);
+        Check("ThemeMode=0 + global 多彩 falls back to a filled surface (not acrylic)",
+            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Colorful)).IsSolid
+            && !FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Colorful)).IsRenderedGlass);
+        var softGlobal = FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.SoftGlow));
+        Check("ThemeMode=0 + global 柔光玻璃 resolves the rendered (soft) glass, not acrylic",
+            softGlobal.IsRenderedGlass && softGlobal.IsSoftGlow && !softGlobal.IsAcrylic && !softGlobal.IsSolid);
+        var liquidGlobal = FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.LiquidGlass));
+        Check("ThemeMode=0 + global 液态玻璃 resolves rendered glass without the soft recipe",
+            liquidGlobal.IsRenderedGlass && !liquidGlobal.IsSoftGlow);
+        Check("an explicit ThemeMode overrides the global surface",
+            FramelessThemeResolver.Resolve(2, ThemeFor(SurfaceStyle.SoftGlow)).IsLiquidGlass
+            && !FramelessThemeResolver.Resolve(2, ThemeFor(SurfaceStyle.SoftGlow)).IsSoftGlow);
+        Check("ThemeMode=4 pins 柔光玻璃 regardless of the global theme",
+            FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsSoftGlow
+            && FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsRenderedGlass
+            && !FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsAcrylic
+            && !FramelessThemeResolver.Resolve(4, null).IsAcrylic);
+        var themeOptions = new Clock.ViewModels.FramelessClockSettingsViewModel(layout).ThemeModeOptions;
+        Check("the theme-mode list exposes 柔光玻璃 (value 4, once)",
+            themeOptions.Count(o => o.Value == 4) == 1 && themeOptions.First(o => o.Value == 4).DisplayName.Length > 0);
+        Check("the theme-mode list still offers follow-global / acrylic / liquid glass / solid",
+            new[] { 0, 1, 2, 3 }.All(value => themeOptions.Any(o => o.Value == value)));
+        Check("no global theme yet falls back to acrylic (unchanged historic behaviour)",
+            FramelessThemeResolver.Resolve(0, null).IsAcrylic);
+
+        var softSettings = new StubSettings(BuildSettings(SurfaceStyle.SoftGlow));
+        var softServices = new ServiceCollection();
+        softServices.AddSingleton<IAppSettingsProvider>(softSettings);
+        var softFollow = (FramelessDigital)ActivatorUtilities.CreateInstance(
+            softServices.BuildServiceProvider(), typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 0));
+        Check("follow-global on a running instance resolves 柔光玻璃 as rendered glass",
+            ResolveTheme(softFollow) == (false, true, false));
+
+        Console.WriteLine();
+        Console.WriteLine("--- soft glyph optics ---");
+        var softOptics = new LiquidGlassSettings(
+            Blur: 30, Refraction: 50, EdgeWidth: 24, Highlight: 46, Dispersion: 30,
+            LightAngle: 225, EdgeTint: 40, Glow: 70, Spectrum: 100);
+
+        var crispLens = GlyphLiquidGlassRenderer.ResolveLens(softOptics, probeScale, probeStrokeRadius, 1f, 1f, 0.0, soft: false);
+        var softLens = GlyphLiquidGlassRenderer.ResolveLens(softOptics, probeScale, probeStrokeRadius, 1f, 1f, 0.0, soft: true);
+        Console.WriteLine($"  lens: 液态 {crispLens.LensWidth:F2}px/{crispLens.LensShift:F2}px → 柔光 {softLens.LensWidth:F2}px/{softLens.LensShift:F2}px");
+        Check("柔光玻璃 widens the glyph lens band", softLens.LensWidth > crispLens.LensWidth);
+        Check("柔光玻璃 makes the glyph bend shallower", softLens.LensShift < crispLens.LensShift);
+
+        var noLens = GlyphLiquidGlassRenderer.ResolveLens(softOptics with { EdgeWidth = 0 }, probeScale, probeStrokeRadius, 1f, 1f, 0.0);
+        Console.WriteLine($"  EdgeWidth=0 → lens {noLens.LensWidth:F2}px, bend {noLens.LensShift:F2}px, dispersion {noLens.Dispersion:F2} kept");
+        Check("EdgeWidth=0 switches the glyph lens off without touching dispersion",
+            noLens.LensWidth == 0f && noLens.LensShift == 0f && noLens.Dispersion > 0f);
+
+        // Same optics, same mask, same wallpaper — only the material differs.
+        // Same optics, same mask — only the material differs. (Part 5 disposed its preview
+        // wallpaper, so build a fresh one: rendering through a disposed bitmap is an AV.)
+        using var softStripes = new SKBitmap(new SKImageInfo(pw, ph, SKColorType.Bgra8888, SKAlphaType.Opaque));
+        using (var canvas = new SKCanvas(softStripes))
+        {
+            canvas.Clear(new SKColor(16, 22, 36));
+            for (var i = 0; i < 24; i++)
+            {
+                using var paint = new SKPaint { Color = SKColor.FromHsl(i * 15f, 78f, 55f) };
+                canvas.DrawRect(new SKRect(i * 32, 0, i * 32 + 18, ph), paint);
+            }
+        }
+        softStripes.SetImmutable();
+        var softWallpaper = new WallpaperSnapshot(null, new SKColor(16, 22, 36), LiveCapture: true, CachedBitmap: softStripes);
+
+        var softTheme = glassTheme with { Surface = SurfaceStyle.SoftGlow, LiquidGlass = softOptics };
+        var crispTheme = glassTheme with { Surface = SurfaceStyle.LiquidGlass, LiquidGlass = softOptics };
+        var softFrame = previewFrame with { Theme = softTheme };
+        var crispFrame = previewFrame with { Theme = crispTheme };
+        var softPng = GlyphLiquidGlassRenderer.Render(softFrame, softWallpaper, previewMask, 0.0);
+        var crispPng = GlyphLiquidGlassRenderer.Render(crispFrame, softWallpaper, previewMask, 0.0);
+        // Compare decoded pixels: PNG bytes differ in length whenever the content differs at all,
+        // so a byte-wise comparison of the encoded images says nothing about the material.
+        var softPixels = DecodePixels(softPng);
+        var crispPixels = DecodePixels(crispPng);
+        var softDelta = softPixels != null && crispPixels != null
+            ? MeanAbsoluteDifference(softPixels, crispPixels)
+            : 0.0;
+        Console.WriteLine($"  numerals: mean |delta| 柔光 vs 液态 at identical optics: {softDelta:F2}/255");
+        Check("the soft recipe reaches the numerals (柔光玻璃 differs from 液态玻璃)", softDelta > 1.0);
+        File.WriteAllBytes(Path.Combine(outputDir, "glyph-soft-glow.png"), softPng);
+        softWallpaper.Dispose();
 
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");

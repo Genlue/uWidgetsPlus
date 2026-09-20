@@ -136,7 +136,6 @@ public partial class Month : UserControl
     private void UpdateTodayBrush()
     {
         var dark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
-        if (dark) HollowToday = false;
 
         if (monthCalendarModel.TodayColorMode != "Custom")
         {

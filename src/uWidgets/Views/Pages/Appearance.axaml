@@ -29,9 +29,9 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
         </ItemsControl>
-        <StackPanel IsVisible="{Binding ShowLiquidGlassSettings}" Spacing="3" Margin="0 16 0 6">
-            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0 0 0 6" Text="{x:Static locales:Locale.Settings_Appearance_Glass_Title}" />
-            <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0 0 0 10" Text="{x:Static locales:Locale.Settings_Appearance_Glass_Description}" />
+        <StackPanel IsVisible="{Binding ShowGlassOpticsSettings}" Spacing="3" Margin="0 16 0 6">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0 0 0 6" Text="{Binding GlassOpticsTitle}" />
+            <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0 0 0 10" Text="{Binding GlassOpticsDescription}" />
             <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
                               Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
                 <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
@@ -53,9 +53,9 @@
             <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}"
                               Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidthHint}">
                 <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
-                    <Slider Minimum="4" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                    <Slider Minimum="0" Maximum="80" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
                             Value="{Binding GlassEdgeWidth, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
-                    <NumericUpDown Grid.Column="1" Minimum="4" Maximum="80" Increment="1" FormatString="F0"
+                    <NumericUpDown Grid.Column="1" Minimum="0" Maximum="80" Increment="1" FormatString="F0"
                                    Value="{Binding GlassEdgeWidth}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeWidth}" />
                 </Grid>
             </controls:Setting>
@@ -95,6 +95,36 @@
                                    Value="{Binding GlassEdgeTint}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
                 </Grid>
             </controls:Setting>
+            <!-- 柔光玻璃 only: the two extra ingredients of the soft recipe. -->
+            <StackPanel IsVisible="{Binding ShowSoftGlowSettings}" Spacing="3">
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_GlowHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding GlassGlow, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding GlassGlow}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_SpectrumHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding GlassSpectrum, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding GlassSpectrum}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Spectrum}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpreadHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding GlassDyeSpread, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding GlassDyeSpread}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_SoftGlow_DyeSpread}" />
+                    </Grid>
+                </controls:Setting>
+            </StackPanel>
             <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
                 <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />
                 <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Reset}" Click="ResetLiquidGlass" Margin="0 0 8 6" />

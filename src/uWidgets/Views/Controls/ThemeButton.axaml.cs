@@ -21,16 +21,25 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     public Theme AppTheme { get; }
     public Bitmap Wallpaper => wallpaper;
     public bool DimWallpaper => AppTheme.DarkMode == true;
-    public bool IsLiquidGlass => AppTheme.IsLiquidGlass;
+    public bool IsRenderedGlass => AppTheme.UsesRenderedGlass;
     public bool IsColorful => AppTheme.IsColorful;
     public bool IsFrosted => AppTheme.UsesNativeBlur;
     public bool IsSelected => appSettingsProvider.Get().Theme.EffectiveSurface == AppTheme.EffectiveSurface
         || (IsFrosted && !IsColorful && appSettingsProvider.Get().Theme.EffectiveSurface == SurfaceStyle.OutlinedAcrylic);
     public IBrush SelectionBrush => IsSelected ? Brushes.DodgerBlue : Brushes.Transparent;
+    /// <summary>
+    /// Material handed to the preview <see cref="LiquidGlassSurface"/>: the preset's own
+    /// surface (液态玻璃 and 柔光玻璃 are two different recipes of the same pipeline) and —
+    /// unless this button is the active one — the preset's own optics, so the preview shows
+    /// what choosing the preset will actually look like rather than the current settings.
+    /// </summary>
     public Theme GlassMaterial => appSettingsProvider.Get().Theme with
     {
-        Surface = SurfaceStyle.LiquidGlass,
-        OpacityLevel = IsSelected ? appSettingsProvider.Get().Theme.OpacityLevel : AppTheme.OpacityLevel
+        Surface = AppTheme.UsesRenderedGlass ? AppTheme.EffectiveSurface : SurfaceStyle.LiquidGlass,
+        OpacityLevel = IsSelected ? appSettingsProvider.Get().Theme.OpacityLevel : AppTheme.OpacityLevel,
+        LiquidGlass = IsSelected
+            ? appSettingsProvider.Get().Theme.EffectiveLiquidGlass
+            : AppTheme.EffectiveLiquidGlass
     };
     public Brush WidgetBackground
     {
@@ -67,8 +76,9 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
         : new FontFamily(AppTheme.FontFamily);
 
-    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 多彩).</summary>
-    public string ThemeName => IsLiquidGlass ? Locale.Settings_Appearance_Surface_LiquidGlass
+    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 柔光玻璃 / 多彩).</summary>
+    public string ThemeName => IsRenderedGlass
+        ? (AppTheme.IsSoftGlow ? Locale.Settings_Appearance_Surface_SoftGlow : Locale.Settings_Appearance_Surface_LiquidGlass)
         : IsColorful ? Locale.Settings_Appearance_Surface_Colorful
         : AppTheme.IsGlass ? Locale.Settings_Appearance_Surface_Frosted
         : Locale.Settings_Appearance_Surface_Solid;
@@ -152,7 +162,7 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     private void RefreshPreview()
     {
         foreach (var property in new[] { nameof(IsSelected), nameof(SelectionBrush), nameof(GlassMaterial),
-            nameof(WidgetBackground), nameof(WidgetForeground), nameof(PreviewBorderBrush), nameof(PreviewBorderThickness) })
+            nameof(IsRenderedGlass), nameof(WidgetBackground), nameof(WidgetForeground), nameof(PreviewBorderBrush), nameof(PreviewBorderThickness) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
     

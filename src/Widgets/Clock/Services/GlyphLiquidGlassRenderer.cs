@@ -65,8 +65,16 @@ public static class GlyphLiquidGlassRenderer
         var estimatedRadius = Math.Max(avgStrokeDepth * 1.85f, maxStrokeDepth * 0.82f);
         var strokeRadius = Math.Clamp(estimatedRadius, 2.0f * scale, Math.Min(width, height) * 0.25f);
 
+        // 柔光玻璃: the numerals follow the soft recipe — a wide, shallow lens, a diffused rim
+        // instead of the crisp hairline, a single wide sheen instead of the water-bead glint,
+        // and the edge dye reads a *bloomed* colour field so a coloured patch spreads along the
+        // strokes like a light source instead of stopping where the patch ends.
+        var soft = frame.Theme.IsSoftGlow;
+        var glowStrength = soft ? (float)Math.Clamp(optics.Glow, 0, 100) / 100f : 0f;
+        var spectrumStrength = soft ? (float)Math.Clamp(optics.Spectrum, 0, 100) / 100f : 0f;
+
         // Refraction width calculation — see ResolveLens.
-        var lens = ResolveLens(optics, scale, strokeRadius, glyphEdgeScale, glyphShiftScale, refractionWidth);
+        var lens = ResolveLens(optics, scale, strokeRadius, glyphEdgeScale, glyphShiftScale, refractionWidth, soft);
         var lensWidth = lens.LensWidth;
         var lensShift = lens.LensShift;
         var dispStrength = lens.Dispersion;
@@ -149,6 +157,10 @@ public static class GlyphLiquidGlassRenderer
         var sourceW = source.Width;
         var sourceH = source.Height;
 
+        // 柔光玻璃: the dye reads a bloomed colour field (see LiquidGlassRenderer.AuraField), so a
+        // coloured patch spreads along the strokes instead of dyeing the pixels right above it.
+        var aura = soft ? LiquidGlassRenderer.AuraField.Build(sourcePixels, sourceW, sourceH, pad, width, height) : null;
+
         var pixels = scratch.Pixels;
         var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 8) };
 
@@ -193,14 +205,39 @@ public static class GlyphLiquidGlassRenderer
                     blue = SamplePixel(sourcePixels, sourceW, sourceH, sx - nx * split, sy - ny * split);
                 }
 
+                float channelRed = red.Red, channelGreen = middle.Green, channelBlue = blue.Blue;
+
+                // 柔光玻璃: the same seven-tap spectrum the card material uses (red → violet),
+                // blended in over the three-tap split by the Spectrum slider.
+                if (spectrumStrength > 0.01f && split > 0.002f)
+                {
+                    var stepX = nx * split;
+                    var stepY = ny * split;
+                    var t1 = SamplePixel(sourcePixels, sourceW, sourceH, sx + stepX, sy + stepY);
+                    var t2 = SamplePixel(sourcePixels, sourceW, sourceH, sx + stepX * (2f / 3f), sy + stepY * (2f / 3f));
+                    var t3 = SamplePixel(sourcePixels, sourceW, sourceH, sx + stepX / 3f, sy + stepY / 3f);
+                    var t5 = SamplePixel(sourcePixels, sourceW, sourceH, sx - stepX / 3f, sy - stepY / 3f);
+                    var t6 = SamplePixel(sourcePixels, sourceW, sourceH, sx - stepX * (2f / 3f), sy - stepY * (2f / 3f));
+                    var t7 = SamplePixel(sourcePixels, sourceW, sourceH, sx - stepX, sy - stepY);
+
+                    var specRed = (t1.Red + t2.Red + t3.Red) / 3.5f + t7.Red / 7f;
+                    var specGreen = t2.Green / 7f + (t3.Green + middle.Green + t5.Green) / 3.5f;
+                    var specBlue = (t5.Blue + t6.Blue + t7.Blue) / 3f;
+
+                    channelRed = Mix(channelRed, specRed, spectrumStrength);
+                    channelGreen = Mix(channelGreen, specGreen, spectrumStrength);
+                    channelBlue = Mix(channelBlue, specBlue, spectrumStrength);
+                }
+
                 var clarityRamp = (opacity >= 0.99) ? 0f : (1f - SmoothStep(0f, lensWidth * 1.5f, depth));
                 var localTint = tint * (1f - 0.28f * clarityRamp);
 
-                var luma = 0.2126f * red.Red + 0.7152f * middle.Green + 0.0722f * blue.Blue;
+                var luma = 0.2126f * channelRed + 0.7152f * channelGreen + 0.0722f * channelBlue;
                 var adapt = FrostMix(luma);
-                var r = Channel(red.Red, coating.Red, luma, adapt, localTint);
-                var g = Channel(middle.Green, coating.Green, luma, adapt, localTint);
-                var b = Channel(blue.Blue, coating.Blue, luma, adapt, localTint);
+                if (soft) adapt = MathF.Min(adapt * 1.15f, 0.11f);
+                var r = Channel(channelRed, coating.Red, luma, adapt, localTint);
+                var g = Channel(channelGreen, coating.Green, luma, adapt, localTint);
+                var b = Channel(channelBlue, coating.Blue, luma, adapt, localTint);
 
                 // --- Intelligent Edge Dyeing Algorithm for Numeral Meniscus ---
                 var u1 = dyeWidth > 0.001f ? Math.Clamp(depth / dyeWidth, 0f, 1f) : 1f;
@@ -212,17 +249,21 @@ public static class GlyphLiquidGlassRenderer
 
                 if (edgeTint > 0.001f && bezelAura > 0.001f)
                 {
+                    // 柔光玻璃 dyes from the bloomed field, everything else from the pixel itself.
+                    var dyeSource = aura?.Sample(sx - pad, sy - pad) ?? middle;
+
                     // Absolute chroma & physical luminance gating
-                    var maxC = Math.Max(middle.Red, Math.Max(middle.Green, middle.Blue));
-                    var minC = Math.Min(middle.Red, Math.Min(middle.Green, middle.Blue));
+                    var maxC = Math.Max(dyeSource.Red, Math.Max(dyeSource.Green, dyeSource.Blue));
+                    var minC = Math.Min(dyeSource.Red, Math.Min(dyeSource.Green, dyeSource.Blue));
                     var chroma = (float)(maxC - minC);
-                    var chromaWeight = SmoothStep(10f, 26f, chroma);
-                    var lumaGate = SmoothStep(8f, 26f, luma);
+                    var chromaWeight = SmoothStep(soft ? 8f : 10f, soft ? 22f : 26f, chroma);
+                    var dyeLuma = 0.2126f * dyeSource.Red + 0.7152f * dyeSource.Green + 0.0722f * dyeSource.Blue;
+                    var lumaGate = SmoothStep(8f, 26f, dyeLuma);
                     var colorWeight = chromaWeight * lumaGate;
 
                     if (colorWeight > 0.001f)
                     {
-                        middle.ToHsl(out var h, out var s, out var l);
+                        dyeSource.ToHsl(out var h, out var s, out var l);
                         var glowS = Math.Clamp(s * 2.5f + 30f * colorWeight, 30f, 100f);
                         var glowL = Math.Clamp(l * 0.20f + 48f, 44f, 62f);
                         var pureGlow = SKColor.FromHsl(h, glowS, glowL);
@@ -256,13 +297,19 @@ public static class GlyphLiquidGlassRenderer
                     }
                 }
 
-                // Meniscus highlight & crisp glass rim line
+                // Meniscus highlight & crisp glass rim line. 柔光玻璃 widens the stroke into a
+                // diffuse halo and softens the directional bias, so light wraps around the
+                // numeral edge instead of drawing a line on it.
                 var cosL = nx * lx + ny * ly;
                 var directional = MathF.Max(0f, cosL);
-                var rimEdge = 1f - SmoothStep(0f, rimLineWidth, depth);
+                var rimEdge = soft
+                    ? MathF.Pow(1f - SmoothStep(0f, rimLineWidth * 6f, depth), 2.0f)
+                    : 1f - SmoothStep(0f, rimLineWidth, depth);
 
                 // Directional specular glint: only the light-facing edge catches direct specular shine!
-                var rimLight = rimEdge * (0.12f + 0.88f * MathF.Pow(directional, 1.2f));
+                var rimLight = soft
+                    ? rimEdge * (0.20f + 0.55f * MathF.Pow(directional, 0.70f)) * 0.80f
+                    : rimEdge * (0.12f + 0.88f * MathF.Pow(directional, 1.2f));
 
                 // Direct rim dye: guarantees the outer stroke perimeter is visibly dyed, not white!
                 if (dyeWeight > 0.001f && edgeTint > 0.001f)
@@ -284,25 +331,50 @@ public static class GlyphLiquidGlassRenderer
                     var tnz = MathF.Sqrt(Math.Max(0.01f, 1f - tnx * tnx - tny * tny));
 
                     var ndotl = Math.Max(0f, tnx * l3x + tny * l3y + tnz * l3z);
-                    var specGlint = MathF.Pow(ndotl, 28);
-                    var specGlow = MathF.Pow(ndotl, 8);
-                    var fresnel = MathF.Pow(1f - tnz, 3) * 0.35f;
+                    var specGlint = MathF.Pow(ndotl, soft ? 3f : 28f);
+                    var specGlow = MathF.Pow(ndotl, soft ? 2f : 8f);
+                    var fresnel = MathF.Pow(1f - tnz, 3) * (soft ? 0.16f : 0.35f);
 
-                    var bevelLight = ((0.70f * specGlint + 0.30f * specGlow) * MathF.Max(0f, cosL) * 0.90f + fresnel * 0.25f) * (1f - t) * (1f - t);
+                    var bevelLight = ((0.70f * specGlint + 0.30f * specGlow) * MathF.Max(0f, cosL) * (soft ? 0.38f : 0.90f)
+                                      + fresnel * (soft ? 0.18f : 0.25f)) * (1f - t) * (1f - t);
                     var innerT = depth / spreadWidth;
                     var innerRoll = 0.5f * (1f + MathF.Cos(MathF.PI * innerT));
-                    var innerSheen = MathF.Pow(ndotl, 6) * MathF.Max(0f, cosL) * 0.08f * innerRoll;
+                    var innerSheen = MathF.Pow(ndotl, soft ? 4f : 6f) * MathF.Max(0f, cosL) * (soft ? 0.04f : 0.08f) * innerRoll;
 
                     meniscusLight = bevelLight + innerSheen;
                 }
 
-                var totalLight = highlightFactor * (rimLight * 1.10f + meniscusLight * 0.65f + ambientLuster);
+                // 柔光玻璃: the diffuse halo along the strokes — the numerals read as softly lit
+                // rather than outlined, and it survives EdgeWidth = 0 (no lens at all).
+                var softHalo = 0f;
+                if (glowStrength > 0.001f)
+                {
+                    var haloWidth = Math.Min(
+                        Math.Max(lensWidth * 1.6f, Math.Min(width, height) * 0.05f),
+                        Math.Min(width, height) * 0.18f);
+                    var halo = (haloWidth > 0f && depth < haloWidth)
+                        ? MathF.Pow(1f - depth / haloWidth, 2.4f)
+                        : 0f;
+                    var wrap = 0.62f + 0.38f * MathF.Max(0f, cosL);
+                    softHalo = glowStrength * halo * wrap * 0.55f;
+                }
+
+                var totalLight = highlightFactor * (rimLight * (soft ? 1.25f : 1.10f) + meniscusLight * 0.65f + ambientLuster);
                 // Cap total light mix at 0.78 so specular glint never totally blinds out the saturated dye color underneath
                 var lightMix = Math.Clamp(totalLight, 0f, 0.78f);
 
                 r += (hlR - r) * lightMix;
                 g += (hlG - g) * lightMix;
                 b += (hlB - b) * lightMix;
+
+                // The halo is light, not paint: a mostly neutral wash with a hint of the dye colour.
+                if (softHalo > 0.001f)
+                {
+                    var cast = 0.30f * edgeTint;
+                    r += (255f + (hlR - 255f) * cast - r) * softHalo;
+                    g += (255f + (hlG - 255f) * cast - g) * softHalo;
+                    b += (255f + (hlB - 255f) * cast - b) * softHalo;
+                }
 
                 // Anti-aliased alpha at character boundaries
                 var alpha = maskVal;
@@ -357,7 +429,8 @@ public static class GlyphLiquidGlassRenderer
         float strokeRadius,
         float glyphEdgeScale,
         float glyphShiftScale,
-        double? refractionWidth)
+        double? refractionWidth,
+        bool soft = false)
     {
         var manualWidth = refractionWidth.HasValue
             ? (float)Math.Max(0.0, refractionWidth.Value)
@@ -370,9 +443,22 @@ public static class GlyphLiquidGlassRenderer
             return (width, shift, (float)(optics.Dispersion / 100.0));
         }
 
+        // EdgeWidth 0 = the lens ring is switched off globally: the numerals keep their
+        // diffusion, dye and rim light, but nothing is bent.
+        if (optics.EdgeWidth <= 0.0) return (0f, 0f, (float)(optics.Dispersion / 100.0));
+
         var edgeFrac = (float)Math.Clamp((optics.EdgeWidth / 24.0) * 0.38f * glyphEdgeScale, 0.18f, 0.46f);
         var adaptiveWidth = SoftClamp(strokeRadius * edgeFrac, 1.2f * scale, strokeRadius * 0.46f);
         var adaptiveShift = SoftClamp((float)(optics.Refraction / 100.0) * adaptiveWidth * 1.85f * glyphShiftScale, 0.8f * scale, adaptiveWidth * 2.5f);
+
+        if (soft)
+        {
+            // 柔光玻璃: the same "wide and shallow" the card material uses — 1.55x the band at
+            // less than half the displacement.
+            adaptiveWidth = SoftClamp(adaptiveWidth * 1.55f, 1.2f * scale, strokeRadius * 0.46f);
+            adaptiveShift *= 0.45f;
+        }
+
         return (adaptiveWidth, adaptiveShift, (float)(optics.Dispersion / 100.0));
     }
 
@@ -620,12 +706,15 @@ public static class GlyphLiquidGlassRenderer
         return lensShift * Math.Max(0f, shape);
     }
 
-    private static float Channel(byte val, byte coat, float luma, float adapt, float localTint)
+    private static float Channel(float val, byte coat, float luma, float adapt, float localTint)
     {
         var c = luma + (val - luma) * Saturation;
         c += (255f - c) * adapt;
         return c * (1f - localTint) + coat * localTint;
     }
+
+    /// <summary>Linear interpolation between channel values (spectrum blending, halo casting).</summary>
+    private static float Mix(float from, float to, float amount) => from + (to - from) * amount;
 
     private static float FrostMix(float luma)
     {

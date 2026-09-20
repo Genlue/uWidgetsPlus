@@ -37,12 +37,14 @@ Check(oldTheme.EffectiveSurface == SurfaceStyle.Acrylic && oldTheme.UsesNativeBl
 Check((oldTheme with { OpacityLevel = 1 }).EffectiveSurface == SurfaceStyle.Solid, "old solid config migration");
 Check(oldTheme.EffectiveLiquidGlass == new LiquidGlassSettings(), "old config receives glass defaults");
 var invalid = new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900).Normalize();
-Check(invalid == new LiquidGlassSettings(12, 100, 4, 65, 0, 360), "invalid optics are clamped");
+Check(invalid == new LiquidGlassSettings(12, 100, 0, 65, 0, 360), "invalid optics are clamped");
+Check(new LiquidGlassSettings(12, 28, 0, 65, 18, 225).Normalize().EdgeWidth == 0,
+    "EdgeWidth 0 survives validation (no lens ring is a legal setting)");
 var offsetClamp = new LiquidGlassSettings(0, 0, 4, 0, 0, 0, EdgeTint: 0, WallpaperOffsetX: 2500, WallpaperOffsetY: -9999).Normalize();
 Check(offsetClamp.WallpaperOffsetX == LiquidGlassSettings.WallpaperOffsetLimit && offsetClamp.WallpaperOffsetY == -LiquidGlassSettings.WallpaperOffsetLimit,
     "wallpaper offsets are clamped");
 Check(new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900, 400, 2500, -9999).Normalize()
-        == new LiquidGlassSettings(12, 100, 4, 65, 0, 360, 100, 1000, -1000),
+        == new LiquidGlassSettings(12, 100, 0, 65, 0, 360, 100, 1000, -1000),
     "edge tint and offsets are clamped together");
 var theme = oldTheme with { Surface = SurfaceStyle.LiquidGlass, OpacityLevel = 0.18, LiquidGlass = new(7, 55, 32, 80, 40, 225) };
 Check(theme.IsGlass && theme.IsLiquidGlass && !theme.UsesNativeBlur, "liquid glass disables fixed native blur");
@@ -444,6 +446,7 @@ using var sheetData = sheetImage.Encode(SKEncodedImageFormat.Png, 100);
 File.WriteAllBytes(Path.Combine(output, "liquid-glass-preview.png"), sheetData.ToArray());
 Console.WriteLine($"All optical checks passed in {timer.ElapsedMilliseconds} ms. Preview: {output}");
 OpticsProfile.Run(output);
+SoftGlowProfile.Run(output);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));
 void DrawCard(int x, string label, Theme material)

@@ -690,6 +690,33 @@
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
         <value>液态玻璃</value>
     </data>
+    <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
+        <value>柔光玻璃</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Title" xml:space="preserve">
+        <value>柔光玻璃 · 静态</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Description" xml:space="preserve">
+        <value>与液态玻璃同源的壁纸折射材质，改用柔光配方：宽阔而轻柔的折射取代透镜环、弥散光晕取代硬质亮边，并可选全光谱色散。调整即时生效，文字保持清晰。</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Glow" xml:space="preserve">
+        <value>柔光晕</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_GlowHint" xml:space="preserve">
+        <value>0–100% · 边缘弥散光晕的强度</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_Spectrum" xml:space="preserve">
+        <value>光谱弥散</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_SpectrumHint" xml:space="preserve">
+        <value>0–100% · 由三通道色散过渡到红→紫全光谱</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_DyeSpread" xml:space="preserve">
+        <value>染色扩散</value>
+    </data>
+    <data name="Settings_Appearance_SoftGlow_DyeSpreadHint" xml:space="preserve">
+        <value>0–100% · 边缘染色向卡内扩散的程度；0 = 染色只留在最外一圈，卡面完全不被染色覆盖</value>
+    </data>
     <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
         <value>液态玻璃 · 静态</value>
     </data>

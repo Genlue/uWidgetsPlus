@@ -25,5 +25,15 @@ public enum SurfaceStyle
     OutlinedAcrylic = 3,
 
     /// <summary>多彩 / macOS vibrant widget style: rich multi-color elements compatible with OS acrylic blur and solid fill.</summary>
-    Colorful = 4
+    Colorful = 4,
+
+    /// <summary>
+    /// 柔光玻璃 (soft glow glass): the same wallpaper-sampled static material as
+    /// <see cref="LiquidGlass"/>, but tuned for a gentle, luminous look — wide and
+    /// shallow refraction instead of a meniscus ring, no crisp highlight line,
+    /// a broad diffused glow around the rim (see <see cref="LiquidGlassSettings.Glow"/>)
+    /// and an optional full-spectrum dispersion
+    /// (see <see cref="LiquidGlassSettings.Spectrum"/>).
+    /// </summary>
+    SoftGlow = 5
 }

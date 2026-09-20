@@ -437,7 +437,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 : Brushes.White;
         }
 
-        if (theme?.IsLiquidGlass == true)
+        if (theme?.UsesRenderedGlass == true)
             return Brushes.Transparent;
 
         var darkColorHex = theme?.EffectiveSolidBackgroundDark ?? AppTheme.DefaultSolidBackgroundDark;
@@ -486,7 +486,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
                 : Brushes.White;
         }
 
-        if (theme?.IsLiquidGlass == true)
+        if (theme?.UsesRenderedGlass == true)
             return Brushes.Transparent;
 
         var darkColorHex = theme?.EffectiveSolidBackgroundDark ?? AppTheme.DefaultSolidBackgroundDark;

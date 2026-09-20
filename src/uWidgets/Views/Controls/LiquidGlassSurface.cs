@@ -94,7 +94,7 @@ public sealed class LiquidGlassSurface : Control
         revision++;
         if (!attached) return;
         debounce.Stop();
-        if (!IsVisible || Material?.IsLiquidGlass != true)
+        if (!IsVisible || Material?.UsesRenderedGlass != true)
         {
             bitmap?.Dispose();
             bitmap = null;
@@ -106,7 +106,7 @@ public sealed class LiquidGlassSurface : Control
 
     private async void RenderMaterial()
     {
-        if (busy || !attached || !IsVisible || Material?.IsLiquidGlass != true || Bounds.Width < 1 || Bounds.Height < 1) return;
+        if (busy || !attached || !IsVisible || Material?.UsesRenderedGlass != true || Bounds.Width < 1 || Bounds.Height < 1) return;
         busy = true;
         var current = revision;
         try
@@ -139,7 +139,7 @@ public sealed class LiquidGlassSurface : Control
                     DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
                     ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
                     Theme = Material with { LiquidGlass = Material.EffectiveLiquidGlass with
-                    { Blur = Material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = Math.Max(4, Material.EffectiveLiquidGlass.EdgeWidth * 0.35) } } };
+                    { Blur = Material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = Material.EffectiveLiquidGlass.EdgeWidth * 0.35 } } };
             byte[] bytes;
             await RenderSlots.WaitAsync();
             try
@@ -176,7 +176,7 @@ public sealed class LiquidGlassSurface : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        if (Material?.IsLiquidGlass != true) return;
+        if (Material?.UsesRenderedGlass != true) return;
         var rect = new Rect(Bounds.Size);
         if (bitmap != null) context.DrawImage(bitmap, rect);
         else

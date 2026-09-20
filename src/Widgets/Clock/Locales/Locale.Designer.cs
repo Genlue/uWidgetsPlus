@@ -368,6 +368,12 @@ namespace Clock.Locales {
             }
         }
 
+        public static string Clock_ThemeMode_SoftGlow {
+            get {
+                return ResourceManager.GetString("Clock_ThemeMode_SoftGlow", resourceCulture);
+            }
+        }
+
         public static string Clock_DyeIntensity {
             get {
                 return ResourceManager.GetString("Clock_DyeIntensity", resourceCulture);

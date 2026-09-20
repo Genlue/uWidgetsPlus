@@ -129,7 +129,7 @@ public class ThemeService : IThemeService
         // Surface material background styles
         SwitchStyle(transparentStyle, theme.UsesNativeBlur && !theme.IsColorful);
         SwitchStyle(solidStyle, !theme.IsGlass && !theme.IsColorful);
-        SwitchStyle(liquidGlassStyle, theme.IsLiquidGlass);
+        SwitchStyle(liquidGlassStyle, theme.UsesRenderedGlass);
 
         // Colorful (macOS) uses live OS acrylic blur with rich Apple HIG system semantic colors.
         // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,

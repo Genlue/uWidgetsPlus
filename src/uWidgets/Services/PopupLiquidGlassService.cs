@@ -139,14 +139,16 @@ public static class PopupLiquidGlassService
         IReadOnlyList<Screen>? allScreens)
     {
         EnsureWallpaperSubscribed();
-        if (theme?.IsLiquidGlass != true) return;
+        if (theme?.UsesRenderedGlass != true) return;
 
         targetScreen ??= allScreens?.FirstOrDefault();
         if (targetScreen == null) return;
 
         var p = ComputePlacement(screenCenter, logicalWidth, logicalHeight, targetScreen, allScreens);
 
-        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{theme.EffectiveLiquidGlass.Blur}_{theme.EffectiveLiquidGlass.Refraction}_{theme.EffectiveLiquidGlass.LightAngle}";
+        // The key covers the surface as well: 液态玻璃 and 柔光玻璃 share the pipeline but
+        // not the recipe, and Glow/Spectrum only exist on the soft one.
+        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{theme.EffectiveSurface}_{theme.EffectiveLiquidGlass.Blur}_{theme.EffectiveLiquidGlass.Refraction}_{theme.EffectiveLiquidGlass.LightAngle}_{theme.EffectiveLiquidGlass.Glow}_{theme.EffectiveLiquidGlass.Spectrum}";
         var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
 
         lock (renderLock)

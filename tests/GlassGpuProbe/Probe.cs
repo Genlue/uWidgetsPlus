@@ -238,7 +238,7 @@ internal static class Probe
         Set("haloWidth", p.HaloWidth);
         Set("spectrumStrength", p.SpectrumStrength);
         Set("ambientWeight", p.AmbientWeight);
-        Set("coating", new[] { p.Coating.Red / 255f, p.Coating.Green / 255f, p.Coating.Blue / 255f });
+        Set("coating", new[] { (float)p.Coating.Red, (float)p.Coating.Green, (float)p.Coating.Blue });
         Set("tint", p.Tint);
         Set("edgeTint", p.EdgeTint);
         Set("highlightFactor", p.HighlightFactor);

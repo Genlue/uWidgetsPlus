@@ -26,6 +26,57 @@ internal static class Compare
         // samples from, and only structure — not a smooth wash — makes a positional error visible.
         foreach (var clarity in new[] { 100.0, 50.0, 25.0 })
             CompareAt(clarity, output, grContext);
+
+        CoatingCheck(grContext);
+    }
+
+    /// <summary>
+    /// The coating (纯色 background colour) has to reach the shader at the same scale the CPU
+    /// renderer uses. It is mixed into a colour that is already in 0–255 units, so handing over a
+    /// normalised 0–1 value contributes ~255× too little: the tint degenerates into a plain
+    /// darkening and the card reads as though it were under a black mask, whatever colour is
+    /// configured — and the higher 不透明度 is, the blacker it looks.
+    /// </summary>
+    private static void CoatingCheck(GRContext grContext)
+    {
+        const int card = 200;
+        using var wallpaperBitmap = MakeWallpaper(800, 600);
+        using var wallpaper = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), wallpaperBitmap, live: true);
+
+        foreach (var (label, opacity, dark, hex) in new (string, double, bool, string)[]
+        {
+            ("dark  #2E2E2E @ 18%", 0.18, true, "#2E2E2E"),
+            ("dark  #101418 @ 75%", 0.75, true, "#101418"),
+            ("light #FFFFFF @ 60%", 0.60, false, "#FFFFFF"),
+            ("light #E8F0FF @ 60%", 0.60, false, "#E8F0FF")
+        })
+        {
+            var theme = new Theme(null, null, opacity, true, false, "Inter", SurfaceStyle.LiquidGlass,
+                SolidBackgroundDark: hex, SolidBackgroundLight: hex,
+                LiquidGlass: new LiquidGlassSettings(BackdropClarity: 100));
+            var frame = new LiquidGlassRenderer.Frame(card, card, 1f, 20f, 100f, 80f, 800f, 600f,
+                0f, 0f, 800f, 600f, theme, dark, SettingsSurface: false, PixelScale: 1f, Columns: 1, Rows: 1);
+
+            using var cpu = LiquidGlassRenderer.RenderBitmap(frame, wallpaper);
+            if (cpu == null) { Probe.Write($"coating [{label}]: CPU produced nothing"); continue; }
+            using var shared = LiquidGlassSourceCache.Get(frame, wallpaper);
+            if (shared == null) { Probe.Write($"coating [{label}]: no backdrop"); continue; }
+            using var gpu = RenderGpu(grContext, shared.Backdrop, null,
+                LiquidGlassGpuEffect.BuildParams(frame, shared.Scale, card, card), card);
+            if (gpu == null) { Probe.Write($"coating [{label}]: GPU produced nothing"); continue; }
+
+            long total = 0;
+            for (var y = 0; y < card; y += 2)
+            for (var x = 0; x < card; x += 2)
+            {
+                var a = cpu.GetPixel(x, y);
+                var b = gpu.GetPixel(x, y);
+                total += Math.Abs(a.Red - b.Red) + Math.Abs(a.Green - b.Green) + Math.Abs(a.Blue - b.Blue);
+            }
+            var n = (card / 2) * (card / 2);
+            Probe.Write($"coating [{label}]  GPU={gpu.GetPixel(card / 2, card / 2)}  " +
+                        $"CPU={cpu.GetPixel(card / 2, card / 2)}  mean |delta| {total / (double)n:F1}/765");
+        }
     }
 
     private static void CompareAt(double clarity, string output, GRContext grContext)

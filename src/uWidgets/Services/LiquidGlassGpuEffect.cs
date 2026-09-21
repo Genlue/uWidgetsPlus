@@ -264,7 +264,11 @@ internal static class LiquidGlassGpuEffect
                 ["haloWidth"] = p.HaloWidth,
                 ["spectrumStrength"] = p.SpectrumStrength,
                 ["ambientWeight"] = p.AmbientWeight,
-                ["coating"] = new[] { p.Coating.Red / 255f, p.Coating.Green / 255f, p.Coating.Blue / 255f },
+                // 0-255, exactly like the CPU renderer's Channel(value, coat): the shader mixes the
+                // coating into a colour that is already in 0-255 units, so a normalised 0-1 coating
+                // contributes ~255x too little and the tint degenerates into a plain darkening —
+                // the card reads as if it were under a black mask, whatever colour is configured.
+                ["coating"] = new[] { (float)p.Coating.Red, (float)p.Coating.Green, (float)p.Coating.Blue },
                 ["tint"] = p.Tint,
                 ["edgeTint"] = p.EdgeTint,
                 ["highlightFactor"] = p.HighlightFactor,

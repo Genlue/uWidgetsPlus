@@ -149,6 +149,14 @@ internal static class GpuMaterialCheck
         Check(gpuSource.Contains("contentTexel") && gpuSource.Contains("auraTexel"),
             "the GPU material interpolates its backdrop and dye-grid lookups by hand");
 
+        // The coating is mixed into a colour that is already in 0-255 units (the CPU renderer's
+        // Channel(value, coat) does exactly the same), so normalising it to 0-1 makes it contribute
+        // ~255x too little and the tint collapses into a plain darkening — the card then looks like
+        // it is under a black mask whatever 纯色 background is configured, and worse the higher
+        // 不透明度 is. Asserted at source level because it is a units mistake, not a pixel one.
+        Check(!gpuSource.Contains("Coating.Red / 255f") && gpuSource.Contains("(float)p.Coating.Red"),
+            "the coating reaches the shader in 0-255 units, like the CPU renderer's Channel(value, coat)");
+
         // --- the dialect the GPU backend actually accepts ------------------------------------
         // The compile check above only proves SkSL -> IR. The *device* program is built later, from
         // a narrower ES2-compatible dialect, and a program that fails there draws nothing at all

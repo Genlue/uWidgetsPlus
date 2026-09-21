@@ -84,6 +84,46 @@ internal static class GlassDiagnostics
         Write(message);
     }
 
+    /// <summary>
+    /// Fold one published material into a once-per-second rate summary.
+    /// <para>
+    /// The rate — not the sampling interval — is the honest answer to "how smooth is the glass".
+    /// The interval is only a <i>request</i>: what is actually achieved is set by the pipeline
+    /// (desktop capture + shared backdrop build + draw) and by how many widgets are asking at once.
+    /// Logging the achieved rate next to the per-publish cost and the cost of its two stages is what
+    /// turns "it stutters" into a number that can be acted on.
+    /// </para>
+    /// </summary>
+    public static void Published(long elapsedMs, string detail)
+    {
+        if (!Enabled) return;
+        var now = Environment.TickCount64;
+        int count;
+        long total;
+        int worst;
+        lock (Gate)
+        {
+            if (windowStarted == 0) windowStarted = now;
+            windowCount++;
+            windowTotalMs += elapsedMs;
+            if (elapsedMs > windowWorstMs) windowWorstMs = (int)elapsedMs;
+            if (now - windowStarted < 1000) return;
+            count = windowCount;
+            total = windowTotalMs;
+            worst = windowWorstMs;
+            windowCount = 0;
+            windowTotalMs = 0;
+            windowWorstMs = 0;
+            windowStarted = now;
+        }
+        Write($"rate {count}/s · avg {(count == 0 ? 0 : total / count)}ms · worst {worst}ms · {detail}");
+    }
+
+    private static int windowCount;
+    private static long windowTotalMs;
+    private static int windowWorstMs;
+    private static long windowStarted;
+
     /// <summary>Record a failure with its stack. Always kept.</summary>
     public static void Failure(Exception ex)
     {

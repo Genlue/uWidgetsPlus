@@ -82,6 +82,27 @@ public sealed class LiquidGlassSurface : Control
         }
     }
 
+    /// <summary>
+    /// True while any glass surface is mid-prepare.
+    /// <para>
+    /// A sampling round only starts when this is false. One round costs one desktop capture plus one
+    /// shared backdrop build, and every widget that renders during it samples that same frame — but
+    /// only if none of them is still busy from the previous round. Starting a round while widgets
+    /// are mid-prepare hands the new frame to whoever happens to ask first and leaves the rest to
+    /// grab their own: at a 3 ms interval that measured one capture <i>per publish</i> instead of one
+    /// per six, which is why a smaller interval produced a slower glass.
+    /// </para>
+    /// </summary>
+    public static bool AnySurfaceRendering
+    {
+        get
+        {
+            foreach (var surface in Active)
+                if (surface.busy && surface.DemandsFrames) return true;
+            return false;
+        }
+    }
+
     private bool DemandsFrames => attached && IsEffectivelyVisible && Material?.UsesRenderedGlass == true;
 
     public static readonly StyledProperty<Theme?> MaterialProperty =
@@ -268,9 +289,13 @@ public sealed class LiquidGlassSurface : Control
             // Compiling the runtime shader is a one-off cost, so it is resolved off the UI
             // thread together with the first backdrop.
             var wantGpu = Volatile.Read(ref gpuState) != 2;
-            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, AuraTexture Aura)>(() =>
+            var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, AuraTexture Aura, int CaptureMs, int BackdropMs)>(() =>
             {
+                // Split the two stages that actually cost: grabbing the desktop, and building the
+                // shared blurred backdrop from it. Both are per capture, not per pixel of the card.
+                var captureStarted = Environment.TickCount64;
                 var snapshot = LiquidGlassWallpaper.Get();
+                var captureMs = (int)(Environment.TickCount64 - captureStarted);
                 // The preview only overrides the wallpaper's placement. The copy takes its own
                 // reference, so exactly one reference leaves this lambda on every path.
                 var sampled = preview ? snapshot.WithPlacement("10", false) : snapshot;
@@ -279,14 +304,16 @@ public sealed class LiquidGlassSurface : Control
                 {
                     if (wantGpu && LiquidGlassGpuEffect.IsSupported)
                     {
+                        var backdropStarted = Environment.TickCount64;
                         var shared = LiquidGlassSourceCache.Get(frame, sampled);
+                        var backdropMs = (int)(Environment.TickCount64 - backdropStarted);
                         if (shared != null)
                         {
                             // Already an owned reference — the cache handed one over, so it cannot
                             // be evicted and freed out from under the dye-field build below.
                             try
                             {
-                                return (shared, sampled, BuildAura(frame, shared));
+                                return (shared, sampled, BuildAura(frame, shared), captureMs, backdropMs);
                             }
                             catch
                             {
@@ -295,7 +322,7 @@ public sealed class LiquidGlassSurface : Control
                             }
                         }
                     }
-                    return (null, sampled, default(AuraTexture));
+                    return (null, sampled, default(AuraTexture), captureMs, 0);
                 }
                 catch
                 {
@@ -348,7 +375,9 @@ public sealed class LiquidGlassSurface : Control
 
             var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextCpu));
             RetirePrepared(previous);
-            GlassDiagnostics.Note($"published ({path})", started, frame);
+            GlassDiagnostics.Published(Environment.TickCount64 - started,
+                $"{path} {frame.Width}x{frame.Height} capture {result.CaptureMs}ms backdrop {result.BackdropMs}ms " +
+                $"captures {LiquidGlassWallpaper.CaptureCount}");
             InvalidateVisual();
         }
         catch (Exception ex)

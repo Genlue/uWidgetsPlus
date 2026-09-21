@@ -38,7 +38,6 @@ public static class LiquidGlassWallpaper
     private static readonly object Gate = new();
     private static WallpaperSnapshot? cached;
     private static string? cachedKey;
-    private static long captureExpiresTicks;
 
     private static bool liveSamplingEnabled = true;
     private static int liveIntervalMs = DefaultIntervalMs;
@@ -134,15 +133,22 @@ public static class LiquidGlassWallpaper
     /// One sampling tick: drop the cached frame and let the glass surfaces pick up a new one.
     /// <para>
     /// The tick deliberately does <b>not</b> capture on the UI thread — it only invalidates, and the
-    /// capture happens on the render worker that calls <see cref="Get"/>. <c>framePending</c> holds
-    /// the next tick back until that capture has actually happened, so a desktop that is slower to
-    /// grab than the interval cannot build up a backlog of overlapping grabs.
+    /// capture happens on the render worker that calls <see cref="Get"/>.
     /// </para>
     /// <para>
-    /// That hold is deliberately <b>time-bounded</b>. A tick can find every surface busy and
-    /// consume nothing, and an unbounded flag would then be set forever with no later tick allowed
-    /// to clear it — live sampling would stall until the next unrelated wallpaper change. Giving up
-    /// after two intervals guarantees the sampler keeps making progress.
+    /// <b>Only ask for a frame that something can consume.</b> A capture plus its shared backdrop
+    /// costs ~47 ms on a 2560×1440 desktop, so while every widget is mid-prepare there is nothing to
+    /// hand a new frame to. Invalidating anyway used to be actively harmful: it discarded the frame
+    /// the busy widgets were rendering from and left a frame "pending", which then held the sampler
+    /// back for a fixed retry floor. The net effect was that a <i>smaller</i> interval produced a
+    /// <i>slower</i> glass — 3 ms measured 24 publishes/s across six widgets against 60/s at 100 ms,
+    /// i.e. 4 fps per widget instead of 10. The interval is therefore a floor on the period between
+    /// captures, never a target, and a tick that finds no idle surface simply comes back next time.
+    /// </para>
+    /// <para>
+    /// The staleness guard is the safety net: if nothing has been captured for a long time while
+    /// widgets are still asking, the tick forces a frame anyway, so a surface that somehow never
+    /// reports itself idle cannot stall live sampling permanently.
     /// </para>
     /// </summary>
     private static void OnLiveSamplingTick(object? sender, EventArgs e)
@@ -151,28 +157,34 @@ public static class LiquidGlassWallpaper
         if (!LiquidGlassSurface.HasActiveSurfaces) { UpdateTimerState(); return; }
 
         var now = Environment.TickCount64;
-        // The hold on the next tick is floored well above the interval. At a 3 ms interval "two
-        // intervals" would be 6 ms, so the tick would invalidate again long before that frame could
-        // possibly have been consumed — turning a fast setting into a continuous full-desktop grab
-        // rather than a demand-driven one. The floor keeps the sampler demand-driven at any
-        // interval while still guaranteeing it can never stall permanently.
-        var retryFloor = Math.Max(liveIntervalMs * 2L, MinRetryMs);
-        if (Volatile.Read(ref framePendingRef) != 0 && now - Volatile.Read(ref lastInvalidateAt) < retryFloor)
+        // The period is measured from the start of the previous round, not from its capture. A
+        // capture lands a few milliseconds after the round begins, so measuring from it made every
+        // other tick arrive "too early" and halved the rate — 30 publishes/s instead of 60 at a
+        // 100 ms interval.
+        if (now - Interlocked.Read(ref lastRoundAt) < liveIntervalMs) return;
+        if (LiquidGlassSurface.AnySurfaceRendering && now - Interlocked.Read(ref lastCaptureAt) < StallGuardMs)
             return;
 
-        Volatile.Write(ref lastInvalidateAt, now);
         Invalidate();
         // Immediate: the interval can be shorter than the surface's move/resize debounce, and a
         // debounce restarted on every tick would never elapse — freezing the glass entirely.
         LiquidGlassSurface.RefreshAllImmediate();
     }
 
-    // framePending and lastInvalidateAt are touched from the UI timer and from render workers.
-    private static int framePendingRef;
-    private static long lastInvalidateAt;
+    /// <summary>When the desktop was last captured; the stall guard is measured from here.</summary>
+    private static long lastCaptureAt;
 
-    /// <summary>Shortest delay before an unconsumed frame is re-requested, whatever the interval.</summary>
-    private const int MinRetryMs = 250;
+    /// <summary>When the current sampling round began; the interval is measured from here.</summary>
+    private static long lastRoundAt;
+
+    /// <summary>Captures taken since the process started, for the rate diagnostic.</summary>
+    private static int captureCount;
+
+    /// <summary>Total desktop captures; the achieved sharing is the publish rate divided by this.</summary>
+    internal static int CaptureCount => Volatile.Read(ref captureCount);
+
+    /// <summary>Longest the sampler may go without capturing while widgets are still asking.</summary>
+    private const int StallGuardMs = 1000;
 
     /// <summary>Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).</summary>
     public static event Action? WallpaperInvalidated;
@@ -222,13 +234,12 @@ public static class LiquidGlassWallpaper
         WallpaperSnapshot? old;
         lock (Gate)
         {
-            captureExpiresTicks = 0;
             old = cached;
             cached = null;
             cachedKey = null;
         }
 
-        Volatile.Write(ref framePendingRef, 1);
+        Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
         old?.Dispose();
 
         NotifyInvalidated();
@@ -250,13 +261,11 @@ public static class LiquidGlassWallpaper
         WallpaperSnapshot? old;
         lock (Gate)
         {
-            captureExpiresTicks = 0;
             old = cached;
             cached = null;
             cachedKey = null;
         }
 
-        Volatile.Write(ref framePendingRef, 0);
         old?.Dispose();
     }
 
@@ -275,8 +284,12 @@ public static class LiquidGlassWallpaper
 
     private static WallpaperSnapshot? CaptureOnce()
     {
-        if (captureExpiresTicks > DateTime.UtcNow.Ticks && cached is { LiveCapture: true })
-            return cached;
+        // A captured frame stays valid until something explicitly invalidates it — the live sampler
+        // on its next tick, a wallpaper change, a display change or a fullscreen transition. It is
+        // deliberately NOT expired on a timer: keying the life of the frame to the sampling interval
+        // meant that at a small interval the widgets stopped sharing one capture (and one shared
+        // backdrop build) and each paid for its own, which is exactly backwards.
+        if (cached is { LiveCapture: true }) return cached;
 
         // Two attempts: a wallpaper host can vanish mid-transition (monitor hot-plug, a
         // wallpaper engine restarting) and re-resolving usually succeeds on the second try.
@@ -291,12 +304,13 @@ public static class LiquidGlassWallpaper
             {
                 old = cached;
                 cached = snapshot;
-                // Frame coherence: every surface rendering this tick samples the same capture.
-                captureExpiresTicks = DateTime.UtcNow.Ticks + TimeSpan.TicksPerMillisecond * liveIntervalMs;
                 cachedKey = null;
             }
 
-            Volatile.Write(ref framePendingRef, 0);
+            // Frame coherence: every surface asked for a frame from now on samples this one, so a
+            // round costs one desktop grab and one backdrop build however many widgets are on screen.
+            Interlocked.Exchange(ref lastCaptureAt, Environment.TickCount64);
+            Interlocked.Increment(ref captureCount);
             // Only the cache's reference goes; a render still using the previous frame keeps it.
             old?.Dispose();
             return snapshot;

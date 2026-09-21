@@ -1,24 +1,39 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using Microsoft.Win32;
 using SkiaSharp;
+using uWidgets.Core.Models.Settings;
+using uWidgets.Views.Controls;
 
 namespace uWidgets.Services;
 
 /// <summary>
 /// Resolves the wallpaper the glass samples. Primary source: a 1:1 capture of the
-/// real composited desktop (PrintWindow on Progman), so the sampled background is
-/// pixel-identical to what is actually behind the widget — including any layout
-/// quirks introduced by taskbar replacements (myDockFinder), wallpaper engines or
-/// the DWM. The static-file path (Windows wallpaper image + registry placement)
-/// remains as a fallback when the capture is not available.
+/// real desktop wallpaper — including animated wallpapers, which do not live in
+/// Progman (see <see cref="DesktopCapturer"/>) — so the sampled background is
+/// pixel-identical to what is actually behind the widget. The static-file path
+/// (Windows wallpaper image + registry placement) remains as a fallback when no
+/// capture is available.
 /// </summary>
 public static class LiquidGlassWallpaper
 {
-    private const long CaptureTtlTicks = TimeSpan.TicksPerSecond * 2;
+    /// <summary>
+    /// Lower bound of the live sampling rate — effectively "as fast as possible".
+    /// </summary>
+    public const int MinIntervalMs = LiquidGlassSettings.MinLiveSamplingInterval;
+
+    /// <summary>Upper bound of the live sampling rate (1 fps).</summary>
+    public const int MaxIntervalMs = LiquidGlassSettings.MaxLiveSamplingInterval;
+
+    /// <summary>Default live sampling interval (10 fps).</summary>
+    public const int DefaultIntervalMs = LiquidGlassSettings.DefaultLiveSamplingInterval;
 
     /// <summary>
     /// How long a replaced capture is kept alive before its bitmap is disposed: long enough for
@@ -28,9 +43,146 @@ public static class LiquidGlassWallpaper
     private const int RetireDelayMs = 3000;
 
     private static readonly object Gate = new();
-    private static string? cachedKey;
     private static WallpaperSnapshot? cached;
+    private static string? cachedKey;
     private static long captureExpiresTicks;
+
+    private static bool liveSamplingEnabled = true;
+    private static int liveIntervalMs = DefaultIntervalMs;
+    private static bool suspended;
+    private static DispatcherTimer? liveSamplingTimer;
+
+    /// <summary>
+    /// Turn continuous desktop sampling on or off. Switching it off is the static-wallpaper
+    /// mode: the last captured frame is frozen (a single capture still runs if nothing has
+    /// been sampled yet, so the glass never falls back to a stale wallpaper file).
+    /// </summary>
+    public static void ConfigureLiveSampling(bool enabled, int intervalMs)
+    {
+        liveSamplingEnabled = enabled;
+        liveIntervalMs = Math.Clamp(intervalMs, MinIntervalMs, MaxIntervalMs);
+
+        if (!OperatingSystem.IsWindows()) return;
+        try
+        {
+            var timer = EnsureTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(liveIntervalMs);
+            UpdateTimerState();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Live glass sampling unavailable: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Stop asking for new frames — every screen is covered by a fullscreen application and
+    /// nobody can see the glass. Unrelated to the user's 实时采样 switch.
+    /// </summary>
+    public static void SuspendLiveSampling()
+    {
+        suspended = true;
+        UpdateTimerState();
+    }
+
+    /// <summary>Resume asking for frames after a fullscreen application went away.</summary>
+    public static void ResumeLiveSampling()
+    {
+        suspended = false;
+        UpdateTimerState();
+    }
+
+    /// <summary>True when the user's 实时采样 switch is on.</summary>
+    public static bool LiveSamplingEnabled => liveSamplingEnabled;
+
+    /// <summary>True when the sampler is actually ticking (switch on, glass on screen, not covered).</summary>
+    public static bool LiveSamplingActive =>
+        liveSamplingEnabled && !suspended && liveSamplingTimer is { IsEnabled: true };
+
+    /// <summary>The effective sampling interval in milliseconds.</summary>
+    public static int LiveSamplingIntervalMs => liveIntervalMs;
+
+    /// <summary>
+    /// Re-evaluate whether the sampler should be ticking. Called when glass surfaces attach or
+    /// detach — the sampler is pointless while no widget is on screen, and starting it lazily
+    /// also means a theme switch made before any widget existed still begins sampling later.
+    /// </summary>
+    internal static void RefreshSamplerState() => UpdateTimerState();
+
+    private static DispatcherTimer EnsureTimer()
+    {
+        if (liveSamplingTimer != null) return liveSamplingTimer;
+        liveSamplingTimer = new DispatcherTimer();
+        liveSamplingTimer.Tick += OnLiveSamplingTick;
+        return liveSamplingTimer;
+    }
+
+    private static void UpdateTimerState()
+    {
+        if (liveSamplingTimer == null) return;
+        // DispatcherTimer must be started and stopped from the UI thread.
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(UpdateTimerState);
+            return;
+        }
+        var shouldRun = liveSamplingEnabled && !suspended && LiquidGlassSurface.HasActiveSurfaces;
+        if (shouldRun)
+        {
+            if (!liveSamplingTimer.IsEnabled) liveSamplingTimer.Start();
+        }
+        else
+        {
+            liveSamplingTimer.Stop();
+        }
+    }
+
+    /// <summary>
+    /// One sampling tick: drop the cached frame and let the glass surfaces pick up a new one.
+    /// <para>
+    /// The tick deliberately does <b>not</b> capture on the UI thread — it only invalidates, and the
+    /// capture happens on the render worker that calls <see cref="Get"/>. <c>framePending</c> holds
+    /// the next tick back until that capture has actually happened, so a desktop that is slower to
+    /// grab than the interval cannot build up a backlog of overlapping grabs.
+    /// </para>
+    /// <para>
+    /// That hold is deliberately <b>time-bounded</b>. A tick can find every surface busy and
+    /// consume nothing, and an unbounded flag would then be set forever with no later tick allowed
+    /// to clear it — live sampling would stall until the next unrelated wallpaper change. Giving up
+    /// after two intervals guarantees the sampler keeps making progress.
+    /// </para>
+    /// </summary>
+    private static void OnLiveSamplingTick(object? sender, EventArgs e)
+    {
+        if (!liveSamplingEnabled || suspended) { UpdateTimerState(); return; }
+        if (!LiquidGlassSurface.HasActiveSurfaces) { UpdateTimerState(); return; }
+
+        var now = Environment.TickCount64;
+        // The hold on the next tick is floored well above the interval. At a 3 ms interval "two
+        // intervals" would be 6 ms, so the tick would invalidate again long before that frame could
+        // possibly have been consumed — turning a fast setting into a continuous full-desktop grab
+        // rather than a demand-driven one. The floor keeps the sampler demand-driven at any
+        // interval while still guaranteeing it can never stall permanently.
+        var retryFloor = Math.Max(liveIntervalMs * 2L, MinRetryMs);
+        if (Volatile.Read(ref framePendingRef) != 0 && now - Volatile.Read(ref lastInvalidateAt) < retryFloor)
+            return;
+
+        Volatile.Write(ref lastInvalidateAt, now);
+        Invalidate();
+        // Immediate: the interval can be shorter than the surface's move/resize debounce, and a
+        // debounce restarted on every tick would never elapse — freezing the glass entirely.
+        LiquidGlassSurface.RefreshAllImmediate();
+    }
+
+    // framePending and lastInvalidateAt are touched from the UI timer and from render workers.
+    private static int framePendingRef;
+    private static long lastInvalidateAt;
+
+    /// <summary>Shortest delay before an unconsumed frame is re-requested, whatever the interval.</summary>
+    private const int MinRetryMs = 250;
+
+    /// <summary>Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).</summary>
+    public static event Action? WallpaperInvalidated;
 
     public static WallpaperSnapshot Get()
     {
@@ -40,11 +192,18 @@ public static class LiquidGlassWallpaper
                 return new WallpaperSnapshot(null, new SKColor(32, 38, 48));
             try
             {
-                var live = CaptureOnce();
-                if (live != null)
-                {
+                // Live sampling on: reuse the frame while it is fresh (so every widget samples
+                // the same instant), otherwise grab a new one. Live sampling off: the frozen
+                // frame wins; a single one-shot capture runs only if there is nothing to freeze.
+                if (liveSamplingEnabled && CaptureOnce() is { } live && live.LiveCapture)
                     return live;
+
+                if (!liveSamplingEnabled)
+                {
+                    if (cached is { LiveCapture: true }) return cached;
+                    if (CaptureOnce() is { } once) return once;
                 }
+
                 return FromFileFallback();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -54,12 +213,7 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    /// <summary>
-    /// Raised whenever the wallpaper is invalidated (system wallpaper change, display change, or manual refresh).
-    /// </summary>
-    public static event Action? WallpaperInvalidated;
-
-    /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or wallpaper changed).</summary>
+    /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or the wallpaper changed).</summary>
     public static void Invalidate()
     {
         WallpaperSnapshot? old;
@@ -71,26 +225,10 @@ public static class LiquidGlassWallpaper
             cachedKey = null;
         }
 
-        if (old != null)
-        {
-            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
-        }
+        Volatile.Write(ref framePendingRef, 1);
+        Retire(old);
 
-        try
-        {
-            if (Dispatcher.UIThread.CheckAccess())
-            {
-                WallpaperInvalidated?.Invoke();
-            }
-            else
-            {
-                Dispatcher.UIThread.Post(() => WallpaperInvalidated?.Invoke());
-            }
-        }
-        catch
-        {
-            try { WallpaperInvalidated?.Invoke(); } catch { }
-        }
+        NotifyInvalidated();
     }
 
     /// <summary>
@@ -114,32 +252,55 @@ public static class LiquidGlassWallpaper
             cachedKey = null;
         }
 
-        if (old != null)
+        Volatile.Write(ref framePendingRef, 0);
+        Retire(old);
+    }
+
+    private static void NotifyInvalidated()
+    {
+        try
         {
-            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
+            if (Dispatcher.UIThread.CheckAccess()) WallpaperInvalidated?.Invoke();
+            else Dispatcher.UIThread.Post(() => WallpaperInvalidated?.Invoke());
         }
+        catch
+        {
+            try { WallpaperInvalidated?.Invoke(); } catch { }
+        }
+    }
+
+    private static void Retire(WallpaperSnapshot? old)
+    {
+        if (old == null) return;
+        Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose(), TaskScheduler.Default);
     }
 
     private static WallpaperSnapshot? CaptureOnce()
     {
-        if (captureExpiresTicks > DateTime.UtcNow.Ticks && cached != null && cached.LiveCapture)
+        if (captureExpiresTicks > DateTime.UtcNow.Ticks && cached is { LiveCapture: true })
             return cached;
 
+        // Two attempts: a wallpaper host can vanish mid-transition (monitor hot-plug, a
+        // wallpaper engine restarting) and re-resolving usually succeeds on the second try.
         for (var attempt = 0; attempt < 2; attempt++)
         {
             var bmp = DesktopCapturer.CaptureBitmap();
-            if (bmp == null)
+            if (bmp == null) continue;
+
+            var snapshot = new WallpaperSnapshot(null, new SKColor(32, 38, 48), LiveCapture: true, CachedBitmap: bmp);
+            WallpaperSnapshot? old;
+            lock (Gate)
             {
-                continue;
+                old = cached;
+                cached = snapshot;
+                // Frame coherence: every surface rendering this tick samples the same capture.
+                captureExpiresTicks = DateTime.UtcNow.Ticks + TimeSpan.TicksPerMillisecond * liveIntervalMs;
+                cachedKey = null;
             }
-            var old = cached;
-            cached = new WallpaperSnapshot(null, new SKColor(32, 38, 48), LiveCapture: true, CachedBitmap: bmp);
-            captureExpiresTicks = DateTime.UtcNow.Ticks + CaptureTtlTicks;
-            if (old != null && !ReferenceEquals(old, cached))
-            {
-                System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
-            }
-            return cached;
+
+            Volatile.Write(ref framePendingRef, 0);
+            Retire(old);
+            return snapshot;
         }
         return null;
     }
@@ -159,7 +320,7 @@ public static class LiquidGlassWallpaper
             ? new SKColor(r, g, b) : new SKColor(32, 38, 48);
         var exists = File.Exists(path);
         var key = $"{path}|{(exists ? File.GetLastWriteTimeUtc(path).Ticks : 0)}|{style}|{tile}|{background}";
-        if (cachedKey == key && cached != null && !cached.LiveCapture) return cached;
+        if (cachedKey == key && cached is { LiveCapture: false }) return cached;
         var bytes = exists ? File.ReadAllBytes(path) : null;
         SKBitmap? bmp = null;
         if (bytes != null)
@@ -174,19 +335,23 @@ public static class LiquidGlassWallpaper
         var old = cached;
         cached = new WallpaperSnapshot(bytes, background, style, tile, CachedBitmap: bmp);
         cachedKey = key;
-        if (old != null && !ReferenceEquals(old, cached))
-        {
-            System.Threading.Tasks.Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose());
-        }
+        Retire(old);
         return cached;
     }
 }
 
 /// <summary>
-/// Captures the virtual desktop wallpaper as Progman renders it — exactly what the
-/// user sees behind the widgets, regardless of how the wallpaper layout was
-/// computed (DWM, myDockFinder, wallpaper engines). Desktop icons and docks are not
-/// part of Progman's own surface, so the capture is pure wallpaper.
+/// Captures the live desktop wallpaper — exactly what the user sees behind the widgets —
+/// including animated wallpapers.
+/// <para>
+/// A static wallpaper is painted by <c>Progman</c>, so <c>PrintWindow(Progman)</c> is enough.
+/// Every wallpaper <i>engine</i> instead reparents its own render window into a <c>WorkerW</c>
+/// that sits between the desktop icons and the wallpaper: Wallpaper Engine in its default
+/// "desktop" mode does this, and its frames never reach Progman at all. The host is located the
+/// documented way — the wallpaper <c>WorkerW</c> is the top-level <c>WorkerW</c> that follows the
+/// one owning <c>SHELLDLL_DefView</c> — and the first candidate that yields a plausible
+/// wallpaper is remembered, so the source only has to be resolved once.
+/// </para>
 /// </summary>
 public static class DesktopCapturer
 {
@@ -195,17 +360,29 @@ public static class DesktopCapturer
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
 
     [DllImport("user32.dll")]
     private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr extraData);
 
     [DllImport("user32.dll")]
+    private static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc callback, IntPtr extraData);
+
+    [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hwnd);
 
     [DllImport("user32.dll")]
-    private static extern int GetClassName(IntPtr hwnd, System.Text.StringBuilder buffer, int maxCount);
+    private static extern bool IsWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr hwnd, StringBuilder buffer, int maxCount);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindow(string? className, string? windowName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? className, string? windowName);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetDC(IntPtr hwnd);
@@ -237,47 +414,63 @@ public static class DesktopCapturer
     // SM_* virtual desktop metrics (physical pixels; the process is DPI aware).
     private const int SmXVirtualScreen = 76, SmYVirtualScreen = 77, SmCXVirtualScreen = 78, SmCYVirtualScreen = 79;
 
+    private static readonly object HostGate = new();
+    private static IntPtr resolvedHost;
+    private static string resolvedHostDescription = "unresolved";
+
+    /// <summary>Which window the current capture comes from — surfaced for diagnostics.</summary>
+    public static string CaptureSourceDescription
+    {
+        get { lock (HostGate) return resolvedHostDescription; }
+    }
+
     public static SKBitmap? CaptureBitmap()
     {
-        var left = GetSystemMetrics(SmXVirtualScreen);
-        var top = GetSystemMetrics(SmYVirtualScreen);
         var width = GetSystemMetrics(SmCXVirtualScreen);
         var height = GetSystemMetrics(SmCYVirtualScreen);
         if (width <= 0 || height <= 0) return null;
 
-        var hwnd = FindProgman();
-        if (hwnd == IntPtr.Zero) return null;
-
-        var screenDc = GetDC(IntPtr.Zero);
-        var memDc = CreateCompatibleDC(screenDc);
-        var bitmap = CreateCompatibleBitmap(screenDc, width, height);
-        var previous = SelectObject(memDc, bitmap);
-        try
+        // Fast path: the host resolved last time. This runs once per sampled frame, so it must not
+        // walk every top-level window to rediscover a window that has not changed. The frame is
+        // trusted as-is — re-validating every frame would make a genuinely dark scene in an animated
+        // wallpaper look like a failed capture and flip the glass back to Progman, which is a
+        // visible jump between the animated and the static wallpaper.
+        IntPtr remembered;
+        lock (HostGate) remembered = resolvedHost;
+        if (remembered != IntPtr.Zero && IsWindow(remembered))
         {
-            var ok = PrintWindow(hwnd, memDc, PwRenderFullContent);
-            if (!ok) return null;
-
-            var skBitmap = ReadBitmap(memDc, bitmap, width, height);
-            if (skBitmap == null) return null;
-
-            if (!LooksLikeWallpaper(skBitmap))
+            var fast = CaptureWindow(remembered, width, height);
+            if (fast != null)
             {
-                skBitmap.Dispose();
-                return null;
+                fast.SetImmutable();
+                return fast;
+            }
+        }
+
+        // Slow path: first frame, or the remembered host died (a wallpaper engine restarting, a
+        // monitor hot-plug, a shell restart). Re-resolve from scratch.
+        foreach (var (hwnd, description) in ResolveCandidates())
+        {
+            var bmp = CaptureWindow(hwnd, width, height);
+            if (bmp == null) continue;
+            if (!LooksLikeWallpaper(bmp))
+            {
+                bmp.Dispose();
+                continue;
             }
 
-            skBitmap.SetImmutable();
-            return skBitmap;
+            lock (HostGate)
+            {
+                resolvedHost = hwnd;
+                resolvedHostDescription = description;
+            }
+            bmp.SetImmutable();
+            return bmp;
         }
-        finally
-        {
-            SelectObject(memDc, previous);
-            DeleteObject(bitmap);
-            DeleteDC(memDc);
-            ReleaseDC(IntPtr.Zero, screenDc);
-        }
+        return null;
     }
 
+    /// <summary>Encode a one-off capture as PNG (diagnostics only).</summary>
     public static byte[] Capture()
     {
         using var bmp = CaptureBitmap();
@@ -287,21 +480,113 @@ public static class DesktopCapturer
         return data.ToArray();
     }
 
-    private static IntPtr FindProgman()
+    /// <summary>
+    /// Candidate windows in priority order: the animated wallpaper host, then the classic Progman
+    /// wallpaper, then any visible child surface of the animated host (some engines render into a
+    /// child of the WorkerW rather than into it). The already-remembered host is tried separately,
+    /// before this runs, so a steady state never enumerates the window list at all.
+    /// </summary>
+    private static List<(IntPtr Hwnd, string Description)> ResolveCandidates()
     {
-        IntPtr result = IntPtr.Zero;
+        var result = new List<(IntPtr, string)>();
+        var seen = new HashSet<IntPtr>();
+
+        void Add(IntPtr hwnd, string description)
+        {
+            if (hwnd == IntPtr.Zero || !IsWindow(hwnd) || !seen.Add(hwnd)) return;
+            result.Add((hwnd, description));
+        }
+
+        var progman = FindWindow("Progman", null);
+        var defViewHost = IntPtr.Zero;
+        var workerViews = new List<IntPtr>();
+
         EnumWindows((hwnd, _) =>
         {
-            var buffer = new System.Text.StringBuilder(256);
-            GetClassName(hwnd, buffer, buffer.Capacity);
-            if (buffer.ToString() == "Progman" && IsWindowVisible(hwnd))
-            {
-                result = hwnd;
-                return false;
-            }
+            if (ClassNameOf(hwnd) != "WorkerW") return true;
+            workerViews.Add(hwnd);
+            if (defViewHost == IntPtr.Zero &&
+                FindWindowEx(hwnd, IntPtr.Zero, "SHELLDLL_DefView", null) != IntPtr.Zero)
+                defViewHost = hwnd;
             return true;
         }, IntPtr.Zero);
+
+        // The wallpaper WorkerW is the top-level WorkerW that follows the icons' WorkerW. When
+        // the desktop is static there is no such sibling and this contributes nothing.
+        if (defViewHost != IntPtr.Zero)
+        {
+            var afterIcons = false;
+            foreach (var worker in workerViews)
+            {
+                if (afterIcons) { Add(worker, "WorkerW (animated wallpaper host)"); AddChildren(worker, "WorkerW child"); }
+                else if (worker == defViewHost) afterIcons = true;
+            }
+        }
+
+        // A WorkerW parented to Progman also hosts wallpaper on some shell versions.
+        foreach (var worker in workerViews)
+            if (IsChildOf(progman, worker)) Add(worker, "WorkerW (Progman child)");
+
+        Add(progman, "Progman");
         return result;
+
+        void AddChildren(IntPtr parent, string label)
+        {
+            EnumChildWindows(parent, (child, _) =>
+            {
+                if (IsWindowVisible(child)) Add(child, label);
+                return true;
+            }, IntPtr.Zero);
+        }
+    }
+
+    private static bool IsChildOf(IntPtr parent, IntPtr child)
+    {
+        var current = child;
+        for (var depth = 0; depth < 32 && current != IntPtr.Zero; depth++)
+        {
+            var owner = GetParent(current);
+            if (owner == parent) return true;
+            if (owner == IntPtr.Zero) return false;
+            current = owner;
+        }
+        return false;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetParent(IntPtr hwnd);
+
+    private static string ClassNameOf(IntPtr hwnd)
+    {
+        var buffer = new StringBuilder(256);
+        GetClassName(hwnd, buffer, buffer.Capacity);
+        return buffer.ToString();
+    }
+
+    private static SKBitmap? CaptureWindow(IntPtr hwnd, int width, int height)
+    {
+        var screenDc = GetDC(IntPtr.Zero);
+        if (screenDc == IntPtr.Zero) return null;
+        var memDc = CreateCompatibleDC(screenDc);
+        var bitmap = CreateCompatibleBitmap(screenDc, width, height);
+        var previous = SelectObject(memDc, bitmap);
+        try
+        {
+            if (!PrintWindow(hwnd, memDc, PwRenderFullContent)) return null;
+            return ReadBitmap(memDc, bitmap, width, height);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Wallpaper capture failed for {ClassNameOf(hwnd)}: {ex.Message}");
+            return null;
+        }
+        finally
+        {
+            SelectObject(memDc, previous);
+            DeleteObject(bitmap);
+            DeleteDC(memDc);
+            ReleaseDC(IntPtr.Zero, screenDc);
+        }
     }
 
     /// <summary>A valid wallpaper capture has meaningful content: not uniform, not black.</summary>

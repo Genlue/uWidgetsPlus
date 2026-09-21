@@ -32,6 +32,10 @@ namespace uWidgets.Locales {
         public static string Settings_Appearance_SoftGlow_SpectrumHint => ResourceManager.GetString("Settings_Appearance_SoftGlow_SpectrumHint", resourceCulture);
         public static string Settings_Appearance_SoftGlow_DyeSpread => ResourceManager.GetString("Settings_Appearance_SoftGlow_DyeSpread", resourceCulture);
         public static string Settings_Appearance_SoftGlow_DyeSpreadHint => ResourceManager.GetString("Settings_Appearance_SoftGlow_DyeSpreadHint", resourceCulture);
+        public static string Settings_Appearance_Glass_LiveSampling => ResourceManager.GetString("Settings_Appearance_Glass_LiveSampling", resourceCulture);
+        public static string Settings_Appearance_Glass_LiveSamplingHint => ResourceManager.GetString("Settings_Appearance_Glass_LiveSamplingHint", resourceCulture);
+        public static string Settings_Appearance_Glass_LiveSamplingInterval => ResourceManager.GetString("Settings_Appearance_Glass_LiveSamplingInterval", resourceCulture);
+        public static string Settings_Appearance_Glass_LiveSamplingIntervalHint => ResourceManager.GetString("Settings_Appearance_Glass_LiveSamplingIntervalHint", resourceCulture);
         public static string Settings_Appearance_Glass_Title => ResourceManager.GetString("Settings_Appearance_Glass_Title", resourceCulture);
         public static string Settings_Appearance_Glass_Description => ResourceManager.GetString("Settings_Appearance_Glass_Description", resourceCulture);
         public static string Settings_Appearance_Glass_Blur => ResourceManager.GetString("Settings_Appearance_Glass_Blur", resourceCulture);

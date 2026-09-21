@@ -789,6 +789,18 @@
     <data name="Settings_Appearance_Glass_Reset" xml:space="preserve">
         <value>重置玻璃参数</value>
     </data>
+    <data name="Settings_Appearance_Glass_LiveSampling" xml:space="preserve">
+        <value>实时采样动态壁纸</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingHint" xml:space="preserve">
+        <value>持续采样桌面，让视频/动态壁纸在玻璃后保持实时；关闭后冻结当前帧</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingInterval" xml:space="preserve">
+        <value>采样间隔（毫秒）</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingIntervalHint" xml:space="preserve">
+        <value>3–1000 毫秒 · 越短越流畅、开销越大；模糊背景下 100 毫秒（10 fps）已足够顺滑</value>
+    </data>
     <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
         <value>刷新壁纸</value>
     </data>

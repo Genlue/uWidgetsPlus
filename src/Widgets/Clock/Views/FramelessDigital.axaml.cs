@@ -458,13 +458,20 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         var effectiveTheme = theme ?? appSettingsProvider?.Get().Theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
 
         // An explicit theme mode has to pick the *recipe*, not just the branch: the renderer
-        // decides between the crisp and the soft optics from the theme's surface, so mode 4
-        // (柔光玻璃) under a global 液态玻璃 must hand it a SoftGlow surface — and mode 2 the
-        // other way round. "Follow global" (0) already carries the right surface.
+        // decides between the crisp and the soft optics from the theme, so mode 4 (柔光玻璃)
+        // under a global 液态玻璃 must switch the soft recipe on — and mode 2 must switch it off.
+        // "Follow global" (0) already carries the right recipe.
         if (model.ThemeMode == 4 && !effectiveTheme.IsSoftGlow)
             effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.SoftGlow };
         else if (model.ThemeMode == 2 && effectiveTheme.IsSoftGlow)
-            effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.LiquidGlass };
+            // Clearing the surface is no longer enough: 柔光玻璃 was merged into 液态玻璃 and the
+            // soft recipe is selected by 柔光晕 / 光谱弥散 too, so an explicit crisp mode has to
+            // zero both. The optics underneath are kept, which is what this mode always did.
+            effectiveTheme = effectiveTheme with
+            {
+                Surface = SurfaceStyle.LiquidGlass,
+                LiquidGlass = effectiveTheme.EffectiveLiquidGlass with { Glow = 0, Spectrum = 0 }
+            };
 
         // The widget's own 染色强度 is a legacy override of the theme's edge tint. On 柔光玻璃 the
         // dye *is* the material — the bloomed colour along the rim — so a low widget value (the

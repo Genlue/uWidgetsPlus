@@ -44,11 +44,15 @@ public record AppSettings(
     /// </summary>
     public Theme GetThemeForSurface(SurfaceStyle surface)
     {
+        if (surface == SurfaceStyle.SoftGlow) surface = SurfaceStyle.LiquidGlass;
         var key = surface.ToString();
         if (SurfaceThemes != null && SurfaceThemes.TryGetValue(key, out var savedTheme))
         {
-            return savedTheme;
+            return savedTheme.NormalizeMaterial();
         }
+        if (surface == SurfaceStyle.LiquidGlass && SurfaceThemes != null &&
+            SurfaceThemes.TryGetValue(nameof(SurfaceStyle.SoftGlow), out var legacy))
+            return legacy.NormalizeMaterial();
 
         return surface switch
         {
@@ -57,12 +61,6 @@ public record AppSettings(
                 UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
                 Surface: SurfaceStyle.LiquidGlass, MonochromeVariant: MonochromeStyle.BlackWhite,
                 AutoTheme: Theme.AutoTheme, LiquidGlass: new LiquidGlassSettings()),
-
-            SurfaceStyle.SoftGlow => new Theme(
-                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: Theme.DefaultSoftGlowOpacity, Monochrome: true,
-                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
-                Surface: SurfaceStyle.SoftGlow, MonochromeVariant: MonochromeStyle.BlackWhite,
-                AutoTheme: Theme.AutoTheme, LiquidGlass: LiquidGlassSettings.SoftGlowPreset),
 
             SurfaceStyle.Solid => new Theme(
                 DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
@@ -90,6 +88,8 @@ public record AppSettings(
     /// </summary>
     public AppSettings WithThemeForSurface(SurfaceStyle surface, Theme theme)
     {
+        if (surface == SurfaceStyle.SoftGlow) surface = SurfaceStyle.LiquidGlass;
+        theme = theme.NormalizeMaterial();
         var dict = SurfaceThemes != null 
             ? new Dictionary<string, Theme>(SurfaceThemes, StringComparer.OrdinalIgnoreCase) 
             : new Dictionary<string, Theme>(StringComparer.OrdinalIgnoreCase);

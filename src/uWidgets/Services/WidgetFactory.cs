@@ -252,7 +252,9 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
 
         // The desktop capture is the largest single allocation in the process and nothing is
         // sampling glass behind a fullscreen application, so it is given up as well (it is
-        // re-captured on demand the moment a widget renders again).
+        // re-captured on demand the moment a widget renders again). Live sampling stops too:
+        // otherwise the timer would immediately re-capture what was just released, every tick.
+        LiquidGlassWallpaper.SuspendLiveSampling();
         LiquidGlassWallpaper.Release();
 
         InteropService.TrimProcessMemory();
@@ -263,6 +265,7 @@ public class WidgetFactory(IAssemblyProvider assemblyProvider, ILayoutProvider l
     {
         if (!suspended) return;
         suspended = false;
+        LiquidGlassWallpaper.ResumeLiveSampling();
 
         foreach (var list in activeWidgets.Values)
         {

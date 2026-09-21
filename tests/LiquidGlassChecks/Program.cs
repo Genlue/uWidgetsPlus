@@ -46,6 +46,19 @@ Check(offsetClamp.WallpaperOffsetX == LiquidGlassSettings.WallpaperOffsetLimit &
 Check(new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900, 400, 2500, -9999).Normalize()
         == new LiquidGlassSettings(12, 100, 0, 65, 0, 360, 100, 1000, -1000),
     "edge tint and offsets are clamped together");
+
+// Live sampling: the floor is 3 ms ("as fast as this machine can go"), and the sampler is
+// demand-driven, so a very small interval asks for frames rather than grabbing the desktop
+// hundreds of times a second.
+Check(LiquidGlassSettings.MinLiveSamplingInterval == 3, "the fastest sampling interval is 3 ms");
+Check(LiquidGlassSettings.MaxLiveSamplingInterval == 1000, "the slowest sampling interval is 1000 ms");
+Check(new LiquidGlassSettings(LiveSamplingInterval: 1).Normalize().LiveSamplingInterval == 3,
+    "a sub-3 ms sampling interval clamps up to 3 ms");
+Check(new LiquidGlassSettings(LiveSamplingInterval: 99999).Normalize().LiveSamplingInterval == 1000,
+    "an absurd sampling interval clamps down to 1000 ms");
+Check(new LiquidGlassSettings().LiveSamplingInterval == LiquidGlassSettings.DefaultLiveSamplingInterval,
+    "the default sampling interval is unchanged (10 fps)");
+Check(new LiquidGlassSettings().LiveSampling, "live sampling is on by default");
 var theme = oldTheme with { Surface = SurfaceStyle.LiquidGlass, OpacityLevel = 0.18, LiquidGlass = new(7, 55, 32, 80, 40, 225) };
 Check(theme.IsGlass && theme.IsLiquidGlass && !theme.UsesNativeBlur, "liquid glass disables fixed native blur");
 var restored = JsonSerializer.Deserialize<Theme>(JsonSerializer.Serialize(theme))!;
@@ -447,6 +460,11 @@ File.WriteAllBytes(Path.Combine(output, "liquid-glass-preview.png"), sheetData.T
 Console.WriteLine($"All optical checks passed in {timer.ElapsedMilliseconds} ms. Preview: {output}");
 OpticsProfile.Run(output);
 SoftGlowProfile.Run(output);
+
+// The GPU material is validated last: it can only be compile-checked here (see GpuMaterialCheck),
+// and its failure count has to reach the process exit code rather than throw mid-sheet.
+var gpuFailures = GpuMaterialCheck.Run();
+if (gpuFailures > 0) Environment.Exit(1);
 
 SKBitmap Decode(Theme material) => SKBitmap.Decode(LiquidGlassRenderer.Render(frame with { Theme = material }, wallpaper));
 void DrawCard(int x, string label, Theme material)

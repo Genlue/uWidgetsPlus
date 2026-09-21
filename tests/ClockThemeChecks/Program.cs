@@ -333,7 +333,14 @@ class Program
         var softWallpaper = new WallpaperSnapshot(null, new SKColor(16, 22, 36), LiveCapture: true, CachedBitmap: softStripes);
 
         var softTheme = glassTheme with { Surface = SurfaceStyle.SoftGlow, LiquidGlass = softOptics };
-        var crispTheme = glassTheme with { Surface = SurfaceStyle.LiquidGlass, LiquidGlass = softOptics };
+        // The crisp side has to zero both soft-recipe ingredients: since 柔光玻璃 was merged into
+        // 液态玻璃, 柔光晕 or 光谱弥散 above 0 selects the soft look on any surface, and without
+        // this the two themes would render identically.
+        var crispTheme = glassTheme with
+        {
+            Surface = SurfaceStyle.LiquidGlass,
+            LiquidGlass = softOptics with { Glow = 0, Spectrum = 0 }
+        };
         var softFrame = previewFrame with { Theme = softTheme };
         var crispFrame = previewFrame with { Theme = crispTheme };
         var softPng = GlyphLiquidGlassRenderer.Render(softFrame, softWallpaper, previewMask, 0.0);

@@ -36,6 +36,8 @@ namespace uWidgets.Core.Models.Settings;
 /// share of the aura; the sideways 晕染 between neighbouring rim colours is
 /// unaffected. Ignored by <see cref="SurfaceStyle.LiquidGlass"/>.
 /// </param>
+/// <param name="LiveSampling">Continuously sample the wallpaper; false freezes the latest frame.</param>
+/// <param name="LiveSamplingInterval">Target interval in milliseconds; frames are dropped under load.</param>
 public record LiquidGlassSettings(
     double Blur = 12,
     double Refraction = 28,
@@ -48,7 +50,9 @@ public record LiquidGlassSettings(
     double WallpaperOffsetY = 0,
     double Glow = 0,
     double Spectrum = 0,
-    double DyeSpread = 35)   // = DefaultDyeSpread; a primary-constructor default cannot name it
+    double DyeSpread = 35,
+    bool LiveSampling = true,
+    int LiveSamplingInterval = 100)   // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
 {
     /// <summary>
     /// Default 染色扩散 (%). Deliberately moderate: a wide wash over the content reads as
@@ -56,6 +60,32 @@ public record LiquidGlassSettings(
     /// the deepest spread.
     /// </summary>
     public const double DefaultDyeSpread = 35;
+
+    /// <summary>
+    /// True when either of the soft recipe's signature ingredients is switched on. The soft
+    /// material is no longer a separate theme; turning up 柔光晕 or 光谱弥散 is what selects it.
+    /// </summary>
+    public bool IsSoftRecipe => Glow > 0 || Spectrum > 0;
+
+    /// <summary>Slowest live sampling rate: 1 fps.</summary>
+    public const int MaxLiveSamplingInterval = 1000;
+
+    /// <summary>
+    /// Fastest live sampling rate: 3 ms — effectively "as fast as this machine can go".
+    /// <para>
+    /// The sampler is demand-driven: a tick only asks for a new frame, and a new desktop capture
+    /// actually happens once the previous one has been consumed and rendered. So a very small
+    /// interval does not grab the desktop hundreds of times a second, it just stops the interval
+    /// from being the bottleneck.
+    /// </para>
+    /// </summary>
+    public const int MinLiveSamplingInterval = 3;
+
+    /// <summary>
+    /// Default live sampling interval. A blurred backdrop hides motion, so 10 fps reads as
+    /// perfectly fluid while costing a third of what 30 fps would.
+    /// </summary>
+    public const int DefaultLiveSamplingInterval = 100;
 
     /// <summary>Dye band width as a fraction of the card's short side, at 染色扩散 = 0 / 100.</summary>
     public const double MinDyeBandFraction = 0.04;
@@ -104,7 +134,8 @@ public record LiquidGlassSettings(
         WallpaperOffsetY = Clamp(WallpaperOffsetY, -WallpaperOffsetLimit, WallpaperOffsetLimit, 0),
         Glow = Clamp(Glow, 0, 100, 0),
         Spectrum = Clamp(Spectrum, 0, 100, 0),
-        DyeSpread = Clamp(DyeSpread, 0, 100, DefaultDyeSpread)
+        DyeSpread = Clamp(DyeSpread, 0, 100, DefaultDyeSpread),
+        LiveSamplingInterval = Math.Clamp(LiveSamplingInterval, MinLiveSamplingInterval, MaxLiveSamplingInterval)
     };
 
     private static double Clamp(double value, double min, double max, double fallback) =>

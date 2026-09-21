@@ -32,6 +32,18 @@
         <StackPanel IsVisible="{Binding ShowGlassOpticsSettings}" Spacing="3" Margin="0 16 0 6">
             <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0 0 0 6" Text="{Binding GlassOpticsTitle}" />
             <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0 0 0 10" Text="{Binding GlassOpticsDescription}" />
+            <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
+                              Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
+                <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
+                              AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
+            </controls:Setting>
+            <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
+                              Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
+                              IsVisible="{Binding LiveSampling}">
+                <NumericUpDown MinWidth="130" Minimum="3" Maximum="1000" Increment="10" FormatString="F0"
+                               Value="{Binding LiveSamplingInterval}"
+                               AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
+            </controls:Setting>
             <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_Blur}"
                               Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BlurHint}">
                 <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
@@ -95,7 +107,9 @@
                                    Value="{Binding GlassEdgeTint}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
                 </Grid>
             </controls:Setting>
-            <!-- 柔光玻璃 only: the two extra ingredients of the soft recipe. -->
+            <!-- The soft recipe's ingredients. 柔光玻璃 was merged into this theme, so these rows
+                 are always offered: turning 柔光晕 or 光谱弥散 up above 0 is what selects the soft
+                 material, and both at 0 keeps the crisp, macOS-faithful default. -->
             <StackPanel IsVisible="{Binding ShowSoftGlowSettings}" Spacing="3">
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_SoftGlow_Glow}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_SoftGlow_GlowHint}">

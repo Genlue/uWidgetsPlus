@@ -40,6 +40,8 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(GlassGlow));
             this.RaisePropertyChanged(nameof(GlassSpectrum));
             this.RaisePropertyChanged(nameof(GlassDyeSpread));
+            this.RaisePropertyChanged(nameof(LiveSampling));
+            this.RaisePropertyChanged(nameof(LiveSamplingInterval));
             this.RaisePropertyChanged(nameof(Monochrome));
             this.RaisePropertyChanged(nameof(MonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
@@ -70,16 +72,22 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// The five surface presets, in the order they are shown:
-    /// frosted glass, solid, static liquid glass, soft glow glass and colorful (macOS).
+    /// The four surface presets, in the order they are shown: frosted glass, solid, liquid glass
+    /// and colorful (macOS).
+    /// <para>
+    /// 柔光玻璃 is deliberately <b>not</b> a preset any more: it was merged into 液态玻璃, which is
+    /// one surface and one pipeline, and the soft look is reached through the 柔光晕 / 光谱弥散
+    /// knobs. Its recipe survives as <see cref="LiquidGlassSettings.SoftGlowPreset"/> for stored
+    /// configurations, and the liquid-glass preset below keeps the crisp factory optics so the
+    /// default material is unchanged by the merge.
+    /// </para>
     /// </summary>
     public static readonly Theme[] SurfaceTemplates =
     [
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.4, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Acrylic),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass),
-        new(DarkMode: null, AccentColor: null, OpacityLevel: Theme.DefaultSoftGlowOpacity, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter",
-            Surface: SurfaceStyle.SoftGlow, LiquidGlass: LiquidGlassSettings.SoftGlowPreset),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass,
+            LiquidGlass: new LiquidGlassSettings()),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Colorful)
     ];
 
@@ -92,23 +100,22 @@ public class AppearanceViewModel : ReactiveObject
     public bool ShowGlassSettings => appSettingsProvider.Get().Theme.IsGlass;
 
     /// <summary>
-    /// True for both wallpaper-sampled materials (液态玻璃 / 柔光玻璃): they share the
-    /// same optics rows, which are hidden for 毛玻璃 and 纯色.
+    /// True for the wallpaper-sampled material: 液态玻璃 (which absorbed 柔光玻璃) exposes the
+    /// optics rows; they are hidden for 毛玻璃 and 纯色.
     /// </summary>
     public bool ShowGlassOpticsSettings => appSettingsProvider.Get().Theme.UsesRenderedGlass;
 
-    /// <summary>True only for 柔光玻璃: the extra soft-glow rows (halo / spectrum) are shown.</summary>
-    public bool ShowSoftGlowSettings => appSettingsProvider.Get().Theme.IsSoftGlow;
+    /// <summary>
+    /// The soft-recipe rows (halo / spectrum / dye spread). They belong to the merged theme now,
+    /// so they are always offered alongside the other optics.
+    /// </summary>
+    public bool ShowSoftGlowSettings => ShowGlassOpticsSettings;
 
-    /// <summary>Section title of the optics block — 柔光玻璃 has its own wording.</summary>
-    public string GlassOpticsTitle => appSettingsProvider.Get().Theme.IsSoftGlow
-        ? Locale.Settings_Appearance_SoftGlow_Title
-        : Locale.Settings_Appearance_Glass_Title;
+    /// <summary>Section title of the optics block.</summary>
+    public string GlassOpticsTitle => Locale.Settings_Appearance_Glass_Title;
 
-    /// <summary>Section description of the optics block — 柔光玻璃 has its own wording.</summary>
-    public string GlassOpticsDescription => appSettingsProvider.Get().Theme.IsSoftGlow
-        ? Locale.Settings_Appearance_SoftGlow_Description
-        : Locale.Settings_Appearance_Glass_Description;
+    /// <summary>Section description of the optics block.</summary>
+    public string GlassOpticsDescription => Locale.Settings_Appearance_Glass_Description;
 
     public double GlassBlur
     {
@@ -169,6 +176,24 @@ public class AppearanceViewModel : ReactiveObject
         set => UpdateGlass(glass => glass with { DyeSpread = value });
     }
 
+    /// <summary>
+    /// Sample the desktop continuously so animated wallpapers stay live behind the glass.
+    /// Switching this off freezes the last captured frame — the static material — which is what a
+    /// still wallpaper or a battery-saving session wants.
+    /// </summary>
+    public bool LiveSampling
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSampling;
+        set => UpdateGlass(glass => glass with { LiveSampling = value });
+    }
+
+    /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
+    public int LiveSamplingInterval
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.LiveSamplingInterval;
+        set => UpdateGlass(glass => glass with { LiveSamplingInterval = value });
+    }
+
     private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update)
     {
         var settings = appSettingsProvider.Get();
@@ -184,10 +209,12 @@ public class AppearanceViewModel : ReactiveObject
         appSettingsProvider.Save(next with { Theme = newTheme });
     }
 
-    /// <summary>Reset the optics to the active material's preset (柔光玻璃 has its own defaults).</summary>
-    public void ResetLiquidGlass() => UpdateGlass(_ => appSettingsProvider.Get().Theme.IsSoftGlow
-        ? LiquidGlassSettings.SoftGlowPreset
-        : new LiquidGlassSettings());
+    /// <summary>
+    /// Reset the optics to the merged 液态玻璃 theme's factory defaults — the crisp, macOS-faithful
+    /// recipe. 柔光玻璃 has no separate defaults any more: its look is a set of knob positions on
+    /// this same theme, and 柔光晕 / 光谱弥散 are what switch it back on.
+    /// </summary>
+    public void ResetLiquidGlass() => UpdateGlass(_ => new LiquidGlassSettings());
 
     public void RefreshLiquidGlassWallpaper()
     {

@@ -690,6 +690,18 @@
     <data name="Settings_Appearance_Glass_Reset" xml:space="preserve">
         <value>Reset glass parameters</value>
     </data>
+    <data name="Settings_Appearance_Glass_LiveSampling" xml:space="preserve">
+        <value>Sample animated wallpapers</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingHint" xml:space="preserve">
+        <value>Keep sampling the desktop so a video or animated wallpaper stays live behind the glass; turn off to freeze the current frame</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingInterval" xml:space="preserve">
+        <value>Sampling interval (ms)</value>
+    </data>
+    <data name="Settings_Appearance_Glass_LiveSamplingIntervalHint" xml:space="preserve">
+        <value>3–1000 ms · shorter is smoother and costs more; 100 ms (10 fps) is already smooth behind a blur</value>
+    </data>
     <data name="Settings_Appearance_Glass_Refresh" xml:space="preserve">
         <value>Refresh wallpaper</value>
     </data>

@@ -94,8 +94,10 @@ public static class SoftGlowProfile
         using var off100 = Render(Material(SurfaceStyle.SoftGlow, optics with { EdgeWidth = 0, Refraction = 100 }), ramp);
         using var on0 = Render(Material(SurfaceStyle.SoftGlow, optics with { EdgeWidth = 24, Refraction = 0 }), ramp);
         using var on100 = Render(Material(SurfaceStyle.SoftGlow, optics with { EdgeWidth = 24, Refraction = 100 }), ramp);
-        using var crisp0 = Render(Material(SurfaceStyle.LiquidGlass, optics with { EdgeWidth = 24, Refraction = 0 }), ramp);
-        using var crisp100 = Render(Material(SurfaceStyle.LiquidGlass, optics with { EdgeWidth = 24, Refraction = 100 }), ramp);
+        // The crisp baselines have to zero both soft-recipe ingredients: since the merge,
+        // 柔光晕 *or* 光谱弥散 above 0 selects the soft material on any surface.
+        using var crisp0 = Render(Material(SurfaceStyle.LiquidGlass, optics with { EdgeWidth = 24, Refraction = 0, Glow = 0, Spectrum = 0 }), ramp);
+        using var crisp100 = Render(Material(SurfaceStyle.LiquidGlass, optics with { EdgeWidth = 24, Refraction = 100, Glow = 0, Spectrum = 0 }), ramp);
 
         var offDelta = MeanDelta(off0, off100, 0, 120);
         var onDelta = MeanDelta(on0, on100, 0, 120);
@@ -231,13 +233,33 @@ public static class SoftGlowProfile
     {
         Check((int)SurfaceStyle.SoftGlow == 5, "SurfaceStyle.SoftGlow has enum value 5 (appended, so stored values stay valid)");
 
+        // 柔光玻璃 was merged into 液态玻璃: one surface, one pipeline. The soft look is now a
+        // recipe selected by the 柔光晕 / 光谱弥散 knobs rather than a separate theme.
         var theme = Material(SurfaceStyle.SoftGlow, LiquidGlassSettings.SoftGlowPreset);
-        Check(theme.EffectiveSurface == SurfaceStyle.SoftGlow, "EffectiveSurface resolves to SoftGlow");
-        Check(theme.IsGlass, "SoftGlow counts as a glass surface (outline rows stay available)");
-        Check(theme.UsesRenderedGlass, "SoftGlow is rendered from the desktop snapshot");
-        Check(theme.IsSoftGlow && !theme.IsLiquidGlass, "SoftGlow is its own material, not liquid glass");
-        Check(!theme.UsesNativeBlur, "SoftGlow never asks for the OS acrylic backdrop");
-        Check(!theme.IsColorful, "SoftGlow is not the colorful material");
+        Check(theme.EffectiveSurface == SurfaceStyle.LiquidGlass, "the legacy soft surface resolves to 液态玻璃");
+        Check(theme.IsGlass, "the merged theme counts as a glass surface (outline rows stay available)");
+        Check(theme.UsesRenderedGlass, "the merged theme is rendered from the desktop snapshot");
+        Check(theme.IsLiquidGlass, "the merged theme IS liquid glass — one theme, not two");
+        Check(theme.IsSoftGlow, "a stored soft configuration still selects the soft look");
+        Check(!theme.UsesNativeBlur, "liquid glass never asks for the OS acrylic backdrop");
+        Check(!theme.IsColorful, "the merged theme is not the colorful material");
+
+        // Migration folds the surface but must not touch the optics.
+        var migrated = theme.NormalizeMaterial();
+        Check(migrated.Surface == SurfaceStyle.LiquidGlass, "NormalizeMaterial folds the legacy surface into liquid glass");
+        Check(migrated.EffectiveLiquidGlass == LiquidGlassSettings.SoftGlowPreset,
+            "migration preserves the saved soft optics exactly");
+        Check(migrated.IsSoftGlow, "a migrated soft configuration keeps the soft look");
+
+        // The factory optics must stay crisp — that is the macOS-faithful material the merge
+        // is meant to default to, and it is what every pre-1.9.9 configuration already had.
+        var crisp = Material(SurfaceStyle.LiquidGlass, new LiquidGlassSettings());
+        Check(!crisp.IsSoftGlow, "the factory liquid-glass optics are the crisp recipe");
+        Check(!crisp.EffectiveLiquidGlass.IsSoftRecipe, "Glow/Spectrum at 0 means the soft recipe is off");
+        Check(Material(SurfaceStyle.LiquidGlass, new LiquidGlassSettings(Glow: 1)).IsSoftGlow,
+            "turning 柔光晕 up selects the soft recipe");
+        Check(Material(SurfaceStyle.LiquidGlass, new LiquidGlassSettings(Spectrum: 1)).IsSoftGlow,
+            "turning 光谱弥散 up selects the soft recipe");
 
         // The preset must survive its own validation untouched.
         Check(LiquidGlassSettings.SoftGlowPreset.Normalize() == LiquidGlassSettings.SoftGlowPreset,
@@ -246,7 +268,7 @@ public static class SoftGlowProfile
             "the soft-glow preset actually enables the halo and the spectrum");
 
         // Old configurations keep the historic optics: the new knobs default to 0,
-        // which is what the LiquidGlass recipe relies on.
+        // which is what the crisp liquid-glass recipe relies on.
         var legacy = new LiquidGlassSettings();
         Check(legacy.Glow == 0 && legacy.Spectrum == 0,
             "the historic default optics leave Glow/Spectrum off (液态玻璃 is unchanged)");
@@ -261,7 +283,8 @@ public static class SoftGlowProfile
         var clamped = new LiquidGlassSettings(Glow: double.NaN, Spectrum: 500).Normalize();
         Check(clamped.Glow == 0 && clamped.Spectrum == 100, "Glow/Spectrum are clamped and NaN-safe");
 
-        // Preset lookup (what the theme button loads) must agree with the template.
+        // Preset lookup (what the theme button loads) must agree with the merged model:
+        // asking for the legacy surface hands back the liquid-glass theme.
         var settings = new AppSettings(
             Material(SurfaceStyle.LiquidGlass, new LiquidGlassSettings()),
             [],
@@ -271,11 +294,18 @@ public static class SoftGlowProfile
             false,
             null);
         var preset = settings.GetThemeForSurface(SurfaceStyle.SoftGlow);
-        Check(preset.Surface == SurfaceStyle.SoftGlow, "GetThemeForSurface(SoftGlow) keeps the surface");
-        Check(Math.Abs(preset.OpacityLevel - Theme.DefaultSoftGlowOpacity) < 1e-6,
-            "GetThemeForSurface(SoftGlow) uses the soft-glow coating opacity");
-        Check(preset.EffectiveLiquidGlass == LiquidGlassSettings.SoftGlowPreset,
-            "GetThemeForSurface(SoftGlow) hands over the soft-glow preset optics");
+        Check(preset.EffectiveSurface == SurfaceStyle.LiquidGlass,
+            "GetThemeForSurface(SoftGlow) resolves to the merged liquid-glass theme");
+        Check(preset.EffectiveLiquidGlass == new LiquidGlassSettings(),
+            "GetThemeForSurface(SoftGlow) hands over the crisp liquid-glass defaults");
+
+        // Once the legacy surface has been folded in, the two lookup keys must be the same entry.
+        var folded = settings.WithThemeForSurface(SurfaceStyle.SoftGlow,
+            Material(SurfaceStyle.SoftGlow, LiquidGlassSettings.SoftGlowPreset));
+        Check(!folded.SurfaceThemes!.ContainsKey(nameof(SurfaceStyle.SoftGlow)),
+            "WithThemeForSurface(SoftGlow) stores under the merged surface, not the legacy key");
+        Check(folded.GetThemeForSurface(SurfaceStyle.LiquidGlass).IsSoftGlow,
+            "the folded-in soft optics are reachable through the liquid-glass key");
     }
 
     // ------------------------------------------------------------- rim/glow ----
@@ -289,7 +319,9 @@ public static class SoftGlowProfile
     private static void CheckSoftRim(byte[] grey)
     {
         var optics = LiquidGlassSettings.SoftGlowPreset with { Dispersion = 0, Glow = 100 };
-        var crisp = Rim(LiquidGlassSettings.SoftGlowPreset with { Dispersion = 0, Glow = 0, Highlight = 100 }, grey, true);
+        // The crisp baseline has to switch both soft-recipe ingredients off: since the merge,
+        // 柔光晕 *or* 光谱弥散 above 0 selects the soft material.
+        var crisp = Rim(LiquidGlassSettings.SoftGlowPreset with { Dispersion = 0, Glow = 0, Spectrum = 0, Highlight = 100 }, grey, true);
         var soft = Rim(optics, grey, false);
 
         Console.WriteLine($"Rim: 液态玻璃 peak {crisp.Peak:F1} levels, 25% width {crisp.Width} px, " +
@@ -370,7 +402,9 @@ public static class SoftGlowProfile
     private static void CheckRefractionIsGentler(byte[] ramp)
     {
         var soft = LiquidGlassSettings.SoftGlowPreset with { Highlight = 0, Dispersion = 0, Spectrum = 0, Refraction = 100 };
-        var crisp = LiquidGlassSettings.SoftGlowPreset with { Highlight = 0, Dispersion = 0, Spectrum = 0, Refraction = 100 };
+        // Same optics, but on the crisp recipe: 柔光晕 has to be off as well, or the merged
+        // model reads this as the soft material and the two sides become identical.
+        var crisp = LiquidGlassSettings.SoftGlowPreset with { Highlight = 0, Dispersion = 0, Spectrum = 0, Glow = 0, Refraction = 100 };
 
         using var softOn = Render(Material(SurfaceStyle.SoftGlow, soft), ramp);
         using var softOff = Render(Material(SurfaceStyle.SoftGlow, soft with { Refraction = 0 }), ramp);
@@ -386,7 +420,9 @@ public static class SoftGlowProfile
         Check(softDelta > 0.25f && softPeak >= 3f,
             $"柔光玻璃 still refracts at 100% (mean {softDelta:F2}, peak {softPeak:F0} levels)");
         Check(softDelta < crispDelta * 0.9f,
-            $"柔光玻璃 bends the backdrop more gently at the same slider value ({softDelta:F2} vs {crispDelta:F2})");
+            $"柔光玻璃 bends the backdrop more gently at the same slider value ({softDelta:F3} vs {crispDelta:F3}; " +
+            $"softRecipe={Material(SurfaceStyle.SoftGlow, soft).IsSoftGlow}, " +
+            $"crispRecipe={Material(SurfaceStyle.LiquidGlass, crisp).IsSoftGlow})");
 
         using var softCentre = Render(Material(SurfaceStyle.SoftGlow, soft), ramp);
         using var softCentreOff = Render(Material(SurfaceStyle.SoftGlow, soft with { Refraction = 0 }), ramp);

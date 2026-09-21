@@ -32,6 +32,34 @@ namespace uWidgets.Services;
 /// </summary>
 public static class LiquidGlassRenderer
 {
+    /// <summary>Builds a card-local backdrop bitmap for the GPU shader path.</summary>
+    public static SKBitmap? CreateBackdrop(Frame frame, WallpaperSnapshot wallpaper)
+    {
+        try
+        {
+            var source = wallpaper.CachedBitmap;
+            if (source == null && wallpaper.ImageBytes != null) source = SKBitmap.Decode(wallpaper.ImageBytes);
+            if (source == null) return null;
+            var sigma = (float)frame.Theme.EffectiveLiquidGlass.Blur * frame.Scale / 8f;
+            var radius = Math.Clamp(frame.Radius * frame.Scale, 0f, Math.Min(frame.Width, frame.Height) / 2f);
+            var pad = (int)Math.Ceiling(Math.Max(sigma * 3f, 16f));
+            using var surface = SKSurface.Create(new SKImageInfo(frame.Width + 2 * pad, frame.Height + 2 * pad));
+            surface.Canvas.Clear(wallpaper.Background);
+            using var filter = sigma > 0 ? SKImageFilter.CreateBlur(sigma, sigma, SKShaderTileMode.Clamp) : null;
+            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High, ImageFilter = filter };
+            surface.Canvas.Save();
+            surface.Canvas.Translate(pad, pad);
+            DrawWallpaper(surface.Canvas, source, paint, frame, wallpaper);
+            surface.Canvas.Restore();
+            using var image = surface.Snapshot();
+            var result = new SKBitmap(new SKImageInfo(frame.Width, frame.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+            image.ReadPixels(result.Info, result.GetPixels(), result.RowBytes, pad, pad);
+            result.SetImmutable();
+            if (!ReferenceEquals(source, wallpaper.CachedBitmap)) source.Dispose();
+            return result;
+        }
+        catch { return null; }
+    }
     public record Frame(int Width, int Height, float Scale, float Radius,
         float DesktopX, float DesktopY, float DesktopWidth, float DesktopHeight,
         float ScreenX, float ScreenY, float ScreenWidth, float ScreenHeight,
@@ -39,21 +67,21 @@ public static class LiquidGlassRenderer
         int Columns = 0, int Rows = 0);
 
     /// <summary>Rim displacement in DIPs at refraction = 100%. Prominent optical lens magnification.</summary>
-    private const float LensDips = 32f;
+    internal const float LensDips = 32f;
 
     /// <summary>Crisp rim-line width in DIPs. Modern iOS distinct 1.6 dp glass stroke.</summary>
     private const float RimLineDips = 1.6f;
 
-    /// <summary>Vibrancy: how much the glass boosts the backdrop's chroma.</summary>
-    private const float Saturation = 1.20f;
+    /// <summary>Vibrancy: how much the glass boosts the backdrop's chroma. Shared with the GPU path.</summary>
+    internal const float Saturation = 1.20f;
 
     /// <summary>Adaptive frost: floor and lift to keep dark backdrops legible without milky veil.</summary>
-    private const float FrostFloor = 0.015f;
-    private const float FrostLift = 0.07f;
-    private const float FrostCap = 0.09f;
+    internal const float FrostFloor = 0.015f;
+    internal const float FrostLift = 0.07f;
+    internal const float FrostCap = 0.09f;
 
     /// <summary>Highlight slider value that reproduces the measured iOS material.</summary>
-    private const double HighlightReference = 65.0;
+    internal const double HighlightReference = 65.0;
 
     /// <summary>
     /// Optics scaling parameters tailored for compact widget sizes (1x1 and 1xN/Nx1 strips).
@@ -570,12 +598,12 @@ public static class LiquidGlassRenderer
         public static AuraField Build(SKColor[] source, int sourceWidth, int sourceHeight, int pad,
             int cardWidth, int cardHeight)
         {
-            var step = Math.Clamp(Math.Min(cardWidth, cardHeight) / 22f, 4f, 18f);
+            var step = StepFor(cardWidth, cardHeight);
             var margin = step;
             var originX = pad - margin;
             var originY = pad - margin;
-            var columns = Math.Max(1, (int)MathF.Ceiling((cardWidth + margin * 2f) / step));
-            var rows = Math.Max(1, (int)MathF.Ceiling((cardHeight + margin * 2f) / step));
+            var columns = ColumnCount(cardWidth, margin, step);
+            var rows = ColumnCount(cardHeight, margin, step);
 
             var raw = new float[columns * rows * 3];
             for (var row = 0; row < rows; row++)
@@ -608,11 +636,68 @@ public static class LiquidGlassRenderer
                 }
             }
 
-            // Spread: two dilate passes let a colourful cell reach two cells out, so a small
-            // patch behaves like a light source rather than a sticker. The winner is the cell
-            // with the most colour × light (a saturated patch beats a grey neighbour, and a
-            // bright saturated one beats a dark saturated one), and it is taken at 70% so the
-            // patch keeps a centre instead of flattening into a plateau.
+            return new AuraField(SpreadAndSmooth(raw, columns, rows), columns, rows, step, margin);
+        }
+
+        /// <summary>
+        /// Same field, built by sampling the backdrop instead of averaging it. The GPU path starts
+        /// from an already-blurred, downscaled backdrop, so a cell's average is its centre value
+        /// and the exhaustive per-pixel pass would be the only remaining O(area) work on the CPU.
+        /// <paramref name="sampleCardPixel"/> maps card-local render pixels to a backdrop colour.
+        /// </summary>
+        public static AuraField BuildFromSampler(Func<float, float, SKColor> sampleCardPixel,
+            int cardWidth, int cardHeight)
+        {
+            var step = StepFor(cardWidth, cardHeight);
+            var margin = step;
+            var columns = ColumnCount(cardWidth, margin, step);
+            var rows = ColumnCount(cardHeight, margin, step);
+            var quarter = step * 0.25f;
+
+            var raw = new float[columns * rows * 3];
+            for (var row = 0; row < rows; row++)
+            for (var column = 0; column < columns; column++)
+            {
+                var cx = -margin + (column + 0.5f) * step;
+                var cy = -margin + (row + 0.5f) * step;
+                float red = 0, green = 0, blue = 0;
+                for (var sy = -1; sy <= 1; sy += 2)
+                for (var sx = -1; sx <= 1; sx += 2)
+                {
+                    var color = sampleCardPixel(cx + sx * quarter, cy + sy * quarter);
+                    red += color.Red;
+                    green += color.Green;
+                    blue += color.Blue;
+                }
+                var i = (row * columns + column) * 3;
+                raw[i] = red / 4f;
+                raw[i + 1] = green / 4f;
+                raw[i + 2] = blue / 4f;
+            }
+
+            return new AuraField(SpreadAndSmooth(raw, columns, rows), columns, rows, step, margin);
+        }
+
+        private static float StepFor(int cardWidth, int cardHeight) =>
+            Math.Clamp(Math.Min(cardWidth, cardHeight) / 22f, 4f, 18f);
+
+        private static int ColumnCount(int cardSide, float margin, float step) =>
+            Math.Max(1, (int)MathF.Ceiling((cardSide + margin * 2f) / step));
+
+        /// <summary>
+        /// Dye spread then smoothing — shared by both builders so the CPU and GPU paths cannot
+        /// drift apart.
+        /// <para>
+        /// Spread: two dilate passes let a colourful cell reach two cells out, so a small patch
+        /// behaves like a light source rather than a sticker. The winner is the cell with the most
+        /// colour × light (a saturated patch beats a grey neighbour, and a bright saturated one
+        /// beats a dark saturated one), and it is taken at 70% so the patch keeps a centre instead
+        /// of flattening into a plateau. Smooth: a 3×3 box blur removes the grid's cell edges,
+        /// which is what turns the spread into a soft 晕染 gradient instead of a mosaic.
+        /// </para>
+        /// </summary>
+        private static float[] SpreadAndSmooth(float[] raw, int columns, int rows)
+        {
             var spread = new float[raw.Length];
             for (var pass = 0; pass < 2; pass++)
             {
@@ -647,8 +732,6 @@ public static class LiquidGlassRenderer
                 Array.Copy(spread, raw, raw.Length);
             }
 
-            // Smooth: a 3×3 box blur removes the grid's cell edges, which is what turns the
-            // spread into a soft 晕染 gradient instead of a mosaic.
             var blurred = new float[raw.Length];
             for (var row = 0; row < rows; row++)
             for (var column = 0; column < columns; column++)
@@ -673,7 +756,36 @@ public static class LiquidGlassRenderer
                 blurred[target + 2] = blue / count;
             }
 
-            return new AuraField(blurred, columns, rows, step, margin);
+            return blurred;
+        }
+
+        /// <summary>Grid dimensions, for the GPU path's texture addressing.</summary>
+        public int Columns => columns;
+
+        /// <summary>Grid rows.</summary>
+        public int Rows => rows;
+
+        /// <summary>Cell size in card-local render pixels.</summary>
+        public float Step => step;
+
+        /// <summary>Bleed margin in card-local render pixels.</summary>
+        public float Margin => margin;
+
+        /// <summary>
+        /// The grid as a texture for the GPU path: one texel per cell, so a bilinear lookup of a
+        /// normalised coordinate reproduces <see cref="Sample"/> exactly.
+        /// </summary>
+        public SKBitmap ToBitmap()
+        {
+            var bitmap = new SKBitmap(new SKImageInfo(columns, rows, SKColorType.Bgra8888, SKAlphaType.Opaque));
+            for (var row = 0; row < rows; row++)
+            for (var column = 0; column < columns; column++)
+            {
+                var i = (row * columns + column) * 3;
+                bitmap.SetPixel(column, row, new SKColor(Clamp(cells[i]), Clamp(cells[i + 1]), Clamp(cells[i + 2])));
+            }
+            bitmap.SetImmutable();
+            return bitmap;
         }
 
         /// <summary>Colourfulness × brightness — how much of a light source this cell is.</summary>

@@ -97,29 +97,39 @@ public record Theme(
     /// (migrates old configurations that predate the <see cref="SurfaceStyle"/> field).
     /// </summary>
     public SurfaceStyle EffectiveSurface =>
+        Surface == SurfaceStyle.SoftGlow ? SurfaceStyle.LiquidGlass :
         Surface ?? (OpacityLevel < 1 ? SurfaceStyle.Acrylic : SurfaceStyle.Solid);
 
     /// <summary>
     /// True for surfaces that use a translucent, blur-capable backdrop
-    /// (frosted glass, its outlined variant, 液态玻璃 and 柔光玻璃); false for
+    /// (frosted glass, its outlined variant and 液态玻璃); false for
     /// <see cref="SurfaceStyle.Solid"/> and <see cref="SurfaceStyle.Colorful"/>.
     /// </summary>
-    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow;
+    public bool IsGlass => EffectiveSurface is SurfaceStyle.Acrylic or SurfaceStyle.LiquidGlass;
 
     /// <summary>Static refractive wallpaper material, with independently adjustable blur.</summary>
     public bool IsLiquidGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
-    /// <summary>Static wallpaper material with the soft, luminous recipe (see <see cref="SurfaceStyle.SoftGlow"/>).</summary>
-    public bool IsSoftGlow => EffectiveSurface == SurfaceStyle.SoftGlow;
+    /// <summary>
+    /// True while the <b>soft recipe</b> of the liquid-glass pipeline is active: the legacy
+    /// <see cref="SurfaceStyle.SoftGlow"/> material, or its two signature ingredients turned up on
+    /// the merged 液态玻璃 theme.
+    /// <para>
+    /// 柔光玻璃 was merged into 液态玻璃: both are the same surface and the same pipeline, and the
+    /// soft look is now reached through the 柔光晕 (<see cref="LiquidGlassSettings.Glow"/>) and
+    /// 光谱弥散 (<see cref="LiquidGlassSettings.Spectrum"/>) knobs instead of a separate theme.
+    /// At the factory defaults both are 0, so the merged theme is the crisp, macOS-faithful
+    /// material and stored configurations keep the optics they were saved with.
+    /// </para>
+    /// </summary>
+    public bool IsSoftGlow => Surface == SurfaceStyle.SoftGlow || EffectiveLiquidGlass.IsSoftRecipe;
 
     /// <summary>
-    /// True for the two materials that are drawn by the app from a desktop snapshot
-    /// (<see cref="SurfaceStyle.LiquidGlass"/> and <see cref="SurfaceStyle.SoftGlow"/>):
-    /// they share <see cref="LiquidGlassSettings"/> and the whole render pipeline, and
-    /// only differ by the recipe the renderer picks. Widgets use this to know that the
-    /// card itself must stay transparent so the rendered material shows through.
+    /// True for the material drawn by the app from a desktop snapshot
+    /// (<see cref="SurfaceStyle.LiquidGlass"/>, which absorbed 柔光玻璃): widgets use this to know
+    /// that the card itself must stay transparent so the rendered material shows through.
     /// </summary>
-    public bool UsesRenderedGlass => EffectiveSurface is SurfaceStyle.LiquidGlass or SurfaceStyle.SoftGlow;
+    public bool UsesRenderedGlass => EffectiveSurface == SurfaceStyle.LiquidGlass;
 
     /// <summary>Only frosted glass (毛玻璃) uses the native, fixed-radius acrylic backdrop.</summary>
     public bool UsesNativeBlur => EffectiveSurface == SurfaceStyle.Acrylic;
@@ -128,7 +138,13 @@ public record Theme(
     public bool IsColorful => EffectiveSurface == SurfaceStyle.Colorful;
 
     /// <summary>Defaults and validated ranges for old or manually edited configurations.</summary>
-    public LiquidGlassSettings EffectiveLiquidGlass => (LiquidGlass ?? new()).Normalize();
+    public LiquidGlassSettings EffectiveLiquidGlass =>
+        (LiquidGlass ?? (Surface == SurfaceStyle.SoftGlow ? LiquidGlassSettings.SoftGlowPreset : new())).Normalize();
+
+    /// <summary>Merge the legacy soft material while preserving its optical settings.</summary>
+    public Theme NormalizeMaterial() => Surface == SurfaceStyle.SoftGlow
+        ? this with { Surface = SurfaceStyle.LiquidGlass, LiquidGlass = EffectiveLiquidGlass }
+        : this;
 
     /// <summary>
     /// The highlighted glass ring color; falls back to <see cref="DefaultOutlineColor"/>

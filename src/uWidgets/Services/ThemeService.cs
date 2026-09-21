@@ -87,6 +87,14 @@ public class ThemeService : IThemeService
         // coating alpha. In Colorful mode, opacity is strictly 1.0 (opaque cards).
         Application.Current.Resources["BackgroundOpacity"] = theme.IsColorful ? 1.0 : theme.OpacityLevel;
 
+        // Animated wallpapers are sampled periodically. Turning this off keeps the
+        // last captured frame and makes liquid glass deterministic/static.
+        if (theme.UsesRenderedGlass)
+        {
+            var optics = theme.EffectiveLiquidGlass;
+            LiquidGlassWallpaper.ConfigureLiveSampling(optics.LiveSampling, optics.LiveSamplingInterval);
+        }
+
         if (theme.IsColorful)
         {
             var appleBlue = Color.Parse("#007AFF");

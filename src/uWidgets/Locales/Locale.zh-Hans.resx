@@ -747,6 +747,12 @@
     <data name="Settings_Appearance_Glass_HighlightHint" xml:space="preserve">
         <value>0–100% · 边缘亮线与内侧反光</value>
     </data>
+    <data name="Settings_Appearance_Glass_BackdropClarity" xml:space="preserve">
+        <value>背景清晰度</value>
+    </data>
+    <data name="Settings_Appearance_Glass_BackdropClarityHint" xml:space="preserve">
+        <value>25–100% · 壁纸采样分辨率；越低越快，100% 为原生</value>
+    </data>
     <data name="Settings_Appearance_Glass_Dispersion" xml:space="preserve">
         <value>色散强度</value>
     </data>

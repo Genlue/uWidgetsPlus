@@ -106,6 +106,7 @@ internal static class Probe
             Measure(label, source, contentChild, auraChild, uniforms, expectEmpty, grContext);
 
         Compare.Run(grContext);
+        Perf.Run();
     }
 
     private static LiquidGlassGpuEffect.Params Params(LiquidGlassSettings glass, bool auraEnabled)

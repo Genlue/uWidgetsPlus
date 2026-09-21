@@ -107,6 +107,17 @@
                                    Value="{Binding GlassEdgeTint}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_EdgeTint}" />
                 </Grid>
             </controls:Setting>
+            <!-- 背景清晰度: the one setting that trades live-sampling *speed* against backdrop
+                 detail. Everything else here is optics; this is the sampling round's cost. -->
+            <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
+                              Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
+                <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                    <Slider Minimum="25" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                            Value="{Binding GlassBackdropClarity, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                    <NumericUpDown Grid.Column="1" Minimum="25" Maximum="100" Increment="5" FormatString="F0"
+                                   Value="{Binding GlassBackdropClarity}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                </Grid>
+            </controls:Setting>
             <!-- The soft recipe's ingredients. 柔光玻璃 was merged into this theme, so these rows
                  are always offered: turning 柔光晕 or 光谱弥散 up above 0 is what selects the soft
                  material, and both at 0 keeps the crisp, macOS-faithful default. -->

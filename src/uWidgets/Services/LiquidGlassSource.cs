@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using SkiaSharp;
+using uWidgets.Core.Models.Settings;
 
 namespace uWidgets.Services;
 
@@ -84,8 +85,11 @@ internal sealed class GlassSource : IDisposable
 /// </summary>
 internal static class LiquidGlassSourceCache
 {
-    /// <summary>Longest backdrop side, in pixels. The blur hides the downscale; this bounds memory.</summary>
-    private const float MaxBackdropSide = 2560f;
+    /// <summary>
+    /// Lowest backdrop scale accepted, whatever 背景清晰度 asks for. A quarter of the desktop still
+    /// reads as a blurred wallpaper behind the lens; below that it is flat colour.
+    /// </summary>
+    private const float MinBackdropScale = (float)(LiquidGlassSettings.MinBackdropClarity / 100.0);
 
     /// <summary>Entries kept before the oldest is released. Widgets may differ in blur strength.</summary>
     private const int Capacity = 3;
@@ -110,7 +114,11 @@ internal static class LiquidGlassSourceCache
         var desktopWidth = frame.DesktopWidth >= 1f ? frame.DesktopWidth : Math.Max(1f, frame.Width);
         var desktopHeight = frame.DesktopHeight >= 1f ? frame.DesktopHeight : Math.Max(1f, frame.Height);
 
-        var scale = Math.Clamp(MaxBackdropSide / Math.Max(desktopWidth, desktopHeight), 0.35f, 1f);
+        // 背景清晰度 is the user's own cost/quality trade for the shared backdrop, so it is honoured
+        // directly instead of being capped by a constant of ours — and it is the knob that actually
+        // moves the sampling round, because the blur below is what the round spends its time on.
+        var scale = Math.Clamp(
+            (float)(frame.Theme.EffectiveLiquidGlass.BackdropClarity / 100.0), MinBackdropScale, 1f);
         var sigma = (float)frame.Theme.EffectiveLiquidGlass.Blur * frame.Scale / 8f * scale;
         var key = new GlassSourceKey(wallpaper, sigma, scale);
 

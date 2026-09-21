@@ -40,6 +40,7 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(GlassGlow));
             this.RaisePropertyChanged(nameof(GlassSpectrum));
             this.RaisePropertyChanged(nameof(GlassDyeSpread));
+            this.RaisePropertyChanged(nameof(GlassBackdropClarity));
             this.RaisePropertyChanged(nameof(LiveSampling));
             this.RaisePropertyChanged(nameof(LiveSamplingInterval));
             this.RaisePropertyChanged(nameof(Monochrome));
@@ -174,6 +175,18 @@ public class AppearanceViewModel : ReactiveObject
     {
         get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.DyeSpread;
         set => UpdateGlass(glass => glass with { DyeSpread = value });
+    }
+
+    /// <summary>
+    /// 背景清晰度 (25-100%): the resolution the shared backdrop is built at, relative to the
+    /// desktop's long side. This is the knob that actually moves the live-sampling rate — the
+    /// backdrop's downscale + blur is the half of a sampling round that is not the desktop grab,
+    /// and it costs roughly the square of this value. 100% = native pixels, no compression.
+    /// </summary>
+    public double GlassBackdropClarity
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlass.BackdropClarity;
+        set => UpdateGlass(glass => glass with { BackdropClarity = value });
     }
 
     /// <summary>

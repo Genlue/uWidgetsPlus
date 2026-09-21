@@ -59,6 +59,25 @@ Check(new LiquidGlassSettings(LiveSamplingInterval: 99999).Normalize().LiveSampl
 Check(new LiquidGlassSettings().LiveSamplingInterval == LiquidGlassSettings.DefaultLiveSamplingInterval,
     "the default sampling interval is unchanged (10 fps)");
 Check(new LiquidGlassSettings().LiveSampling, "live sampling is on by default");
+
+// 背景清晰度 is the knob that trades the sampling round's cost against backdrop detail, and it is
+// the user's own setting — so it must survive validation untouched across its whole range and only
+// be clamped at the documented floor. Silently capping it is the defect it exists to fix.
+Check(new LiquidGlassSettings().BackdropClarity == LiquidGlassSettings.DefaultBackdropClarity,
+    "backdrop clarity defaults to 50% (the measured cost/detail sweet spot)");
+Check(new LiquidGlassSettings(BackdropClarity: 100).Normalize().BackdropClarity == 100,
+    "backdrop clarity 100% (native resolution) survives validation");
+Check(new LiquidGlassSettings(BackdropClarity: 25).Normalize().BackdropClarity == 25,
+    "backdrop clarity 25% (the floor) survives validation");
+Check(new LiquidGlassSettings(BackdropClarity: 1).Normalize().BackdropClarity == LiquidGlassSettings.MinBackdropClarity,
+    "a sub-floor backdrop clarity clamps up to the minimum");
+Check(new LiquidGlassSettings(BackdropClarity: 9999).Normalize().BackdropClarity == 100,
+    "an absurd backdrop clarity clamps down to native");
+Check(double.IsFinite(new LiquidGlassSettings(BackdropClarity: double.NaN).Normalize().BackdropClarity),
+    "a non-finite backdrop clarity falls back to the default");
+Check(JsonSerializer.Deserialize<LiquidGlassSettings>(JsonSerializer.Serialize(
+        new LiquidGlassSettings(BackdropClarity: 80)))!.BackdropClarity == 80,
+    "backdrop clarity survives a JSON round trip");
 var theme = oldTheme with { Surface = SurfaceStyle.LiquidGlass, OpacityLevel = 0.18, LiquidGlass = new(7, 55, 32, 80, 40, 225) };
 Check(theme.IsGlass && theme.IsLiquidGlass && !theme.UsesNativeBlur, "liquid glass disables fixed native blur");
 var restored = JsonSerializer.Deserialize<Theme>(JsonSerializer.Serialize(theme))!;

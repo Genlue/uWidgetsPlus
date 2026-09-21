@@ -46,6 +46,8 @@ namespace uWidgets.Locales {
         public static string Settings_Appearance_Glass_EdgeWidthHint => ResourceManager.GetString("Settings_Appearance_Glass_EdgeWidthHint", resourceCulture);
         public static string Settings_Appearance_Glass_Highlight => ResourceManager.GetString("Settings_Appearance_Glass_Highlight", resourceCulture);
         public static string Settings_Appearance_Glass_HighlightHint => ResourceManager.GetString("Settings_Appearance_Glass_HighlightHint", resourceCulture);
+        public static string Settings_Appearance_Glass_BackdropClarity => ResourceManager.GetString("Settings_Appearance_Glass_BackdropClarity", resourceCulture);
+        public static string Settings_Appearance_Glass_BackdropClarityHint => ResourceManager.GetString("Settings_Appearance_Glass_BackdropClarityHint", resourceCulture);
         public static string Settings_Appearance_Glass_Dispersion => ResourceManager.GetString("Settings_Appearance_Glass_Dispersion", resourceCulture);
         public static string Settings_Appearance_Glass_DispersionHint => ResourceManager.GetString("Settings_Appearance_Glass_DispersionHint", resourceCulture);
         public static string Settings_Appearance_Glass_LightAngle => ResourceManager.GetString("Settings_Appearance_Glass_LightAngle", resourceCulture);

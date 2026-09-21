@@ -38,6 +38,18 @@ namespace uWidgets.Core.Models.Settings;
 /// </param>
 /// <param name="LiveSampling">Continuously sample the wallpaper; false freezes the latest frame.</param>
 /// <param name="LiveSamplingInterval">Target interval in milliseconds; frames are dropped under load.</param>
+/// <param name="BackdropClarity">
+/// 背景清晰度: the resolution the shared blurred backdrop is built at, as a percentage of the
+/// desktop's long side (100 = native pixels).
+/// <para>
+/// This is the one knob that trades the sampling round's <i>cost</i> — not its correctness —
+/// against detail. Measured on a 2560×1440 desktop, the downscale + blur of the backdrop costs
+/// ~26 ms at 100% and ~5 ms at 50%, and it is the blur that costs, not the resampling. The desktop
+/// grab itself is ~20 ms and is unaffected either way, because <c>PrintWindow</c> cannot render
+/// into a smaller target (it crops). Since the material blurs the backdrop and then samples it
+/// through a lens, the reduced grid is not visible.
+/// </para>
+/// </param>
 public record LiquidGlassSettings(
     double Blur = 12,
     double Refraction = 28,
@@ -52,7 +64,8 @@ public record LiquidGlassSettings(
     double Spectrum = 0,
     double DyeSpread = 35,
     bool LiveSampling = true,
-    int LiveSamplingInterval = 100)   // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
+    int LiveSamplingInterval = 100,   // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
+    double BackdropClarity = 50)      // = DefaultBackdropClarity
 {
     /// <summary>
     /// Default 染色扩散 (%). Deliberately moderate: a wide wash over the content reads as
@@ -66,6 +79,19 @@ public record LiquidGlassSettings(
     /// material is no longer a separate theme; turning up 柔光晕 or 光谱弥散 is what selects it.
     /// </summary>
     public bool IsSoftRecipe => Glow > 0 || Spectrum > 0;
+
+    /// <summary>
+    /// Default 背景清晰度 (%). Half the desktop is the measured sweet spot: it is where the
+    /// backdrop build stops dominating the sampling round, and the material's own blur hides the
+    /// reduced grid.
+    /// </summary>
+    public const double DefaultBackdropClarity = 50;
+
+    /// <summary>
+    /// Lowest 背景清晰度 (%). A quarter of the desktop still reads as a blurred wallpaper behind
+    /// the lens; below that the backdrop starts to look like flat colour.
+    /// </summary>
+    public const double MinBackdropClarity = 25;
 
     /// <summary>Slowest live sampling rate: 1 fps.</summary>
     public const int MaxLiveSamplingInterval = 1000;
@@ -135,7 +161,8 @@ public record LiquidGlassSettings(
         Glow = Clamp(Glow, 0, 100, 0),
         Spectrum = Clamp(Spectrum, 0, 100, 0),
         DyeSpread = Clamp(DyeSpread, 0, 100, DefaultDyeSpread),
-        LiveSamplingInterval = Math.Clamp(LiveSamplingInterval, MinLiveSamplingInterval, MaxLiveSamplingInterval)
+        LiveSamplingInterval = Math.Clamp(LiveSamplingInterval, MinLiveSamplingInterval, MaxLiveSamplingInterval),
+        BackdropClarity = Clamp(BackdropClarity, MinBackdropClarity, 100, DefaultBackdropClarity)
     };
 
     private static double Clamp(double value, double min, double max, double fallback) =>

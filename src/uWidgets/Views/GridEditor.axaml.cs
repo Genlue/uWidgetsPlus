@@ -135,7 +135,7 @@ public partial class GridEditor : Window
             var foundByScreen = displayMonitor.Find(targetScreen);
             if (foundByScreen != null) return foundByScreen;
             return new AttachedScreen(targetScreen,
-                new ScreenIdentity(string.Empty, "Screen", targetScreen.Bounds.Width, targetScreen.Bounds.Height, targetScreen.Primary, targetScreen.Scaling),
+                new ScreenIdentity(string.Empty, "Screen", targetScreen.Bounds.Width, targetScreen.Bounds.Height, targetScreen.IsPrimary, targetScreen.Scaling),
                 screenId != null ? layoutProvider.Get().FindById(screenId) : null);
         }
 
@@ -152,7 +152,7 @@ public partial class GridEditor : Window
             }
         }
 
-        return displayMonitor.Attached.FirstOrDefault(s => s.Screen.Primary)
+        return displayMonitor.Attached.FirstOrDefault(s => s.Screen.IsPrimary)
                ?? (Screens?.Primary is { } prim ? displayMonitor.Find(prim) : null);
     }
 
@@ -476,7 +476,7 @@ public partial class GridEditor : Window
         var target = GetTargetScreen();
         var screenName = target?.Config?.DisplayName
                          ?? (target?.Identity.FriendlyName.Length > 0 ? target.Identity.FriendlyName : null)
-                         ?? (target?.Screen.Primary == true ? "Primary" : null);
+                         ?? (target?.Screen.IsPrimary == true ? "Primary" : null);
         var screenHeader = screenName != null && target != null
             ? $"[{screenName} · {target.Screen.Bounds.Width}×{target.Screen.Bounds.Height}] "
             : "";

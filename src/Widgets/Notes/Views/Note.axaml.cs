@@ -392,11 +392,13 @@ public partial class Note : UserControl, IWidgetSelfRefreshing
     {
         viewModel.Update(newModel);
         var currentLayout = widgetLayoutProvider?.Get();
+        // The null test above is redundant for the compiler (widgetLayoutProvider is a
+        // non-nullable readonly field), but the dereference is guaranteed safe either way.
         if (currentLayout != null)
         {
             var newSettings = JsonSerializer.SerializeToElement(newModel);
             var newLayout = currentLayout with { Settings = newSettings };
-            widgetLayoutProvider.Save(newLayout);
+            widgetLayoutProvider!.Save(newLayout);
         }
     }
 

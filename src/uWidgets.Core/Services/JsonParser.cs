@@ -6,6 +6,9 @@ namespace uWidgets.Core.Services;
 /// <inheritdoc />
 public class JsonParser<T>(string filePath) : IDataProvider<T>
 {
+    /// <summary>
+    /// Cached deserialized data; <c>null</c> until the first <see cref="Get"/> call.
+    /// </summary>
     protected T? data;
     /// <inheritdoc />
     public event DataChangedEvent<T>? DataChanging;

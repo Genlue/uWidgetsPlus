@@ -106,7 +106,7 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 device?.FriendlyName ?? "Screen",
                 screen.Bounds.Width,
                 screen.Bounds.Height,
-                screen.Primary,
+                screen.IsPrimary,
                 screen.Scaling);
 
             var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds);
@@ -219,9 +219,10 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             {
                 Layout = primary.Layout.Where(w => w != widget).ToList()
             });
-            stored = stored.WithScreen(owner.Config with
+            // owner.Config is non-null: the query above only matches entries with a config.
+            stored = stored.WithScreen(owner.Config! with
             {
-                Layout = [.. owner.Config.Layout, entry]
+                Layout = [.. owner.Config!.Layout, entry]
             });
             moved = true;
         }

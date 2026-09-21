@@ -319,6 +319,7 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>Static file based fallback (Windows wallpaper image + registry placement).</summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static WallpaperSnapshot FromFileFallback()
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

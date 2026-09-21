@@ -14,6 +14,9 @@
         <RootNamespace>Folders</RootNamespace>
         <AssemblyName>Folders</AssemblyName>
         <Version>0.2.1</Version>
+        <!-- AVLN3001 is benign here: the flagged views are created from code / DataTemplates,
+             never through the runtime XAML loader. -->
+        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

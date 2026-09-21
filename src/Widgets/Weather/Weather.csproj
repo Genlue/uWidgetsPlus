@@ -9,6 +9,9 @@
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <EnableDynamicLoading>true</EnableDynamicLoading>
+        <!-- AVLN3001 is benign here: the flagged views are created from code / DataTemplates,
+             never through the runtime XAML loader. -->
+        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

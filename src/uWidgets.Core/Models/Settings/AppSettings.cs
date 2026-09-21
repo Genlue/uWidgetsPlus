@@ -20,6 +20,9 @@ namespace uWidgets.Core.Models.Settings;
 /// Show the notification-area (tray) icon. <c>true</c> by default; the tray menu can hide it and
 /// the widget context menu brings it back, so a hidden icon is never unreachable.
 /// </param>
+/// <param name="UpdateInterval">How often to check for updates.</param>
+/// <param name="LastUpdateCheckTime">UTC timestamp of the last update check; <c>null</c> when never checked.</param>
+/// <param name="SurfaceThemes">Per-surface theme overrides keyed by <see cref="SurfaceStyle"/> name; <c>null</c> falls back to the built-in presets.</param>
 public record AppSettings(
     Theme Theme,
     Theme[] Templates,

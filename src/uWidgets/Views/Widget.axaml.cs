@@ -49,7 +49,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     public bool IsFrameless => isFrameless;
 
     /// <inheritdoc />
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
 
     private void Notify(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
@@ -1352,7 +1352,8 @@ public partial class Widget : Window, INotifyPropertyChanged
         var owning = displayMonitor.FindByConfigId(widgetLayoutProvider.ScreenId);
         var current = displayMonitor.Find(this);
         var movedToAnotherScreen = current != null && owning != null && owning.Screen.Bounds != current.Screen.Bounds;
-        var span = movedToAnotherScreen ? (manualSpan ?? ResolveSpanFor(owning)) : (Columns: 1, Rows: 1);
+        // owning is not null whenever movedToAnotherScreen is true (see the condition above).
+        var span = movedToAnotherScreen ? (manualSpan ?? ResolveSpanFor(owning!)) : (Columns: 1, Rows: 1);
         
         TransferOwnership();
         

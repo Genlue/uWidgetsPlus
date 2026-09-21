@@ -168,7 +168,7 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
                 var config = attached.Config ?? displayMonitor.EnsureConfig(attached);
                 var name = config.DisplayName 
                            ?? (attached.Identity.FriendlyName.Length > 0 ? attached.Identity.FriendlyName : "Screen");
-                var suffix = attached.Screen.Primary ? " [Primary]" : "";
+                var suffix = attached.Screen.IsPrimary ? " [Primary]" : "";
                 var label = $"{name} ({attached.Screen.Bounds.Width}×{attached.Screen.Bounds.Height}{suffix})";
                 list.Add(new(label, config.Id, attached));
             }

@@ -47,7 +47,8 @@ public class WallpaperThemeService : IDisposable
     {
         if (!resolved)
         {
-            var source = GetSource();
+            // The registry solid-color fallback in GetSource is Windows-only.
+            var source = OperatingSystem.IsWindows() ? GetSource() : (Path: (string?) null, SolidColor: (string?) null);
             resolvedSourceKey = SourceKey(source);
             isDark = ComputeDark(source);
             resolved = true;
@@ -65,7 +66,8 @@ public class WallpaperThemeService : IDisposable
         busy = true;
         try
         {
-            var source = GetSource();
+            // The registry solid-color fallback in GetSource is Windows-only.
+            var source = OperatingSystem.IsWindows() ? GetSource() : (Path: (string?) null, SolidColor: (string?) null);
             var key = SourceKey(source);
             if (resolved && key == resolvedSourceKey) return;
 
@@ -93,6 +95,9 @@ public class WallpaperThemeService : IDisposable
     /// of whatever is currently displayed, so it wins over the raw path
     /// (which can be stale for slideshows and empty for spotlight).
     /// </summary>
+    // Registry-based fallback: only reached when the wallpaper image is missing, and the
+    // callers run behind the service's Windows availability check.
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static (string? Path, string? SolidColor) GetSource()
     {
         var transcoded = Path.Combine(

@@ -7,6 +7,7 @@ namespace uWidgets.Core.Models.Attributes;
 /// <example><c>[assembly: Locale(typeof(Locale), "MyWidget_DisplayName")]</c></example>
 /// <param name="localeType">Type of auto-generated <c>Locale.Designer.cs</c> class</param>
 /// <param name="displayName">Resource key of your assembly's display name</param>
+/// <param name="iconData">Icon data of your assembly</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class LocaleAttribute(Type localeType, string? displayName = null, string? iconData = null) : Attribute
 {

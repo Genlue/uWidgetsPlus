@@ -427,8 +427,10 @@ public partial class NoteSettings : UserControl
                 else selected.Remove(name);
                 UpdateModel(m => m with { SelectedFiles = selected.ToList() });
             }
-            check.Checked += OnCheckChanged;
-            check.Unchecked += OnCheckChanged;
+            // Checked and Unchecked both used to call OnCheckChanged; IsCheckedChanged fires
+            // for exactly the same transitions (false→true, true→false, null→value, value→null),
+            // so a single subscription keeps the previous behaviour.
+            check.IsCheckedChanged += OnCheckChanged;
             FilesPanel.Children.Add(check);
         }
     }

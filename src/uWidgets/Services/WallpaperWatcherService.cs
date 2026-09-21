@@ -83,6 +83,9 @@ public class WallpaperWatcherService : IDisposable
         }
     }
 
+    // Raised only by SystemEvents.UserPreferenceChanged, which is subscribed inside the
+    // OperatingSystem.IsWindows() guard in the constructor.
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
         if (e.Category is UserPreferenceCategory.Desktop 

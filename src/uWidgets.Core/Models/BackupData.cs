@@ -6,7 +6,7 @@ namespace uWidgets.Core.Models;
 /// A backup file: the global application settings plus per-screen configurations
 /// (each screen's widget layout and manual grid).
 /// <para>
-/// A full backup carries every screen (<see cref="Screens.Screens"/>); a single-screen
+/// A full backup carries every screen (<see cref="ScreensLayout.Screens"/>); a single-screen
 /// export carries exactly one screen entry inside the same structure.
 /// </para>
 /// </summary>

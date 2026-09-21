@@ -97,16 +97,13 @@ public class ThemeService : IThemeService
 
         if (theme.IsColorful)
         {
-            var appleBlue = Color.Parse("#007AFF");
-            Application.Current.Resources["SystemAccentColor"] = appleBlue;
-            Application.Current.Resources["SystemAccentColorDark1"] = appleBlue;
-            Application.Current.Resources["SystemAccentColorLight1"] = Color.Parse("#0A84FF");
+            // Apple systemBlue: #007AFF on light, #0A84FF on dark (the ramp the
+            // Colorful palettes were designed against).
+            ApplyAccent(Color.Parse("#007AFF"), light: Color.Parse("#0A84FF"));
         }
         else if (theme.AccentColor != null && Color.TryParse(theme.AccentColor, out var color))
         {
-            Application.Current.Resources["SystemAccentColor"] = color;
-            Application.Current.Resources["SystemAccentColorDark1"] = color;
-            Application.Current.Resources["SystemAccentColorLight1"] = color;
+            ApplyAccent(color);
         }
 
         // 纯色 surface: the card color (per dark/light variant) and the coating
@@ -143,6 +140,42 @@ public class ThemeService : IThemeService
         // Loaded after accentStyle so its vibrant palette (Red calendar, Orange clock second hand,
         // Blue/Purple/Orange monitor rings, etc.) takes precedence over single-color accent fallbacks.
         SwitchStyle(colorfulStyle, theme.IsColorful);
+    }
+
+    /// <summary>
+    /// The accent ramp the theme dictionaries read, minus the base <c>SystemAccentColor</c>.
+    /// Avalonia's Fluent theme pre-defines every one of these as a fixed shade of its own blue,
+    /// so <b>any key left unwritten keeps that blue</b> — which is exactly how a hand-picked
+    /// accent used to survive only in the light variant: <c>Styles/Accent.axaml</c> reads
+    /// <c>SystemAccentColorLight2</c> from its Dark dictionary and nothing ever wrote it, so dark
+    /// mode stayed Fluent blue no matter what the user picked (same for <c>Monochrome.axaml</c>,
+    /// <c>ThemeButton</c> and the 配置方案 badge).
+    /// </summary>
+    private static readonly string[] DarkAccentKeys =
+        ["SystemAccentColorDark1", "SystemAccentColorDark2", "SystemAccentColorDark3"];
+
+    /// <inheritdoc cref="DarkAccentKeys"/>
+    private static readonly string[] LightAccentKeys =
+        ["SystemAccentColorLight1", "SystemAccentColorLight2", "SystemAccentColorLight3"];
+
+    /// <summary>
+    /// Overwrite the whole accent ramp so the resolved accent is authoritative in both theme
+    /// variants. <paramref name="light"/>/<paramref name="dark"/> default to the accent itself:
+    /// the app has no shade hierarchy of its own, and a colour the user picked should render as
+    /// that colour — not as Fluent's tint of it.
+    /// </summary>
+    private static void ApplyAccent(Color accent, Color? light = null, Color? dark = null)
+    {
+        var lightShade = light ?? accent;
+        var darkShade = dark ?? accent;
+
+        Application.Current!.Resources["SystemAccentColor"] = accent;
+
+        foreach (var key in DarkAccentKeys)
+            Application.Current.Resources[key] = darkShade;
+
+        foreach (var key in LightAccentKeys)
+            Application.Current.Resources[key] = lightShade;
     }
 
     private static Color ParseColor(string hex, string fallbackHex) =>

@@ -148,7 +148,16 @@ public class SettingsViewModel : ReactiveObject
 
         if (!pageCache.TryGetValue(value, out var page))
         {
-            if (value.Type == typeof(Gallery))
+            // IsItem (checked above) guarantees a Type; bail out without caching otherwise
+            // instead of letting Activator.CreateInstance receive a null type.
+            if (value.Type is not { } pageType)
+            {
+                CurrentPage = null;
+                CurrentPageTitle = value.Text;
+                return;
+            }
+
+            if (pageType == typeof(Gallery))
             {
                 var assemblies = value.AssemblyInfos 
                     ?? (value.AssemblyInfo != null ? (IEnumerable<AssemblyInfo>)[value.AssemblyInfo] : Array.Empty<AssemblyInfo>());
@@ -156,13 +165,13 @@ public class SettingsViewModel : ReactiveObject
             }
             else
             {
-                page = value.Type switch
+                page = pageType switch
                 {
                     var type when type == typeof(General) => new General(appSettingsProvider, updateService),
                     var type when type == typeof(Profiles) => new Profiles(profileService),
                     var type when type == typeof(Advanced) => new Advanced(appSettingsProvider, layoutProvider, displayMonitor, profileService),
                     var type when type == typeof(MultiScreen) => new MultiScreen(appSettingsProvider, layoutProvider, displayMonitor),
-                    _ => (UserControl?) Activator.CreateInstance(value.Type, appSettingsProvider)
+                    _ => (UserControl?) Activator.CreateInstance(pageType, appSettingsProvider)
                 };
             }
 

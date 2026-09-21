@@ -44,7 +44,7 @@ public partial class Advanced : UserControl
             var currentWindow = TopLevel.GetTopLevel(this) as Window;
             var currentScreen = currentWindow != null ? displayMonitor.Find(currentWindow)?.Screen : null;
             var targetScreen = currentScreen
-                               ?? displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.Primary)?.Screen
+                               ?? displayMonitor.Attached.FirstOrDefault(screen => screen.Screen.IsPrimary)?.Screen
                                ?? (currentWindow != null ? currentWindow.Screens.Primary : null);
             new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, null, targetScreen).Show();
         }

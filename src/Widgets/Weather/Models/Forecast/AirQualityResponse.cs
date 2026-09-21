@@ -5,11 +5,11 @@ namespace Weather.Models.Forecast;
 public class AirQualityResponse
 {
     [JsonPropertyName("current")]
-    public CurrentAirQuality Current { get; set; }
+    public CurrentAirQuality Current { get; set; } = new();
     
     [JsonPropertyName("error")]
-    public string Error { get; set; }
+    public string Error { get; set; } = string.Empty;
     
     [JsonPropertyName("reason")]
-    public string Reason { get; set; }
+    public string Reason { get; set; } = string.Empty;
 }

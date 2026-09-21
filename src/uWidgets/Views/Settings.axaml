@@ -27,7 +27,16 @@
         </Style>
     </Window.Styles>
     
-    <Grid RowDefinitions="Auto,*" Background="{DynamicResource SettingsWindowBackground}">
+    <!-- The window's own glass surface. It is clipped to exactly the radius Avalonia's
+         WinUIComposition backdrop is rounded with (SettingsWindowCornerRadius), so the blurred
+         backdrop and the 0.80-opacity tint share one single corner outline. Without the clip the
+         square tint rectangle painted past the backdrop's arc, leaving a no-blur notch in every
+         corner that looked like a second, transparent corner. -->
+    <Border x:Name="WindowSurface"
+            Background="{DynamicResource SettingsWindowBackground}"
+            CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
+            ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
         <controls:LiquidGlassSurface x:Name="GlassSurface" Grid.RowSpan="2" SettingsSurface="False" />
         <!-- macOS traffic lights title bar (native system buttons are hidden
              via code when this mode is active) -->
@@ -92,5 +101,6 @@
                 </Grid>
             </SplitView.Content>
         </SplitView>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>

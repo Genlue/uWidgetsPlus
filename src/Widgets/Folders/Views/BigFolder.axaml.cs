@@ -610,7 +610,13 @@ public partial class BigFolder : UserControl, IWidgetSelfRefreshing
                     paths.Add(p);
             }
         }
+        // GetFileNames() is obsolete ("Use GetFiles") but still the only API that yields local
+        // paths for a plain string-list 'Files' drop; GetFiles() above already consumed the
+        // IStorageItem form. Kept, with a narrow suppression, because swapping it for GetFiles()
+        // would silently drop that drop-source. Migrate when Avalonia exposes the replacement.
+#pragma warning disable CS0618
         else if (data.GetFileNames() is { } fileNames)
+#pragma warning restore CS0618
         {
             foreach (var p in fileNames)
             {

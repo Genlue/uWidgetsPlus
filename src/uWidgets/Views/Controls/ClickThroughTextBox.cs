@@ -10,9 +10,9 @@ using Avalonia.Styling;
 
 namespace uWidgets.Views.Controls;
 
-public class ClickThroughTextBox : TextBox, IStyleable
+public class ClickThroughTextBox : TextBox
 {
-    Type IStyleable.StyleKey => typeof(TextBox);
+    protected override Type StyleKeyOverride => typeof(TextBox);
     public FlyoutBase? DefaultContextFlyout { get; set; }
 
     /// <summary>

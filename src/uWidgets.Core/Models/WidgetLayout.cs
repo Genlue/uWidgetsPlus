@@ -42,7 +42,7 @@ public record WidgetLayout(string Type, string SubType, int X, int Y, int Width,
     /// <para>
     /// Returns <c>-1</c> when the widget is genuinely absent, which callers must treat as
     /// "this widget is no longer part of the layout" — never as "append a new entry".
-    /// <see cref="List{T}.IndexOf"/> / <c>!=</c> cannot be used instead: the record's value
+    /// <see cref="List{T}.IndexOf(T)"/> / <c>!=</c> cannot be used instead: the record's value
     /// equality compares <see cref="Settings"/> (<see cref="JsonElement"/>) by document
     /// reference, so two entries parsed from different documents never compare equal even
     /// with identical content.

@@ -64,6 +64,13 @@ public class App : Application
         UpdateCornerRadiusResources(appSettingsProvider.Get());
         appSettingsProvider.DataChanged += (_, _, newSettings) => UpdateCornerRadiusResources(newSettings);
 
+        // The settings window paints its own rounded glass surface on top of Avalonia's
+        // WinUIComposition backdrop, so it has to be clipped to the radius that backdrop was
+        // built with. Both sides read Program.WindowCornerRadius, so they can never drift apart
+        // and reopen the transparent corner notch. This is a window radius — not the widget-card
+        // radius in Dimensions.Radius, which is a different (and much larger) setting.
+        Resources["SettingsWindowCornerRadius"] = new CornerRadius(Program.WindowCornerRadius);
+
 
         Control.LoadedEvent.AddClassHandler<ContextMenu>((cm, _) =>
         {

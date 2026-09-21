@@ -75,11 +75,30 @@ class Program
         }
     }
 
+    /// <summary>
+    /// Corner radius (DIP) of the application's own windows (the settings window and any dialog
+    /// that shows the compositor backdrop).
+    /// <para>
+    /// Deliberately a window-sized constant and <b>not</b> <c>Dimensions.Radius</c>: that setting
+    /// sizes the widget <i>cards</i> and is routinely configured much larger (36 on the author's
+    /// desktop), which made the settings window's corners absurdly round.
+    /// </para>
+    /// <para>
+    /// Keep it at or below the radius Windows itself rounds a top-level window with (8 DIP, scaled
+    /// by the monitor DPI). Windows rounds the finished window — content and composited backdrop
+    /// alike — with an antialiased arc and a matching shadow, so a backdrop radius that is
+    /// <i>smaller</i> than that arc is simply invisible and the window shows one clean corner. A
+    /// larger one draws a second arc inside the first, and the sliver between the two is glass-free
+    /// (the "small, transparent corner"). It is also deliberately not enforced with
+    /// <c>SetWindowRgn</c>: that region is a 1-bit mask, and clipping the window with it makes the
+    /// corners visibly jagged.
+    /// </para>
+    /// </summary>
+    public const double WindowCornerRadius = 8;
+
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-        var settings = new AppSettingsProvider().Get();
-        
         return AppBuilder.Configure<App>()
             .UseWin32()
             .UsePlatformDetect()
@@ -87,7 +106,8 @@ class Program
             .With(new Win32PlatformOptions
             {
                 CompositionMode = new[] { Win32CompositionMode.WinUIComposition },
-                WinUICompositionBackdropCornerRadius = settings.Theme.UseNativeFrame ? 0 : settings.Dimensions.Radius
+                // Read once, while the platform is built, so this radius is fixed for the session.
+                WinUICompositionBackdropCornerRadius = (float)WindowCornerRadius
             })
             .LogToTrace();
     }

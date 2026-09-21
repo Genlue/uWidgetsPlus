@@ -3,6 +3,14 @@ using System.Collections.Generic;
 
 namespace uWidgets.Core.Interfaces;
 
+/// <summary>
+/// One pagination indicator of a stack widget: the child's index, its display title and
+/// whether it is the active child, plus the opacity the indicator should be drawn with.
+/// </summary>
+/// <param name="Index">Zero-based index of the child widget the indicator points at.</param>
+/// <param name="Title">Display title of that child widget.</param>
+/// <param name="IsActive">Whether that child widget is the currently active one.</param>
+/// <param name="Opacity">Opacity the indicator should be rendered with.</param>
 public record StackWidgetIndicatorItem(int Index, string Title, bool IsActive, double Opacity);
 
 /// <summary>

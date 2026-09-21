@@ -16,6 +16,10 @@
         <ServerGarbageCollection>false</ServerGarbageCollection>
         <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
         <RetainVM>false</RetainVM>
+        <!-- AVLN3001 is benign here: every flagged view is instantiated from code / DataTemplates
+             and never resolved through the runtime XAML loader, so the missing public
+             parameterless constructor is intentional. -->
+        <NoWarn>$(NoWarn);AVLN3001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

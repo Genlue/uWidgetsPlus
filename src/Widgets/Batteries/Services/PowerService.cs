@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.RegularExpressions;
 using Batteries.Models;
@@ -394,6 +395,9 @@ public static class PowerService
         return DeviceKind.Other;
     }
 
+    // Only ever reached after the OperatingSystem.IsWindows() guard in GetConnectedPeripherals,
+    // so declaring the Windows requirement here (instead of on the public entry points) is exact.
+    [SupportedOSPlatform("windows")]
     private static List<PeripheralInfo> GetPeripheralsFromRegistry(IReadOnlyDictionary<string, DeviceKind>? overrides)
     {
         var list = new List<PeripheralInfo>();

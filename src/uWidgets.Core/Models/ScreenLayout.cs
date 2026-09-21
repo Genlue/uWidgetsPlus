@@ -51,16 +51,37 @@ public record ScreensLayout(List<ScreenLayout> Screens, int Version = 2)
     public static ScreensLayout FromLegacy(List<WidgetLayout> layout) =>
         new([new ScreenLayout(LegacyPrimaryId, null, null, null, null, null, layout)], Version: 1);
 
+    /// <summary>
+    /// Find a screen configuration by its <see cref="ScreenLayout.Id"/>.
+    /// </summary>
+    /// <returns>The matching entry, or <c>null</c> when no entry has that id.</returns>
     public ScreenLayout? FindById(string id) =>
         Screens.FirstOrDefault(screen => screen.Id == id);
 
+    /// <summary>
+    /// Replace the entry with the same <see cref="ScreenLayout.Id"/> as <paramref name="screen"/>,
+    /// or add it when no such entry exists.
+    /// </summary>
+    /// <param name="screen">The screen configuration to store.</param>
+    /// <returns>The updated layout; the receiver is left unchanged.</returns>
     public ScreensLayout WithScreen(ScreenLayout screen) => this with
     {
         Screens = Screens.Select(item => item.Id == screen.Id ? screen : item).ToList()
     };
 
+    /// <summary>
+    /// Append a screen configuration to the collection.
+    /// </summary>
+    /// <param name="screen">The screen configuration to append.</param>
+    /// <returns>The updated layout; the receiver is left unchanged.</returns>
     public ScreensLayout AddScreen(ScreenLayout screen) => this with { Screens = [..Screens, screen] };
 
+    /// <summary>
+    /// Insert or replace a screen configuration, depending on whether its
+    /// <see cref="ScreenLayout.Id"/> is already present.
+    /// </summary>
+    /// <param name="screen">The screen configuration to store.</param>
+    /// <returns>The updated layout; the receiver is left unchanged.</returns>
     public ScreensLayout UpsertScreen(ScreenLayout screen) =>
         Screens.Any(item => item.Id == screen.Id) ? WithScreen(screen) : AddScreen(screen);
 

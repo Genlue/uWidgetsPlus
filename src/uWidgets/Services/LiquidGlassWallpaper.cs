@@ -35,13 +35,6 @@ public static class LiquidGlassWallpaper
     /// <summary>Default live sampling interval (10 fps).</summary>
     public const int DefaultIntervalMs = LiquidGlassSettings.DefaultLiveSamplingInterval;
 
-    /// <summary>
-    /// How long a replaced capture is kept alive before its bitmap is disposed: long enough for
-    /// an in-flight background render to finish sampling it, short enough that a full-size
-    /// desktop bitmap is never doubled up for long.
-    /// </summary>
-    private const int RetireDelayMs = 3000;
-
     private static readonly object Gate = new();
     private static WallpaperSnapshot? cached;
     private static string? cachedKey;
@@ -186,6 +179,16 @@ public static class LiquidGlassWallpaper
 
     public static WallpaperSnapshot Get()
     {
+        // The cache owns one reference and the caller gets another; the caller releases it with
+        // WallpaperSnapshot.Dispose. Nothing here is kept alive by a timer — a capture is a full
+        // desktop bitmap and live sampling replaces it ten times a second.
+        var snapshot = GetShared();
+        snapshot.AddRef();
+        return snapshot;
+    }
+
+    private static WallpaperSnapshot GetShared()
+    {
         lock (Gate)
         {
             if (!OperatingSystem.IsWindows())
@@ -226,7 +229,7 @@ public static class LiquidGlassWallpaper
         }
 
         Volatile.Write(ref framePendingRef, 1);
-        Retire(old);
+        old?.Dispose();
 
         NotifyInvalidated();
     }
@@ -236,9 +239,10 @@ public static class LiquidGlassWallpaper
     /// <para>
     /// Called while every attached screen is covered by a fullscreen application: the capture is
     /// a full virtual desktop at physical resolution — the single largest allocation in the
-    /// process (tens of megabytes with several monitors) — nothing can be looking at glass right
-    /// then, and the next <see cref="Get"/> re-captures on demand. The snapshot is retired rather
-    /// than disposed inline so a render that is already sampling it cannot hit a disposed bitmap.
+    /// process (tens of megabytes with several monitors) — and nothing can be looking at glass
+    /// right then. The next <see cref="Get"/> re-captures on demand. Releasing here only drops the
+    /// cache's own reference: a render that is still holding one keeps the pixels valid until it
+    /// lets go.
     /// </para>
     /// </summary>
     public static void Release()
@@ -253,7 +257,7 @@ public static class LiquidGlassWallpaper
         }
 
         Volatile.Write(ref framePendingRef, 0);
-        Retire(old);
+        old?.Dispose();
     }
 
     private static void NotifyInvalidated()
@@ -269,12 +273,6 @@ public static class LiquidGlassWallpaper
         }
     }
 
-    private static void Retire(WallpaperSnapshot? old)
-    {
-        if (old == null) return;
-        Task.Delay(RetireDelayMs).ContinueWith(_ => old.Dispose(), TaskScheduler.Default);
-    }
-
     private static WallpaperSnapshot? CaptureOnce()
     {
         if (captureExpiresTicks > DateTime.UtcNow.Ticks && cached is { LiveCapture: true })
@@ -287,7 +285,7 @@ public static class LiquidGlassWallpaper
             var bmp = DesktopCapturer.CaptureBitmap();
             if (bmp == null) continue;
 
-            var snapshot = new WallpaperSnapshot(null, new SKColor(32, 38, 48), LiveCapture: true, CachedBitmap: bmp);
+            var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true);
             WallpaperSnapshot? old;
             lock (Gate)
             {
@@ -299,7 +297,8 @@ public static class LiquidGlassWallpaper
             }
 
             Volatile.Write(ref framePendingRef, 0);
-            Retire(old);
+            // Only the cache's reference goes; a render still using the previous frame keeps it.
+            old?.Dispose();
             return snapshot;
         }
         return null;
@@ -333,9 +332,9 @@ public static class LiquidGlassWallpaper
             catch { }
         }
         var old = cached;
-        cached = new WallpaperSnapshot(bytes, background, style, tile, CachedBitmap: bmp);
+        cached = WallpaperSnapshot.FromBitmap(bytes, background, bmp, style, tile);
         cachedKey = key;
-        Retire(old);
+        old?.Dispose();
         return cached;
     }
 }

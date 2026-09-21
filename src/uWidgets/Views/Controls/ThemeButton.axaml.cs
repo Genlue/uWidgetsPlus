@@ -184,8 +184,8 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         }
         catch { }
 
-        // 2. Fallback: query wallpaper snapshot
-        var snapshot = LiquidGlassWallpaper.Get();
+        // 2. Fallback: query wallpaper snapshot. The caller owns the reference Get() hands out.
+        using var snapshot = LiquidGlassWallpaper.Get();
         try
         {
             if (snapshot.ImageBytes != null)

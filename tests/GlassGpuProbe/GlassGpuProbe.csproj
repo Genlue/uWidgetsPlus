@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\uWidgets.Core\uWidgets.Core.csproj" />
+    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassGpuEffect.cs" Link="LiquidGlassGpuEffect.cs" />
+    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassRenderer.cs" Link="LiquidGlassRenderer.cs" />
+    <Compile Include="..\..\src\uWidgets\Services\LiquidGlassSource.cs" Link="LiquidGlassSource.cs" />
+  </ItemGroup>
+
+</Project>

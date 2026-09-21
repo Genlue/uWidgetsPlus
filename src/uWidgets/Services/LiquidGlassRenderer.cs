@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using SkiaSharp;
 using uWidgets.Core.Models.Settings;
@@ -152,6 +153,23 @@ public static class LiquidGlassRenderer
 
     /// <summary>Render one background to PNG. Safe on worker threads.</summary>
     public static byte[] Render(Frame frame, WallpaperSnapshot wallpaper)
+    {
+        using var bitmap = RenderBitmap(frame, wallpaper);
+        if (bitmap == null) return [];
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
+    }
+
+    /// <summary>
+    /// Render one background. Safe on worker threads; the <b>caller owns</b> the result.
+    /// <para>
+    /// The glass surface draws this bitmap straight onto the canvas through the Skia lease, so the
+    /// CPU material no longer pays a PNG encode on the worker and a decode on the render thread for
+    /// every frame. <see cref="Render"/> keeps the encoded form for the offline comparisons.
+    /// </para>
+    /// </summary>
+    public static SKBitmap? RenderBitmap(Frame frame, WallpaperSnapshot wallpaper)
     {
         var optics = frame.Theme.EffectiveLiquidGlass;
         var scale = frame.Scale;
@@ -540,8 +558,14 @@ public static class LiquidGlassRenderer
         using var glassPaint = new SKPaint { Shader = shader, IsAntialias = true };
         output.Canvas.DrawRoundRect(new SKRect(0, 0, width, height), radius, radius, glassPaint);
         using var result = output.Snapshot();
-        using var data = result.Encode(SKEncodedImageFormat.Png, 100);
-        return data.ToArray();
+        var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul));
+        if (!result.ReadPixels(bitmap.Info, bitmap.GetPixels(), bitmap.RowBytes, 0, 0))
+        {
+            bitmap.Dispose();
+            return null;
+        }
+        bitmap.SetImmutable();
+        return bitmap;
 
         SKColor Sample(float x, float y)
         {
@@ -1010,15 +1034,63 @@ public static class LiquidGlassRenderer
     }
 }
 
+/// <summary>
+/// A reference-counted desktop capture.
+/// <para>
+/// The capture is the single largest allocation in the process — a full virtual desktop at physical
+/// resolution, tens of megabytes with several monitors — and live sampling replaces it many times a
+/// second. It is therefore released the moment its last user lets go rather than after a fixed
+/// grace period: at the default 10 fps a three-second grace kept roughly thirty captures alive at
+/// once (hundreds of megabytes), which is where the liquid-glass theme's memory went.
+/// </para>
+/// </summary>
+public sealed class WallpaperLease : IDisposable
+{
+    private int references = 1;
+    private readonly SKBitmap? bitmap;
+
+    public WallpaperLease(SKBitmap? bitmap) => this.bitmap = bitmap;
+
+    public SKBitmap? Bitmap => bitmap;
+
+    public void AddRef() => Interlocked.Increment(ref references);
+
+    public void Dispose()
+    {
+        if (Interlocked.Decrement(ref references) > 0) return;
+        try { bitmap?.Dispose(); } catch { }
+    }
+}
+
 public record WallpaperSnapshot(
     byte[]? ImageBytes,
     SKColor Background,
     string Style = "10",
     bool Tile = false,
-    bool LiveCapture = false,
-    SKBitmap? CachedBitmap = null) : IDisposable
+    bool LiveCapture = false) : IDisposable
 {
     private byte[]? _imageBytes = ImageBytes;
+
+    /// <summary>
+    /// The captured pixels, reference counted.
+    /// <para>
+    /// Deliberately an <c>init</c> property and not a positional parameter: <c>with</c> then copies
+    /// the <i>reference to the lease</i>, which keeps every copy sharing one count. A raw bitmap in
+    /// the positional list would instead be copied by value, giving the copy its own ownership of
+    /// the same pixels — and then two disposals would free them twice.
+    /// </para>
+    /// </summary>
+    internal WallpaperLease? Lease { get; init; }
+
+    public SKBitmap? CachedBitmap => Lease?.Bitmap;
+
+    /// <summary>A snapshot owning a fresh lease around <paramref name="bitmap"/>.</summary>
+    public static WallpaperSnapshot FromBitmap(byte[]? bytes, SKColor background, SKBitmap? bitmap,
+        string style = "10", bool tile = false, bool live = false) =>
+        new(bytes, background, style, tile, live)
+        {
+            Lease = bitmap == null ? null : new WallpaperLease(bitmap)
+        };
 
     public byte[]? ImageBytes
     {
@@ -1040,10 +1112,21 @@ public record WallpaperSnapshot(
         init => _imageBytes = value;
     }
 
-    public void Dispose()
+    /// <summary>
+    /// A copy that only overrides the wallpaper's placement (used by the settings preview). The copy
+    /// shares the pixels and takes its <b>own</b> reference, so its owner must dispose it.
+    /// </summary>
+    public WallpaperSnapshot WithPlacement(string style, bool tile)
     {
-        try { CachedBitmap?.Dispose(); } catch { }
+        Lease?.AddRef();
+        return this with { Style = style, Tile = tile };
     }
+
+    /// <summary>Take one more reference; the caller becomes responsible for one <see cref="Dispose"/>.</summary>
+    public void AddRef() => Lease?.AddRef();
+
+    /// <summary>Release one reference, freeing the capture once the last one goes.</summary>
+    public void Dispose() => Lease?.Dispose();
 
     public string Describe() =>
         $"WallpaperSnapshot(bytes={_imageBytes?.Length ?? 0}, hasBitmap={CachedBitmap != null}, bg=#{Background.Red:X2}{Background.Green:X2}{Background.Blue:X2}, style={Style}, tile={Tile}, live={LiveCapture})";

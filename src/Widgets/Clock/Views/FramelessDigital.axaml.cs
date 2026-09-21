@@ -518,7 +518,8 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         _ = Task.Run(() =>
         {
             if (token.IsCancellationRequested) return;
-            var wallpaper = LiquidGlassWallpaper.Get();
+            // The snapshot carries a reference the caller owns; hold it for the whole render.
+            using var wallpaper = LiquidGlassWallpaper.Get();
             if (token.IsCancellationRequested) return;
             var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask, model.RefractionWidth);
             if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;

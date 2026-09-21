@@ -102,28 +102,51 @@ public sealed class LiquidGlassSurface : Control
     private Window? window;
 
     /// <summary>
-    /// Everything the render thread needs, swapped as one reference.
+    /// Everything the render thread needs, swapped as one reference and <b>reference counted</b>.
     /// <para>
     /// The render thread reads this field once per frame and gets a self-consistent set; the UI
-    /// thread publishes a whole new set at a time and retires the old one (see
-    /// <see cref="RetirePrepared"/>). Splitting these into separate fields would let a frame read a
-    /// new backdrop next to a stale frame geometry, and would let a swap free a bitmap that the
-    /// render thread had already picked up.
+    /// thread publishes a whole new set at a time and drops its own reference. That is not enough on
+    /// its own: Avalonia keeps a custom draw operation in its composition tree and re-invokes it on
+    /// later frames, so a draw operation can outlive the snapshot it was built for by an unbounded
+    /// amount. Each draw operation therefore takes its own reference and gives it back from
+    /// <see cref="ICustomDrawOperation.Dispose"/>, which is what makes the material safe to retire
+    /// immediately — the old time-based grace period both failed to guarantee that (the GPU backlog
+    /// this theme shipped with came from exactly that use-after-free) and held full-size bitmaps
+    /// alive far longer than needed.
     /// </para>
     /// </summary>
-    private sealed record Prepared(GlassSource? Source, AuraTexture Aura, LiquidGlassRenderer.Frame Frame, Bitmap? Cpu);
+    private sealed class Prepared : IDisposable
+    {
+        private int references = 1;
+
+        public Prepared(GlassSource? source, AuraTexture aura, LiquidGlassRenderer.Frame frame, SKBitmap? cpu)
+        {
+            Source = source;
+            Aura = aura;
+            Frame = frame;
+            Cpu = cpu;
+        }
+
+        public GlassSource? Source { get; }
+        public AuraTexture Aura { get; }
+        public LiquidGlassRenderer.Frame Frame { get; }
+        public SKBitmap? Cpu { get; }
+
+        public void AddRef() => Interlocked.Increment(ref references);
+
+        public void Dispose()
+        {
+            if (Interlocked.Decrement(ref references) > 0) return;
+            Cpu?.Dispose();
+            Aura.Bitmap?.Dispose();
+            Source?.Dispose();
+        }
+    }
 
     private volatile Prepared? prepared;
     private bool attached;
     private bool busy;
     private int revision;
-
-    /// <summary>
-    /// How long a replaced backdrop is kept alive. A full-size desktop texture cannot be freed
-    /// inline — the render thread may be in the middle of a frame that already picked it up — and a
-    /// quarter second is many frames, while still bounding the overlap to a couple of textures.
-    /// </summary>
-    private const int SourceRetireDelayMs = 250;
 
     /// <summary>The dye bloom grid and the metadata the shader needs to address it.</summary>
     private readonly record struct AuraTexture(SKBitmap? Bitmap, float Columns, float Rows, float Step, float Margin)
@@ -217,23 +240,11 @@ public sealed class LiquidGlassSurface : Control
     /// <summary>Drop every prepared resource. Safe to call repeatedly.</summary>
     private void ReleasePrepared() => RetirePrepared(Interlocked.Exchange(ref prepared, null));
 
-    private static void RetirePrepared(Prepared? old)
-    {
-        if (old == null) return;
-        old.Cpu?.Dispose();
-        RetireAura(old.Aura.Bitmap);
-        if (old.Source is not { } source) return;
-        // The render thread may still be sampling this backdrop, so it is released on a delay.
-        // Releasing it is what lets the bitmap go: the cache owns a reference of its own, and the
-        // surface's reference is the one that keeps a texture alive across a capture swap.
-        Task.Delay(SourceRetireDelayMs).ContinueWith(_ => source.Dispose(), TaskScheduler.Default);
-    }
-
-    private static void RetireAura(SKBitmap? bitmap)
-    {
-        if (bitmap == null) return;
-        Task.Delay(3000).ContinueWith(_ => { try { bitmap.Dispose(); } catch { } }, TaskScheduler.Default);
-    }
+    /// <summary>
+    /// Drop this surface's reference to a snapshot. The bitmaps are freed when the last draw
+    /// operation holding one has also let go (see <see cref="Prepared"/>).
+    /// </summary>
+    private static void RetirePrepared(Prepared? old) => old?.Dispose();
 
     private async void RenderMaterial()
     {
@@ -241,10 +252,13 @@ public sealed class LiquidGlassSurface : Control
         busy = true;
         var current = revision;
         var started = Environment.TickCount64;
+        // The caller's reference on the desktop capture. Held for the whole prepare (the JPEG-free
+        // CPU render is a second worker hop that reuses it) and released in the finally below.
+        WallpaperSnapshot? wallpaper = null;
         try
         {
             var frame = BuildFrame();
-            byte[]? bytes = null;
+            SKBitmap? nextCpu = null;
             GlassSource? nextSource = null;
             var nextAura = default(AuraTexture);
             var path = "none";
@@ -256,33 +270,44 @@ public sealed class LiquidGlassSurface : Control
             var wantGpu = Volatile.Read(ref gpuState) != 2;
             var result = await Task.Run<(GlassSource? Source, WallpaperSnapshot Wallpaper, AuraTexture Aura)>(() =>
             {
-                var wallpaper = LiquidGlassWallpaper.Get();
-                var sampled = preview ? wallpaper with { Style = "10", Tile = false } : wallpaper;
-
-                if (wantGpu && LiquidGlassGpuEffect.IsSupported)
+                var snapshot = LiquidGlassWallpaper.Get();
+                // The preview only overrides the wallpaper's placement. The copy takes its own
+                // reference, so exactly one reference leaves this lambda on every path.
+                var sampled = preview ? snapshot.WithPlacement("10", false) : snapshot;
+                if (preview) snapshot.Dispose();
+                try
                 {
-                    var shared = LiquidGlassSourceCache.Get(frame, sampled);
-                    if (shared != null)
+                    if (wantGpu && LiquidGlassGpuEffect.IsSupported)
                     {
-                        // Already an owned reference — the cache handed one over, so it cannot
-                        // be evicted and freed out from under the dye-field build below.
-                        try
+                        var shared = LiquidGlassSourceCache.Get(frame, sampled);
+                        if (shared != null)
                         {
-                            return (shared, sampled, BuildAura(frame, shared));
-                        }
-                        catch
-                        {
-                            shared.Dispose();
-                            throw;
+                            // Already an owned reference — the cache handed one over, so it cannot
+                            // be evicted and freed out from under the dye-field build below.
+                            try
+                            {
+                                return (shared, sampled, BuildAura(frame, shared));
+                            }
+                            catch
+                            {
+                                shared.Dispose();
+                                throw;
+                            }
                         }
                     }
+                    return (null, sampled, default(AuraTexture));
                 }
-                return (null, sampled, default(AuraTexture));
+                catch
+                {
+                    sampled.Dispose();
+                    throw;
+                }
             });
 
             // That own reference becomes the surface's; RetirePrepared releases it later.
             nextSource = result.Source;
             nextAura = result.Aura;
+            wallpaper = result.Wallpaper;
 
             if (nextSource != null)
             {
@@ -300,7 +325,7 @@ public sealed class LiquidGlassSurface : Control
                 try
                 {
                     if (!attached || revision != current) return;
-                    bytes = await Task.Run(() => LiquidGlassRenderer.Render(frame, result.Wallpaper));
+                    nextCpu = await Task.Run(() => LiquidGlassRenderer.RenderBitmap(frame, wallpaper!));
                 }
                 finally { RenderSlots.Release(); }
             }
@@ -312,23 +337,16 @@ public sealed class LiquidGlassSurface : Control
                 return;
             }
 
-            Bitmap? nextBitmap = null;
-            if (bytes is { Length: > 0 })
-            {
-                using var stream = new MemoryStream(bytes);
-                nextBitmap = new Bitmap(stream);
-            }
-
             // Never publish an empty material. Doing so would replace working glass with the faint
             // placeholder and blank the card, which is strictly worse than showing a stale frame.
-            if (nextSource == null && nextBitmap == null)
+            if (nextSource == null && nextCpu == null)
             {
                 GlassDiagnostics.Note($"empty ({path}) — keeping the previous material", started, frame);
                 RetirePrepared(new Prepared(null, nextAura, frame, null));
                 return;
             }
 
-            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextBitmap));
+            var previous = Interlocked.Exchange(ref prepared, new Prepared(nextSource, nextAura, frame, nextCpu));
             RetirePrepared(previous);
             GlassDiagnostics.Note($"published ({path})", started, frame);
             InvalidateVisual();
@@ -342,6 +360,7 @@ public sealed class LiquidGlassSurface : Control
         }
         finally
         {
+            wallpaper?.Dispose();
             busy = false;
             if (attached && revision != current) RequestRender();
         }
@@ -424,17 +443,17 @@ public sealed class LiquidGlassSurface : Control
         var rect = new Rect(Bounds.Size);
 
         // One read of the swapped snapshot: the render thread must never see a new backdrop
-        // paired with a stale frame, and the bitmaps it references stay alive for at least
-        // SourceRetireDelayMs after any swap.
+        // paired with a stale frame, and the draw operation takes its own reference so the
+        // bitmaps survive however long the compositor keeps it.
         var current = prepared;
         if (current is { Source: not null })
         {
-            context.Custom(new GlassDrawOperation(current.Source, current.Aura, current.Frame, Material, rect));
+            context.Custom(new GlassDrawOperation(current, Material, rect));
             return;
         }
-        if (current?.Cpu != null)
+        if (current is { Cpu: not null })
         {
-            context.DrawImage(current.Cpu, rect);
+            context.Custom(new ImageDrawOperation(current, rect));
             return;
         }
 
@@ -448,9 +467,14 @@ public sealed class LiquidGlassSurface : Control
     }
 
     /// <summary>
-    /// Runs the optical shader on the render thread. It owns nothing: the surface holds the
-    /// backdrop reference and retires it on a delay, so this operation never has to free a texture
-    /// and does not depend on the renderer disposing it at any particular moment.
+    /// Runs the optical shader on the render thread.
+    /// <para>
+    /// It holds one reference on the <see cref="Prepared"/> snapshot it draws, taken in the
+    /// constructor and given back from <see cref="Dispose"/>. Avalonia keeps a custom draw
+    /// operation in its composition tree and re-invokes it on later frames, so without that
+    /// reference a backdrop could be freed while a queued operation still pointed at it — which is
+    /// a use-after-free inside Skia, not a recoverable exception.
+    /// </para>
     /// <para>
     /// <b>The GrContext check is not optional.</b> SkRuntimeEffect shaders are GPU-only in this
     /// Skia: drawing one onto a raster canvas kills the process with an SEHException that managed
@@ -460,21 +484,24 @@ public sealed class LiquidGlassSurface : Control
     /// </summary>
     private sealed class GlassDrawOperation : ICustomDrawOperation
     {
+        private readonly Prepared prepared;
         private readonly GlassSource source;
         private readonly AuraTexture aura;
         private readonly LiquidGlassRenderer.Frame frame;
         private readonly Theme material;
+        private int disposed;
 
         public Rect Bounds { get; }
 
-        public GlassDrawOperation(GlassSource source, AuraTexture aura,
-            LiquidGlassRenderer.Frame frame, Theme material, Rect bounds)
+        public GlassDrawOperation(Prepared prepared, Theme material, Rect bounds)
         {
-            this.source = source;
-            this.aura = aura;
-            this.frame = frame;
+            this.prepared = prepared;
+            source = prepared.Source!;
+            aura = prepared.Aura;
+            frame = prepared.Frame;
             this.material = material;
             Bounds = bounds;
+            prepared.AddRef();
         }
 
         public bool HitTest(Point p) => false;
@@ -485,7 +512,10 @@ public sealed class LiquidGlassSurface : Control
 
         public override int GetHashCode() => source.GetHashCode();
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref disposed, 1) == 0) prepared.Dispose();
+        }
 
         public void Render(ImmediateDrawingContext context)
         {
@@ -619,17 +649,12 @@ public sealed class LiquidGlassSurface : Control
                 Stage("d0 uniforms echoed", UniformEchoStage, null, uniforms, surface, rect);
                 Stage("d1 rounded-rect mask, no out param", MaskStage, null, uniforms, surface, rect);
                 Stage("d2 same mask, WITH out param", MaskOutParamStage, null, uniforms, surface, rect);
-                // The full model, then with its two most expensive groups of texture fetches
-                // removed in turn. If one of these starts producing colour, the blocker is the
-                // sheer number of sample() calls rather than any single construct.
+                // The full model, then with the seven-tap spectrum removed. If one of these starts
+                // producing colour while the other does not, the blocker is that group of texture
+                // fetches rather than any single construct.
                 Stage("e0 full model (unchanged)", fullSource, contentChild, uniforms, surface, rect);
                 Stage("e1 full model, no 7-tap spectrum",
                     StripMarked(fullSource, "spectrum", ""), contentChild, uniforms, surface, rect);
-                Stage("e2 full model, single-tap sampling",
-                    StripMarked(fullSource, "bilinear", "  return contentTexel(p);"), contentChild, uniforms, surface, rect);
-                Stage("e3 full model, both removed",
-                    StripMarked(StripMarked(fullSource, "spectrum", ""), "bilinear", "  return contentTexel(p);"),
-                    contentChild, uniforms, surface, rect);
                 // Two constructs the full model uses that no passing stage above does.
                 Stage("f1 global const", GlobalConstStage, contentChild, null, surface, rect);
                 Stage("f2 two child shaders", TwoChildrenStage, contentChild, null, surface, rect);
@@ -709,7 +734,7 @@ half4 main(float2 xy) {
   float2 q = abs(p) - h + float2(radius);
   float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
   float mask = clamp(1.0 - sd, 0.0, 1.0);
-  float3 b = bevelOf(p, h, radius);
+  float3 b = bevelOf(rxy, h, radius);
   return half4(half(b.x * 0.5 + 0.5), half(b.y * 0.5 + 0.5), half(b.z / max(size.x, 1.0)), half(mask));
 }";
 
@@ -741,7 +766,7 @@ half4 main(float2 xy) {
   float mask = clamp(1.0 - sd, 0.0, 1.0);
   float2 n;
   float depth;
-  bevelOf(p, h, radius, n, depth);
+  bevelOf(rxy, h, radius, n, depth);
   return half4(half(n.x * 0.5 + 0.5), half(n.y * 0.5 + 0.5), half(depth / max(size.x, 1.0)), half(mask));
 }";
 
@@ -857,6 +882,49 @@ half4 main(float2 xy) {
             using var bitmap = new SKBitmap(info);
             if (!image.ReadPixels(info, bitmap.GetPixels(), bitmap.RowBytes, 0, 0)) return SKColors.Empty;
             return bitmap.GetPixel(Math.Clamp(x, 0, image.Width - 1), Math.Clamp(y, 0, image.Height - 1));
+        }
+    }
+
+    /// <summary>
+    /// Draws the CPU-rendered material. It exists so that the fallback path owns its bitmap the
+    /// same way the GPU path does — a plain <c>DrawImage</c> would leave the composition tree
+    /// pointing at a bitmap the surface had already disposed.
+    /// </summary>
+    private sealed class ImageDrawOperation : ICustomDrawOperation
+    {
+        private readonly Prepared prepared;
+        private int disposed;
+
+        public Rect Bounds { get; }
+
+        public ImageDrawOperation(Prepared prepared, Rect bounds)
+        {
+            this.prepared = prepared;
+            Bounds = bounds;
+            prepared.AddRef();
+        }
+
+        public bool HitTest(Point p) => false;
+
+        public bool Equals(ICustomDrawOperation? other) => ReferenceEquals(this, other);
+
+        public override bool Equals(object? obj) => obj is ICustomDrawOperation other && Equals(other);
+
+        public override int GetHashCode() => prepared.GetHashCode();
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref disposed, 1) == 0) prepared.Dispose();
+        }
+
+        public void Render(ImmediateDrawingContext context)
+        {
+            var bitmap = prepared.Cpu;
+            if (bitmap == null) return;
+            if (context.TryGetFeature(typeof(ISkiaSharpApiLeaseFeature)) is not ISkiaSharpApiLeaseFeature feature) return;
+            using var lease = feature.Lease();
+            lease.SkCanvas.DrawBitmap(bitmap,
+                new SKRect((float)Bounds.X, (float)Bounds.Y, (float)Bounds.Right, (float)Bounds.Bottom));
         }
     }
 }

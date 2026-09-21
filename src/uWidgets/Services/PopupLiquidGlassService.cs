@@ -186,7 +186,7 @@ public static class PopupLiquidGlassService
                         SettingsSurface: false,
                         PixelScale: 1.0f);
 
-                    var wallpaper = LiquidGlassWallpaper.Get();
+                    using var wallpaper = LiquidGlassWallpaper.Get();
                     var bytes = LiquidGlassRenderer.Render(frame, wallpaper);
 
                     if (bytes == null || bytes.Length == 0 || token.IsCancellationRequested) return;
@@ -278,7 +278,7 @@ public static class PopupLiquidGlassService
                     SettingsSurface: false,
                     PixelScale: 1.0f);
 
-                var wallpaper = LiquidGlassWallpaper.Get();
+                using var wallpaper = LiquidGlassWallpaper.Get();
                 return LiquidGlassRenderer.Render(frame, wallpaper);
             });
 

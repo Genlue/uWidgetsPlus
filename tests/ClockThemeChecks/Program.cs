@@ -159,7 +159,7 @@ class Program
         }
         syntheticWallpaper.SetImmutable();
 
-        var liveWallpaper = new WallpaperSnapshot(null, new SKColor(0, 0, 0), LiveCapture: true, CachedBitmap: syntheticWallpaper);
+        var liveWallpaper = WallpaperSnapshot.FromBitmap(null, new SKColor(0, 0, 0), syntheticWallpaper, live: true);
         var liveFrame = new LiquidGlassRenderer.Frame(
             64, 64, 1f, 0f, 0, 0, 64, 64, 0, 0, 64, 64, glassTheme, Dark: true);
 
@@ -198,7 +198,7 @@ class Program
         }
         stripes.SetImmutable();
 
-        var previewWallpaper = new WallpaperSnapshot(null, new SKColor(16, 22, 36), LiveCapture: true, CachedBitmap: stripes);
+        var previewWallpaper = WallpaperSnapshot.FromBitmap(null, new SKColor(16, 22, 36), stripes, live: true);
         var previewFrame = new LiquidGlassRenderer.Frame(
             pw, ph, 2f, 0f, 0, 0, pw, ph, 0, 0, pw, ph, glassTheme, Dark: true, Columns: 4, Rows: 2);
 
@@ -330,7 +330,7 @@ class Program
             }
         }
         softStripes.SetImmutable();
-        var softWallpaper = new WallpaperSnapshot(null, new SKColor(16, 22, 36), LiveCapture: true, CachedBitmap: softStripes);
+        var softWallpaper = WallpaperSnapshot.FromBitmap(null, new SKColor(16, 22, 36), softStripes, live: true);
 
         var softTheme = glassTheme with { Surface = SurfaceStyle.SoftGlow, LiquidGlass = softOptics };
         // The crisp side has to zero both soft-recipe ingredients: since 柔光玻璃 was merged into

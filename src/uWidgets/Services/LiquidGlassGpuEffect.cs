@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using SkiaSharp;
 using uWidgets.Core.Models.Settings;
 
@@ -23,6 +24,31 @@ namespace uWidgets.Services;
 /// <c>GrContext</c> before using the shader (see <see cref="LiquidGlassSurface"/>); the CPU
 /// renderer remains the fallback. Construction and compilation are safe anywhere, which is what
 /// <see cref="IsSupported"/> and the check tests rely on.
+/// </para>
+/// <para>
+/// <b>Where <c>sample()</c> may appear — this is the other load-bearing rule.</b> A child shader
+/// is sampled by emitting a call to the child's fragment-processor chain, and Skia builds that
+/// call with the <i>entry point's</i> input parameter (<c>_input</c>). That only compiles if the
+/// call ends up inside <c>main</c>: a sampling helper survives as a real function whenever Skia's
+/// inliner declines to inline it, and the emitted program then references <c>_input</c> in a
+/// function that has no such parameter. The device backend reports this as
+/// <c>unknown identifier '_input'</c> and draws <b>nothing at all</b> — a silently transparent
+/// card, which is exactly the failure this material shipped with.
+/// </para>
+/// <para>
+/// Skia's inliner is not something to build on: measured on this machine (see
+/// <c>tests/GlassGpuProbe</c>, which drives a real ANGLE/EGL window and reads pixels back), a
+/// four-tap helper is inlined when called once and <b>not</b> when called twice, a twelve-tap
+/// helper behaves the same way, and a helper that samples a <i>single</i> texel is inlined even at
+/// forty call sites. So the only shape that is safe by construction is:
+/// <list type="bullet">
+///   <item><description>every <c>sample()</c> the material needs is written lexically inside
+///   <c>main</c> (via the <c>@fetch</c> expansion below), and</description></item>
+///   <item><description>the one-tap helpers <c>contentTexel</c> / <c>auraTexel</c> hold exactly one
+///   <c>sample()</c> each, which the inliner always takes.</description></item>
+/// </list>
+/// <see cref="GpuMaterialCheck"/> asserts both properties on the expanded source, because a
+/// violation is invisible to every offline test.
 /// </para>
 /// <para>
 /// The uniform derivation below deliberately mirrors the coefficient block at the top of
@@ -272,12 +298,91 @@ internal static class LiquidGlassGpuEffect
     /// <summary>The optical model's SkSL source, for the in-app staged diagnostic probe.</summary>
     internal static string SourceForDiagnostics => Source;
 
+    // -------------------------------------------------------------------------------------------
+    // source assembly
+    // -------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The optical model with its child-shader fetches written out. <c>@fetch</c> / <c>@fetchAura</c>
+    /// are expanded by <see cref="Expand"/>; see the class remarks for why the fetches cannot live
+    /// in helper functions.
+    /// </summary>
+    private static readonly string Source = Expand(RawSource);
+
+    /// <summary>
+    /// One bilinear fetch of the backdrop, addressed by the target variable it assigns.
+    /// <para>
+    /// The four taps call <c>contentTexel</c>, which holds a single <c>sample()</c> and is therefore
+    /// always inlined. Interpolation is by hand because a bitmap shader in this Skia samples
+    /// nearest — neither <c>SKBitmap.ToShader</c> nor <c>SKShader.CreateImage</c> is filtered, there
+    /// is no sampling-options overload in SkiaSharp 2.88 — and nearest would snap the lens
+    /// displacement to whole texels.
+    /// </para>
+    /// </summary>
+    private static string FetchBlock(string target, string coordinate, bool aura)
+    {
+        var texel = aura ? "auraTexel" : "contentTexel";
+        var s = new StringBuilder();
+        s.Append("{ float2 _p = (").Append(coordinate).Append("); float2 _b = floor(_p); float2 _f = _p - _b;\n      ");
+        s.Append(target).Append(" = mix(mix(").Append(texel).Append("(_b), ").Append(texel).Append("(_b + float2(1.0, 0.0)), _f.x),\n");
+        s.Append("                       mix(").Append(texel).Append("(_b + float2(0.0, 1.0)), ")
+         .Append(texel).Append("(_b + float2(1.0, 1.0)), _f.x), _f.y); }");
+        return s.ToString();
+    }
+
+    /// <summary>
+    /// Replace every <c>@fetch(target, coordinate)</c> / <c>@fetchAura(target, coordinate)</c> with
+    /// the corresponding <see cref="FetchBlock"/>, so the emitted program contains no sampling
+    /// helper beyond the single-tap texel lookups.
+    /// </summary>
+    internal static string Expand(string template)
+    {
+        var result = new StringBuilder(template.Length * 2);
+        var i = 0;
+        while (true)
+        {
+            var at = template.IndexOf("@fetch", i, StringComparison.Ordinal);
+            if (at < 0)
+            {
+                result.Append(template, i, template.Length - i);
+                return result.ToString();
+            }
+
+            result.Append(template, i, at - i);
+            var cursor = at + "@fetch".Length;
+            var aura = template.AsSpan(cursor).StartsWith("Aura", StringComparison.Ordinal);
+            if (aura) cursor += "Aura".Length;
+
+            var open = template.IndexOf('(', cursor);
+            var close = MatchingParenthesis(template, open);
+            var arguments = template[(open + 1)..close];
+            var comma = arguments.IndexOf(',');
+            result.Append(FetchBlock(
+                arguments[..comma].Trim(),
+                arguments[(comma + 1)..].Trim(),
+                aura));
+            i = close + 1;
+        }
+    }
+
+    private static int MatchingParenthesis(string text, int open)
+    {
+        var depth = 0;
+        for (var i = open; i < text.Length; i++)
+        {
+            if (text[i] == '(') depth++;
+            else if (text[i] == ')' && --depth == 0) return i;
+        }
+        throw new InvalidOperationException("unbalanced parenthesis in the glass shader template");
+    }
+
     /// <summary>
     /// The optical model, transcribed from the per-pixel loop of
     /// <see cref="LiquidGlassRenderer.Render"/>. Kept in SkSL's lowest common denominator: no
-    /// struct returns (unsupported by this Skia), no dynamic loop bounds, no arrays.
+    /// struct returns (unsupported by this Skia), no dynamic loop bounds, no arrays, no
+    /// <c>out</c> parameters, no early <c>return</c> from <c>main</c>.
     /// </summary>
-    private const string Source = @"
+    private const string RawSource = @"
 uniform shader content;   // blurred, downscaled desktop backdrop
 uniform shader aura;      // dye bloom grid for the soft recipe
 
@@ -336,45 +441,19 @@ float smoothStep(float edge0, float edge1, float value) {
 /// (x == 0) at exactly pi/2.
 float atan2NonNegative(float y, float x) { return atan(y / max(x, 1e-6)); }
 
-/// One exact texel of the backdrop.
-/// Bitmap shaders in this Skia sample nearest — SKBitmap.ToShader offers no sampling options — so
-/// every lookup below is interpolated by hand. Without this the lens would snap its displacement to
-/// whole texels (visible stair-stepping around the rim, and the CPU material would not match), and
-/// the downscaled backdrop would upsample as visible blocks.
+/// One exact texel of the backdrop. Bitmap shaders in this Skia sample nearest — SKBitmap.ToShader
+/// offers no sampling options — so every lookup below is interpolated by hand. Without this the
+/// lens would snap its displacement to whole texels (visible stair-stepping around the rim, and the
+/// CPU material would not match), and the downscaled backdrop would upsample as visible blocks.
+/// <para>
+/// A single sample() per function is what keeps the inliner's hand forced: see the class remarks.
+/// </para>
 float3 contentTexel(float2 texel) { return float3(sample(content, texel + float2(0.5)).rgb) * 255.0; }
 
-/// Bilinear lookup at a continuous backdrop coordinate (texel i centred on i, matching
-/// LiquidGlassRenderer's Sample so the CPU and GPU materials agree on sub-pixel placement).
-float3 sampleRgb(float2 p) {
-  //#probe:bilinear:begin
-  float2 b = floor(p);
-  float2 f = p - b;
-  float3 c00 = contentTexel(b);
-  float3 c10 = contentTexel(b + float2(1.0, 0.0));
-  float3 c01 = contentTexel(b + float2(0.0, 1.0));
-  float3 c11 = contentTexel(b + float2(1.0, 1.0));
-  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
-  //#probe:bilinear:end
-}
-
-/// One exact cell of the dye bloom grid.
+/// One exact cell of the dye bloom grid. Single-sample, same as contentTexel.
 float3 auraTexel(float2 cell) {
   float2 c = clamp(cell, float2(0.0), auraSize - float2(1.0));
   return float3(sample(aura, (c + float2(0.5)) / auraSize).rgb) * 255.0;
-}
-
-/// Bilinear lookup of the dye grid — the grid is ~30x24 texels magnified over the whole card, so
-/// nearest sampling here would read as a mosaic rather than as a soft 晕染.
-float3 sampleAura(float2 cardXY) {
-  float2 g = clamp((cardXY + float2(auraMargin)) / max(auraStep, 0.001) - 0.5,
-                   float2(0.0), auraSize - float2(1.0));
-  float2 b = floor(g);
-  float2 f = g - b;
-  float3 c00 = auraTexel(b);
-  float3 c10 = auraTexel(b + float2(1.0, 0.0));
-  float3 c01 = auraTexel(b + float2(0.0, 1.0));
-  float3 c11 = auraTexel(b + float2(1.0, 1.0));
-  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
 }
 
 /// Port of LiquidGlassRenderer.BevelField.Evaluate: outward normal + inward depth.
@@ -480,7 +559,12 @@ half4 main(float2 xy) {
   // early return from main, and the mask already zeroes every channel outside the card anyway.
   float mask = 1.0 - smoothStep(-0.75, 0.75, sd);
 
-  float3 bevel = bevelAt(p, h, radius);
+  // The bevel field is addressed in <b>card-local absolute</b> coordinates, exactly like
+  // LiquidGlassRenderer.BevelField.Evaluate(x + 0.5, y + 0.5): it subtracts the half-size itself.
+  // Passing the already centre-relative p here subtracted it twice, which put the whole normal and
+  // depth field half a card off — the material rendered as a flat wash with a stray dark rounded
+  // rectangle where the field happened to fold back over itself.
+  float3 bevel = bevelAt(rxy, h, radius);
   float2 n = bevel.xy;
   float depth = bevel.z;
 
@@ -496,13 +580,19 @@ half4 main(float2 xy) {
 
   // The backdrop beyond the card edge is real desktop content, not a clamped edge
   // pixel: refraction around the rim therefore bends in what is genuinely behind it.
+  //
+  // Every child-shader fetch is expanded here, in the entry point, rather than through a sampling
+  // helper: Skia's inliner leaves a multi-tap helper as a real function, and the device program it
+  // then emits references the entry point's _input from that function and fails to build. See the
+  // class remarks.
   float2 base = rxy - n * shift + srcOrigin;
-  float3 middle = sampleRgb(base * srcScale);
+  float3 middle;
+  @fetch(middle, base * srcScale)
   float3 reddish = middle;
   float3 bluish = middle;
   if (tintSplit > 0.002) {
-    reddish = sampleRgb((base + n * tintSplit) * srcScale);
-    bluish = sampleRgb((base - n * tintSplit) * srcScale);
+    @fetch(reddish, (base + n * tintSplit) * srcScale)
+    @fetch(bluish, (base - n * tintSplit) * srcScale)
   }
   float cRed = reddish.r;
   float cGreen = middle.g;
@@ -512,12 +602,18 @@ half4 main(float2 xy) {
   //#probe:spectrum:begin
   if (spectrumStrength > 0.01 && tintSplit > 0.002) {
     float2 step1 = n * tintSplit;
-    float3 t1 = sampleRgb((base + step1) * srcScale);
-    float3 t2 = sampleRgb((base + step1 * (2.0 / 3.0)) * srcScale);
-    float3 t3 = sampleRgb((base + step1 / 3.0) * srcScale);
-    float3 t5 = sampleRgb((base - step1 / 3.0) * srcScale);
-    float3 t6 = sampleRgb((base - step1 * (2.0 / 3.0)) * srcScale);
-    float3 t7 = sampleRgb((base - step1) * srcScale);
+    float3 t1;
+    @fetch(t1, (base + step1) * srcScale)
+    float3 t2;
+    @fetch(t2, (base + step1 * (2.0 / 3.0)) * srcScale)
+    float3 t3;
+    @fetch(t3, (base + step1 / 3.0) * srcScale)
+    float3 t5;
+    @fetch(t5, (base - step1 / 3.0) * srcScale)
+    float3 t6;
+    @fetch(t6, (base - step1 * (2.0 / 3.0)) * srcScale)
+    float3 t7;
+    @fetch(t7, (base - step1) * srcScale)
     float specRed = (t1.r + t2.r + t3.r) / 3.5 + t7.r / 7.0;
     float specGreen = t2.g / 7.0 + (t3.g + middle.g + t5.g) / 3.5;
     float specBlue = (t5.b + t6.b + t7.b) / 3.0;
@@ -555,7 +651,14 @@ half4 main(float2 xy) {
   if (edgeTint > 0.001 && softAura > 0.001) {
     // The soft recipe reads a *bloomed* colour field so a small patch spreads along
     // the edge like a light source; everything else dyes from the pixel itself.
-    float3 dyeSource = auraEnabled > 0.5 ? sampleAura(rxy) : middle;
+    float3 dyeSource = middle;
+    if (auraEnabled > 0.5) {
+      // The dye grid is ~30x24 texels magnified over the whole card, so nearest sampling here
+      // would read as a mosaic rather than as a soft 晕染.
+      float2 g = clamp((rxy + float2(auraMargin)) / max(auraStep, 0.001) - 0.5,
+                       float2(0.0), auraSize - float2(1.0));
+      @fetchAura(dyeSource, g)
+    }
     float chroma = max(dyeSource.r, max(dyeSource.g, dyeSource.b))
                  - min(dyeSource.r, min(dyeSource.g, dyeSource.b));
     float chromaWeight = smoothStep(soft > 0.5 ? 9.0 : 14.0, soft > 0.5 ? 24.0 : 32.0, chroma);

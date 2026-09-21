@@ -187,11 +187,16 @@ internal static class LiquidGlassGpuEffect
         return new Params(
             Width: width, Height: height, Radius: radius,
             DestOriginX: 0f, DestOriginY: 0f, DestToRender: destToRender,
-            // Desktop-space origin of the card. The 对齐 offset is deliberately NOT added here:
-            // the backdrop texture is built by DrawWallpaper, which has already shifted the image
-            // by -offset, and adding it again would apply the user's alignment twice.
-            SourceOriginX: frame.DesktopX * sourceScale,
-            SourceOriginY: frame.DesktopY * sourceScale,
+            // Desktop-space origin of the card, in <b>render pixels</b> — the shader multiplies the
+            // whole sum by srcScale exactly once, so pre-scaling this would square the factor and
+            // slide the sample point across the wallpaper. That only looked correct while the
+            // backdrop happened to be built at native resolution (srcScale == 1), which is why it
+            // survived until 背景清晰度 made srcScale a user choice.
+            // The 对齐 offset is deliberately NOT added: the backdrop texture is built by
+            // DrawWallpaper, which has already shifted the image by -offset, and adding it again
+            // would apply the user's alignment twice.
+            SourceOriginX: frame.DesktopX,
+            SourceOriginY: frame.DesktopY,
             SourceScale: sourceScale,
             LensWidth: lensWidth,
             InvLens: lensWidth > 0f ? 1f / lensWidth : 0f,
@@ -390,7 +395,7 @@ uniform float2 size;      // card size, render px
 uniform float radius;     // card corner radius, render px
 uniform float2 destOrigin; // top-left of the drawn rect, in the shader's own coordinate space
 uniform float destToRender; // multiply shader coordinates by this to get render px
-uniform float2 srcOrigin; // render px -> backdrop origin, in backdrop px
+uniform float2 srcOrigin; // card origin, in render px (scaled once, with everything else, by srcScale)
 uniform float srcScale;   // render px -> backdrop px
 
 uniform float lensWidth;

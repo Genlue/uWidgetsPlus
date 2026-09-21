@@ -22,24 +22,33 @@ internal static class Compare
         var output = Path.GetFullPath("dist/glass-gpu-compare");
         Directory.CreateDirectory(output);
 
+        // A high-frequency wallpaper: the backdrop's resolution must not move where the material
+        // samples from, and only structure — not a smooth wash — makes a positional error visible.
+        foreach (var clarity in new[] { 100.0, 50.0, 25.0 })
+            CompareAt(clarity, output, grContext);
+    }
+
+    private static void CompareAt(double clarity, string output, GRContext grContext)
+    {
         const int card = 200;
         using var wallpaperBitmap = MakeWallpaper(800, 600);
         using var wallpaper = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), wallpaperBitmap, live: true);
-        var theme = new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass);
+        var theme = new Theme(null, null, 0.18, true, false, "Inter", SurfaceStyle.LiquidGlass,
+            LiquidGlass: new LiquidGlassSettings(BackdropClarity: clarity));
         var frame = new LiquidGlassRenderer.Frame(card, card, 1f, 20f, 100f, 80f, 800f, 600f,
             0f, 0f, 800f, 600f, theme, true, SettingsSurface: false, PixelScale: 1f, Columns: 1, Rows: 1);
 
         using var cpu = LiquidGlassRenderer.RenderBitmap(frame, wallpaper);
         if (cpu == null)
         {
-            Probe.Write("compare: the CPU renderer produced nothing");
+            Probe.Write($"compare [{clarity:F0}%]: the CPU renderer produced nothing");
             return;
         }
 
         using var shared = LiquidGlassSourceCache.Get(frame, wallpaper);
         if (shared == null)
         {
-            Probe.Write("compare: the shared backdrop could not be built");
+            Probe.Write($"compare [{clarity:F0}%]: the shared backdrop could not be built");
             return;
         }
 
@@ -140,6 +149,15 @@ internal static class Compare
         surface.Canvas.DrawCircle(width * 0.3f, height * 0.65f, 90, paint);
         paint.Color = new SKColor(240, 240, 245);
         surface.Canvas.DrawRect(new SKRect(0, 0, width, height * 0.12f), paint);
+        // A 40 px grid. The material's own blur and lens would hide a positional error in a smooth
+        // wallpaper — which is exactly how "the backdrop's resolution moved where the card samples
+        // from" survived: the original comparison used a soft wash and reported a small delta even
+        // while the sampling origin was half a desktop off.
+        using (var grid = new SKPaint { Color = new SKColor(250, 250, 250), StrokeWidth = 6, IsAntialias = false })
+        {
+            for (var x = 0; x < width; x += 40) surface.Canvas.DrawLine(x, 0, x, height, grid);
+            for (var y = 0; y < height; y += 40) surface.Canvas.DrawLine(0, y, width, y, grid);
+        }
         using var image = surface.Snapshot();
         return SKBitmap.FromImage(image).Copy();
     }

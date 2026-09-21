@@ -120,6 +120,28 @@ internal static class GpuMaterialCheck
               Math.Abs(aligned.SourceOriginY - crisp.SourceOriginY) < 1e-6,
             "the wallpaper alignment offset is not applied twice");
 
+        // The backdrop's resolution must not move *where* the material samples from. The shader
+        // multiplies its whole render-pixel sum by srcScale exactly once, so the origin handed to it
+        // has to stay in render pixels at every scale. Pre-scaling it here squares the factor and
+        // slides the sample point across the wallpaper — which is invisible while the backdrop is
+        // built at native resolution (srcScale == 1) and glaring the moment 背景清晰度 lowers it, so
+        // it is asserted across the whole range the setting can produce.
+        var originFrame = Frame(crispTheme, 400, 260);
+        var atFull = LiquidGlassGpuEffect.BuildParams(originFrame, 1.0f);
+        var atDefault = LiquidGlassGpuEffect.BuildParams(originFrame, 0.5f);
+        var atFloor = LiquidGlassGpuEffect.BuildParams(originFrame, (float)(LiquidGlassSettings.MinBackdropClarity / 100.0));
+        Check(Math.Abs(atFull.SourceOriginX - atDefault.SourceOriginX) < 1e-6 &&
+              Math.Abs(atFull.SourceOriginY - atDefault.SourceOriginY) < 1e-6 &&
+              Math.Abs(atFull.SourceOriginX - atFloor.SourceOriginX) < 1e-6 &&
+              Math.Abs(atFull.SourceOriginY - atFloor.SourceOriginY) < 1e-6,
+            "the backdrop scale does not move the sampling origin (100% / 50% / floor agree)");
+        Check(Math.Abs(atFull.SourceOriginX - originFrame.DesktopX) < 1e-6 &&
+              Math.Abs(atFull.SourceOriginY - originFrame.DesktopY) < 1e-6,
+            "the sampling origin is the card's desktop position in render pixels, unscaled");
+        Check(atFull.SourceScale == 1.0f && Math.Abs(atDefault.SourceScale - 0.5f) < 1e-6 &&
+              atDefault.SourceScale < atFull.SourceScale,
+            "the backdrop scale reaches the shader (100% -> 1.0, 50% -> 0.5)");
+
         // Bitmap shaders here sample nearest, so the material interpolates its own lookups. Losing
         // that would show up as stair-stepping around the lens and a blocky backdrop.
         var gpuSourcePath = Path.GetFullPath(@"src/uWidgets/Services/LiquidGlassGpuEffect.cs");

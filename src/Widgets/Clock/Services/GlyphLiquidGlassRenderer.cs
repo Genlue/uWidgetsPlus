@@ -422,7 +422,11 @@ public static class GlyphLiquidGlassRenderer
     /// <param name="strokeRadius">Half-thickness of the numeral strokes, in render px.</param>
     /// <param name="glyphEdgeScale">Adaptive edge scale for compact layouts.</param>
     /// <param name="glyphShiftScale">Adaptive displacement scale for compact layouts.</param>
-    /// <param name="refractionWidth">Manual lens width from the widget settings (DIPs), if any.</param>
+    /// <param name="refractionWidth">
+    /// Explicit lens width in DIPs that overrides the adaptive lens. Production callers pass
+    /// <c>null</c> (the clock has no widget-level 边缘折射宽度 override any more) — the parameter
+    /// is kept so the optics checks can sweep lens widths directly.
+    /// </param>
     public static (float LensWidth, float LensShift, float Dispersion) ResolveLens(
         LiquidGlassSettings optics,
         float scale,

@@ -227,10 +227,10 @@ if (File.Exists(clockDll))
             Check(weightProp != null && (int)weightProp.GetValue(modelInst)! == 700, "FramelessClockModel has FontWeight with default 700");
             var stretchProp = modelType.GetProperty("StretchFill");
             Check(stretchProp != null && (bool)stretchProp.GetValue(modelInst)! == true, "FramelessClockModel has StretchFill with default true");
-            var dyeProp = modelType.GetProperty("DyeIntensity");
-            Check(dyeProp != null && Math.Abs((double)dyeProp.GetValue(modelInst)! - 10.0) < 0.001, "FramelessClockModel has DyeIntensity with default 10.0");
-            var refProp = modelType.GetProperty("RefractionWidth");
-            Check(refProp != null && Math.Abs((double)refProp.GetValue(modelInst)! - 0.0) < 0.001, "FramelessClockModel has RefractionWidth with default 0.0");
+            // The clock carries no glass-parameter overrides: the lens width and the edge dye now
+            // come from the global liquid glass settings, so neither property may come back.
+            Check(modelType.GetProperty("DyeIntensity") == null, "FramelessClockModel no longer declares DyeIntensity");
+            Check(modelType.GetProperty("RefractionWidth") == null, "FramelessClockModel no longer declares RefractionWidth");
         }
 
         var asmProvider = new uWidgets.Core.Services.AssemblyProvider(new EmptyServiceProvider());

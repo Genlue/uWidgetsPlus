@@ -1,5 +1,7 @@
 using System.Reflection;
+using System.Text.Json;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
@@ -16,26 +18,30 @@ using uWidgets.Services;
 namespace ClockThemeChecks;
 
 /// <summary>
-/// Regression checks for the frameless clock's per-widget theme override and its glyph
-/// liquid glass output.
+/// Regression checks for the frameless clock's material resolution and its glyph liquid glass
+/// output.
+///
+/// The clock carries <b>no per-widget theme override</b> any more: it always follows the global
+/// app theme. The historical <c>ThemeMode</c> setting was removed when the old separate
+/// 液态玻璃 / 柔光玻璃 materials were merged into the single current 液态玻璃, where 柔光 is reached
+/// through the 柔光晕 / 光谱弥散 optics instead of a second material.
 ///
 /// Part 1 (activation): the desktop widget is activated by
 /// <c>WidgetFactory.CreateWidgetControl</c> as <c>Activate(typeof(FramelessDigital), layoutProvider, model)</c>,
 /// which goes through <c>ActivatorUtilities.CreateInstance</c>. That type has five public
 /// constructors, two of which accept those two arguments, so which one wins decides whether
-/// the widget ever receives <see cref="IAppSettingsProvider"/> — and therefore whether
-/// "跟随软件主题" can resolve the global material at all.
+/// the widget ever receives <see cref="IAppSettingsProvider"/> — and therefore whether it can
+/// resolve the global material at all.
 ///
-/// Part 2 (rendering): renders the control for every theme mode with a liquid glass global
-/// theme and saves PNGs, so the follow-global result can be compared with the explicit
-/// liquid glass result pixel by pixel (and inspected by eye).
+/// Part 2 (rendering): renders the control under global 液态玻璃 and global 毛玻璃 themes and saves
+/// PNGs, so the two materials can be compared pixel by pixel (and inspected by eye).
 /// </summary>
 class Program
 {
     private static int failures;
     private static string outputDir = "dist/clock-theme-checks";
 
-    /// <summary>Global material used by the checks ("跟随软件主题" resolves against this).</summary>
+    /// <summary>Global material used by the checks (the clock resolves its material against this).</summary>
     private static readonly SurfaceStyle GlobalSurface = SurfaceStyle.LiquidGlass;
 
     [STAThread]
@@ -57,61 +63,45 @@ class Program
         Console.WriteLine($"global surface = {GlobalSurface}");
         Console.WriteLine();
 
-        // ---- Part 1: activation / theme resolution ----
-        var followGlobal = (FramelessDigital)ActivatorUtilities.CreateInstance(
-            provider, typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 0));
+        // ---- Part 1: activation / material resolution ----
+        var clock = (FramelessDigital)ActivatorUtilities.CreateInstance(
+            provider, typeof(FramelessDigital), layout, new FramelessClockModel());
 
-        var injected = ReadField(followGlobal, "appSettingsProvider");
+        var injected = ReadField(clock, "appSettingsProvider");
         Console.WriteLine("ctor args = [IWidgetLayoutProvider, FramelessClockModel]");
         Console.WriteLine($"  injected IAppSettingsProvider = {(injected == null ? "NULL" : injected.GetType().Name)}");
-        Check("follow-global receives IAppSettingsProvider", injected != null);
-        Check("ThemeMode=0 + global LiquidGlass resolves LiquidGlass",
-            ResolveTheme(followGlobal) == (false, true, false));
+        Check("the clock receives IAppSettingsProvider", injected != null);
+        Check("a global LiquidGlass theme resolves LiquidGlass",
+            ResolveTheme(clock) == (false, true, false));
 
-        var acrylic = (FramelessDigital)ActivatorUtilities.CreateInstance(
-            provider, typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 1));
-        Check("ThemeMode=1 resolves Acrylic only", ResolveTheme(acrylic) == (true, false, false));
-
-        var solid = (FramelessDigital)ActivatorUtilities.CreateInstance(
-            provider, typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 3));
-        Check("ThemeMode=3 resolves Solid only", ResolveTheme(solid) == (false, false, true));
-
-        // ---- Part 2: rendering ----
+        // ---- Part 2: rendering follows the global material ----
         Console.WriteLine();
         Console.WriteLine($"Rendering into {Path.GetFullPath(outputDir)} …");
 
-        var mode0 = Render(settings, layout, outputDir, "mode0-follow-global", ThemeMode: 0, rendered: true);
-        var mode2 = Render(settings, layout, outputDir, "mode2-liquidglass", ThemeMode: 2, rendered: true);
-        var mode4 = Render(settings, layout, outputDir, "mode4-softglow", ThemeMode: 4, rendered: true);
-        Render(settings, layout, outputDir, "mode1-acrylic", ThemeMode: 1, rendered: false);
+        var glass = Render(settings, layout, outputDir, "global-liquidglass", expectFrame: true);
+        var acrylic = Render(new StubSettings(BuildSettings(SurfaceStyle.Acrylic)), layout, outputDir,
+            "global-acrylic", expectFrame: false);
 
-        if (mode2 != null && mode4 != null)
+        Check("a global 液态玻璃 theme drives the glyph glass pipeline", glass.ProducedFrame);
+        Check("a global 毛玻璃 theme does not (it uses the OS acrylic backdrop)", !acrylic.ProducedFrame);
+
+        byte[]? glassPixels = glass.Pixels, acrylicPixels = acrylic.Pixels;
+        if (glassPixels != null && acrylicPixels != null)
         {
-            // The global theme here is 液态玻璃: mode 4 must still render the *soft* material,
-            // which only works if the explicit mode also switches the recipe's surface.
-            var explicitSoft = MeanAbsoluteDifference(mode2, mode4);
-            Console.WriteLine($"  mean |delta| explicit 柔光玻璃 vs 液态玻璃: {explicitSoft:F2}/255");
-            Check("ThemeMode=4 renders the soft material, not the global one", explicitSoft > 1.0);
+            var materialDelta = MeanAbsoluteDifference(glassPixels, acrylicPixels);
+            Console.WriteLine($"  mean |delta| 液态玻璃 vs 毛玻璃: {materialDelta:F2}/255");
+            Check("the clock renders visibly different numerals per global material", materialDelta > 1.0);
         }
         else
         {
-            Check("both explicit-glass renders produced pixels", false);
+            Check("both global material renders produced pixels", false);
         }
 
-        if (mode0 != null && mode2 != null)
-        {
-            var diff = MeanAbsoluteDifference(mode0, mode2);
-            Console.WriteLine($"  mean |delta| follow-global vs explicit liquid glass: {diff:F2}/255");
-            Check("follow-global renders liquid glass, not acrylic (< 12/255 from explicit)", diff < 12.0);
-        }
-        else
-        {
-            Check("both liquid glass renders produced pixels", false);
-        }
-
-        // ---- Part 3: glyph optics — the meniscus must exist at the default 0 ----
+        // ---- Part 3: glyph optics — the meniscus must exist on the adaptive path ----
         // Regression: refractionWidth 0 used to mean "no lens", so the numerals were only a
         // blurred, tinted fill and read as 毛玻璃 while the rest of the desktop was 液态玻璃.
+        // The clock no longer exposes a 边缘折射宽度 override, so <c>null</c> (what the widget
+        // passes) is the production path and must resolve the same adaptive lens as 0.
         Console.WriteLine();
         Console.WriteLine("--- glyph lens optics ---");
 
@@ -129,7 +119,7 @@ class Program
 
         var manual = GlyphLiquidGlassRenderer.ResolveLens(globalOptics, probeScale, probeStrokeRadius, 1f, 1f, 12.0);
         Console.WriteLine($"  refractionWidth = 12 (manual)  → lens {manual.LensWidth:F2}px, bend {manual.LensShift:F2}px");
-        Check("an explicit refractionWidth still overrides the adaptive lens", manual.LensWidth > auto.LensWidth + 1f);
+        Check("an explicit refractionWidth still overrides the adaptive lens (optics sweep aid)", manual.LensWidth > auto.LensWidth + 1f);
 
         var strong = GlyphLiquidGlassRenderer.ResolveLens(globalOptics with { Refraction = 100 }, probeScale, probeStrokeRadius, 1f, 1f, 0.0);
         Check("the global refraction slider drives the glyph bend", strong.LensShift > auto.LensShift);
@@ -236,7 +226,7 @@ class Program
         var switchProvider = switchServices.BuildServiceProvider();
 
         var switched = (FramelessDigital)ActivatorUtilities.CreateInstance(
-            switchProvider, typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 0));
+            switchProvider, typeof(FramelessDigital), layout, new FramelessClockModel());
         switched.Width = 368;
         switched.Height = 184;
         switched.Measure(new Size(368, 184));
@@ -244,7 +234,7 @@ class Program
         switched.UpdateLayout();
 
         Console.WriteLine($"  before: {Describe(ResolveTheme(switched))}");
-        Check("a follow-global clock starts on the acrylic global theme", ResolveTheme(switched) == (true, false, false));
+        Check("the clock starts on the acrylic global theme", ResolveTheme(switched) == (true, false, false));
 
         switchSettings.Save(BuildSettings(SurfaceStyle.LiquidGlass));
 
@@ -252,51 +242,61 @@ class Program
         Check("the same instance follows the switch to liquid glass", ResolveTheme(switched) == (false, true, false));
         Check("and it renders a liquid glass frame afterwards", WaitForFrame(switched));
 
-        // ---- Part 7: follow-global must also cover 柔光玻璃 (the soft material) ----
-        // "跟随全局主题" is a promise about the *global* material: a global 柔光玻璃 has to reach
-        // the numerals through the glyph pipeline, soft recipe included. Two things are pinned
-        // here: the resolver mapping (a pure function) and that the soft recipe actually changes
-        // the rendered numerals when the optics are otherwise identical.
+        // ---- Part 7: material resolution is global-only ----
+        // The clock used to carry its own 视觉主题 override (ThemeMode, which also offered the old
+        // separate 液态玻璃 and 柔光玻璃). It was removed when those two were merged into one
+        // material: the widget now always follows the global theme, and 柔光 is reached through the
+        // global 柔光晕 / 光谱弥散 optics instead of a second material. This pins the mapping — and
+        // that a ThemeMode left over in an existing layout.json is simply ignored.
         Console.WriteLine();
-        Console.WriteLine("--- follow-global material resolution ---");
+        Console.WriteLine("--- global material resolution ---");
 
         Theme ThemeFor(SurfaceStyle surface) => BuildSettings(surface).Theme;
 
-        Check("ThemeMode=0 + global 毛玻璃 resolves Acrylic",
-            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Acrylic)).IsAcrylic);
-        Check("ThemeMode=0 + global 纯色 resolves Solid",
-            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Solid)).IsSolid);
-        Check("ThemeMode=0 + global 多彩 falls back to a filled surface (not acrylic)",
-            FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Colorful)).IsSolid
-            && !FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.Colorful)).IsRenderedGlass);
-        var softGlobal = FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.SoftGlow));
-        Check("ThemeMode=0 + global 柔光玻璃 resolves the rendered (soft) glass, not acrylic",
-            softGlobal.IsRenderedGlass && softGlobal.IsSoftGlow && !softGlobal.IsAcrylic && !softGlobal.IsSolid);
-        var liquidGlobal = FramelessThemeResolver.Resolve(0, ThemeFor(SurfaceStyle.LiquidGlass));
-        Check("ThemeMode=0 + global 液态玻璃 resolves rendered glass without the soft recipe",
-            liquidGlobal.IsRenderedGlass && !liquidGlobal.IsSoftGlow);
-        Check("an explicit ThemeMode overrides the global surface",
-            FramelessThemeResolver.Resolve(2, ThemeFor(SurfaceStyle.SoftGlow)).IsLiquidGlass
-            && !FramelessThemeResolver.Resolve(2, ThemeFor(SurfaceStyle.SoftGlow)).IsSoftGlow);
-        Check("ThemeMode=4 pins 柔光玻璃 regardless of the global theme",
-            FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsSoftGlow
-            && FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsRenderedGlass
-            && !FramelessThemeResolver.Resolve(4, ThemeFor(SurfaceStyle.Acrylic)).IsAcrylic
-            && !FramelessThemeResolver.Resolve(4, null).IsAcrylic);
-        var themeOptions = new Clock.ViewModels.FramelessClockSettingsViewModel(layout).ThemeModeOptions;
-        Check("the theme-mode list exposes 柔光玻璃 (value 4, once)",
-            themeOptions.Count(o => o.Value == 4) == 1 && themeOptions.First(o => o.Value == 4).DisplayName.Length > 0);
-        Check("the theme-mode list still offers follow-global / acrylic / liquid glass / solid",
-            new[] { 0, 1, 2, 3 }.All(value => themeOptions.Any(o => o.Value == value)));
+        Check("global 毛玻璃 resolves Acrylic",
+            FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.Acrylic)).IsAcrylic);
+        Check("global 纯色 resolves Solid",
+            FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.Solid)).IsSolid);
+        Check("global 多彩 falls back to a filled surface (not acrylic)",
+            FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.Colorful)).IsSolid
+            && !FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.Colorful)).IsRenderedGlass);
+
+        var liquidGlobal = FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.LiquidGlass));
+        Check("global 液态玻璃 resolves rendered glass without the soft recipe",
+            liquidGlobal is { IsRenderedGlass: true, IsSoftGlow: false, IsAcrylic: false, IsSolid: false });
+
+        // A stored 柔光玻璃 surface (legacy configurations) still reaches the soft recipe…
+        var legacySoft = FramelessThemeResolver.Resolve(ThemeFor(SurfaceStyle.SoftGlow));
+        Check("a stored 柔光玻璃 theme still resolves the rendered (soft) glass",
+            legacySoft is { IsRenderedGlass: true, IsSoftGlow: true, IsAcrylic: false, IsSolid: false });
+
+        // …and so does the merged form: plain 液态玻璃 with the soft optics turned up.
+        var mergedSoft = ThemeFor(SurfaceStyle.LiquidGlass) with
+        {
+            LiquidGlass = new LiquidGlassSettings(Glow: 70, Spectrum: 100)
+        };
+        Check("液态玻璃 with 柔光晕 / 光谱弥散 up resolves the soft recipe",
+            FramelessThemeResolver.Resolve(mergedSoft) is { IsRenderedGlass: true, IsSoftGlow: true });
+
         Check("no global theme yet falls back to acrylic (unchanged historic behaviour)",
-            FramelessThemeResolver.Resolve(0, null).IsAcrylic);
+            FramelessThemeResolver.Resolve(null).IsAcrylic);
+
+        // The model must no longer be able to carry a per-widget material at all, and a ThemeMode
+        // left over in a user's layout.json must not break deserialization.
+        Check("FramelessClockModel no longer declares a ThemeMode override",
+            typeof(FramelessClockModel).GetProperty("ThemeMode") == null);
+        var stale = JsonSerializer.Deserialize<FramelessClockModel>(
+            "{\"Use24Hours\":false,\"ThemeMode\":4}",
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Check("a stale ThemeMode in stored settings is ignored, not fatal",
+            stale is { Use24Hours: false });
 
         var softSettings = new StubSettings(BuildSettings(SurfaceStyle.SoftGlow));
         var softServices = new ServiceCollection();
         softServices.AddSingleton<IAppSettingsProvider>(softSettings);
         var softFollow = (FramelessDigital)ActivatorUtilities.CreateInstance(
-            softServices.BuildServiceProvider(), typeof(FramelessDigital), layout, new FramelessClockModel(ThemeMode: 0));
-        Check("follow-global on a running instance resolves 柔光玻璃 as rendered glass",
+            softServices.BuildServiceProvider(), typeof(FramelessDigital), layout, new FramelessClockModel());
+        Check("a running instance on a soft global theme resolves rendered glass",
             ResolveTheme(softFollow) == (false, true, false));
 
         Console.WriteLine();
@@ -357,6 +357,52 @@ class Program
         File.WriteAllBytes(Path.Combine(outputDir, "glyph-soft-glow.png"), softPng);
         softWallpaper.Dispose();
 
+        // ---- Part 8: 跟随强调色 must resolve the accent actually in effect ----
+        // Regression: the overlay read only Theme.AccentColor, so a user who left the accent on
+        // 跟随系统强调色 (AccentColor == null) got a hard-coded Windows blue for the overlay no
+        // matter what accent the rest of the app was using.
+        Console.WriteLine();
+        Console.WriteLine("--- overlay accent resolution ---");
+
+        var overlayMethod = typeof(FramelessDigital).GetMethod(
+            "ResolveOverlayColor", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        Color Overlay(int opacityPercent, bool followAccent, string? customHex, string? themeAccent)
+        {
+            var overlayModel = new FramelessClockModel(
+                EnableOverlay: true,
+                FollowAccentColor: followAccent,
+                OverlayColor: customHex ?? "#000000",
+                OverlayOpacity: opacityPercent / 100.0);
+            var overlayTheme = BuildSettings(SurfaceStyle.LiquidGlass).Theme with { AccentColor = themeAccent };
+            return (Color)overlayMethod.Invoke(null, [overlayModel, overlayTheme])!;
+        }
+
+        static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+        // The host publishes the accent in effect here (ThemeService.ApplyAccent for a picked one,
+        // Avalonia's Fluent theme for 跟随系统). Set it to a colour that is unmistakably not blue;
+        // this is the last part of the run, so the fixture is left in place like the other checks
+        // that drive the accent resource (CalendarHollowChecks, AccentPersistenceChecks).
+        Application.Current!.Resources["SystemAccentColor"] = Color.Parse("#12C46A");
+
+        var systemAccent = Overlay(100, true, null, null);
+        Console.WriteLine($"  跟随系统强调色 → {Hex(systemAccent)}");
+        Check("跟随强调色 with no picked accent uses the SystemAccentColor resource",
+            systemAccent == Color.Parse("#12C46A"));
+
+        var pickedAccent = Overlay(100, true, null, "#FF3B30");
+        Console.WriteLine($"  手选强调色 → {Hex(pickedAccent)}");
+        Check("跟随强调色 with a picked accent uses the picked colour",
+            pickedAccent == Color.Parse("#FF3B30"));
+
+        var custom = Overlay(100, false, "#FFCC00", "#FF3B30");
+        Check("a custom 遮罩颜色 ignores the accent", custom == Color.Parse("#FFCC00"));
+
+        var faint = Overlay(40, true, null, "#FF3B30");
+        Check("the overlay carries the model's opacity",
+            faint == Color.FromArgb((byte)(0.40 * 255), 0xFF, 0x3B, 0x30));
+
         Console.WriteLine();
         Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
@@ -384,35 +430,41 @@ class Program
         return ReadField(view, "liquidGlassBitmap") != null;
     }
 
+    /// <summary>Pixels of a rendered widget snapshot, plus whether it produced a glyph glass frame.</summary>
+    private sealed record RenderResult(byte[]? Pixels, bool ProducedFrame);
+
     /// <summary>
-    /// Render the widget off-screen at the real 4×2 grid size. The liquid glass material is
-    /// produced by a background task, so the dispatcher is pumped until the widget's
-    /// pre-rendered bitmap lands (or the timeout elapses). Returns the rendered pixels.
+    /// Render the widget off-screen at the real 4×2 grid size under <paramref name="provider"/>'s
+    /// global theme. The liquid glass material is produced by a background task, so the dispatcher
+    /// is pumped until the widget's pre-rendered bitmap lands (or the timeout elapses) — a
+    /// non-liquid-glass theme produces none, which is what <see cref="RenderResult.ProducedFrame"/>
+    /// reports.
     /// </summary>
-    private static byte[]? Render(IAppSettingsProvider provider, StubLayout layout, string dir,
-        string name, int ThemeMode, bool rendered)
+    private static RenderResult Render(IAppSettingsProvider provider, StubLayout layout, string dir,
+        string name, bool expectFrame)
     {
         const double width = 368, height = 184;
 
         var model = new FramelessClockModel(
-            Use24Hours: true, FontFamily: "Impact", FontWeight: 800, StretchFill: true, ThemeMode: ThemeMode);
+            Use24Hours: true, FontFamily: "Impact", FontWeight: 800, StretchFill: true);
 
         var view = new FramelessDigital(model, layout, provider) { Width = width, Height = height };
         view.Measure(new Size(width, height));
         view.Arrange(new Rect(0, 0, width, height));
         view.UpdateLayout();
 
-        if (rendered)
+        // Wait long enough for the optical render when a frame is expected; a theme that never
+        // starts the pipeline only needs a short grace period before it is declared absent.
+        var deadline = DateTime.UtcNow.AddSeconds(expectFrame ? 20 : 2);
+        while (DateTime.UtcNow < deadline && ReadField(view, "liquidGlassBitmap") == null)
         {
-            var deadline = DateTime.UtcNow.AddSeconds(20);
-            while (DateTime.UtcNow < deadline && ReadField(view, "liquidGlassBitmap") == null)
-            {
-                Dispatcher.UIThread.RunJobs();
-                Thread.Sleep(50);
-            }
             Dispatcher.UIThread.RunJobs();
-            Console.WriteLine($"  {name}: liquidGlassBitmap={(ReadField(view, "liquidGlassBitmap") != null ? "ready" : "NOT PRODUCED")}");
+            Thread.Sleep(50);
         }
+        Dispatcher.UIThread.RunJobs();
+
+        var produced = ReadField(view, "liquidGlassBitmap") != null;
+        Console.WriteLine($"  {name}: liquidGlassBitmap={(produced ? "ready" : "NOT PRODUCED")}");
 
         const double scale = 2.0;
         var pixelSize = new PixelSize((int)(width * scale), (int)(height * scale));
@@ -423,7 +475,7 @@ class Program
         bitmap.Save(path);
         Console.WriteLine($"  {name}: saved {path}");
 
-        return LoadPixels(path);
+        return new RenderResult(LoadPixels(path), produced);
     }
 
     /// <summary>Decode a PNG into BGRA bytes (SkiaSharp, so no unsafe pointer juggling).</summary>

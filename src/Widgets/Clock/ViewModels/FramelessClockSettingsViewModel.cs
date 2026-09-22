@@ -16,8 +16,6 @@ public record FontWeightOption(int Value, string DisplayName);
 
 public record ClockFontOption(string? FontFamily, string DisplayName, string Description);
 
-public record ThemeModeOption(int Value, string DisplayName);
-
 public class FramelessClockSettingsViewModel : ReactiveObject
 {
     private readonly IWidgetLayoutProvider widgetLayoutProvider;
@@ -89,50 +87,6 @@ public class FramelessClockSettingsViewModel : ReactiveObject
     {
         get => model.StretchFill;
         set => UpdateModel(model with { StretchFill = value });
-    }
-
-    public IReadOnlyList<ThemeModeOption> ThemeModeOptions { get; } =
-    [
-        new(0, Locale.Clock_ThemeMode_FollowGlobal),
-        new(1, Locale.Clock_ThemeMode_Acrylic),
-        new(2, Locale.Clock_ThemeMode_LiquidGlass),
-        new(4, Locale.Clock_ThemeMode_SoftGlow),
-        new(3, Locale.Clock_ThemeMode_Solid),
-    ];
-
-    public ThemeModeOption SelectedThemeModeOption
-    {
-        get => ThemeModeOptions.FirstOrDefault(o => o.Value == model.ThemeMode) ?? ThemeModeOptions[0];
-        set
-        {
-            if (value != null && value.Value != model.ThemeMode)
-            {
-                UpdateModel(model with { ThemeMode = value.Value });
-                this.RaisePropertyChanged(nameof(SelectedThemeModeOption));
-            }
-        }
-    }
-
-    public double DyeIntensityPercent
-    {
-        get => Math.Round(model.DyeIntensity);
-        set
-        {
-            var clamped = Math.Clamp(value, 0.0, 100.0);
-            UpdateModel(model with { DyeIntensity = clamped });
-            this.RaisePropertyChanged(nameof(DyeIntensityPercent));
-        }
-    }
-
-    public double RefractionWidth
-    {
-        get => Math.Round(model.RefractionWidth);
-        set
-        {
-            var clamped = Math.Clamp(value, 0.0, 60.0);
-            UpdateModel(model with { RefractionWidth = clamped });
-            this.RaisePropertyChanged(nameof(RefractionWidth));
-        }
     }
 
     public IReadOnlyList<FontWeightOption> FontWeightOptions { get; } =

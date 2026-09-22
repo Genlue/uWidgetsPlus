@@ -132,34 +132,4 @@
     <data name="Clock_FontWeight_900" xml:space="preserve">
         <value>Black (900)</value>
     </data>
-    <data name="Clock_ThemeMode" xml:space="preserve">
-        <value>Theme Style</value>
-    </data>
-    <data name="Clock_ThemeMode_FollowGlobal" xml:space="preserve">
-        <value>Follow Global Theme</value>
-    </data>
-    <data name="Clock_ThemeMode_Acrylic" xml:space="preserve">
-        <value>Acrylic Blur</value>
-    </data>
-    <data name="Clock_ThemeMode_LiquidGlass" xml:space="preserve">
-        <value>Liquid Glass</value>
-    </data>
-    <data name="Clock_ThemeMode_SoftGlow" xml:space="preserve">
-        <value>Soft Glow Glass</value>
-    </data>
-    <data name="Clock_ThemeMode_Solid" xml:space="preserve">
-        <value>Solid Fill</value>
-    </data>
-    <data name="Clock_DyeIntensity" xml:space="preserve">
-        <value>Edge Dye Intensity</value>
-    </data>
-    <data name="Clock_DyeIntensity_Subtitle" xml:space="preserve">
-        <value>Adjusts the edge tint strength for numeral contours (default 10%)</value>
-    </data>
-    <data name="Clock_RefractionWidth" xml:space="preserve">
-        <value>Edge Refraction Width</value>
-    </data>
-    <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
-        <value>Refraction lens width on the numeral edges (0 = automatic, follows the global liquid glass optics; above 0 sets an explicit width in px)</value>
-    </data>
 </root>

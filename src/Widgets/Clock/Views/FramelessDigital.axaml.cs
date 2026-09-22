@@ -295,14 +295,14 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     }
 
     /// <summary>
-    /// The clock's material, resolved from its own <c>ThemeMode</c> against the global theme
-    /// (see <see cref="FramelessThemeResolver"/>): 0 follows the global theme — including the
-    /// rendered-glass materials (液态玻璃 / 柔光玻璃), which is what makes the numerals lens
-    /// rather than frost — while 1/2/3 force acrylic / liquid glass / solid.
+    /// The clock's material, resolved from the <b>global</b> theme (see
+    /// <see cref="FramelessThemeResolver"/>): the widget has no per-widget theme override, so the
+    /// global 液态玻璃 / 柔光 recipe reaches the numerals through the glyph glass pipeline, a global
+    /// 毛玻璃 gives the OS acrylic backdrop and a global 纯色 a plain fill.
     /// </summary>
     private (bool IsAcrylic, bool IsLiquidGlass, bool IsSolid) ResolveEffectiveTheme()
     {
-        var material = FramelessThemeResolver.Resolve(model.ThemeMode, appSettingsProvider?.Get().Theme);
+        var material = FramelessThemeResolver.Resolve(appSettingsProvider?.Get().Theme);
         return (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
     }
 
@@ -455,33 +455,11 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
         byte[] glyphMask = ExtractGlyphMask(stretchedGeometry, Bounds.Width, Bounds.Height, scaling, width, height);
 
-        var effectiveTheme = theme ?? appSettingsProvider?.Get().Theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
-
-        // An explicit theme mode has to pick the *recipe*, not just the branch: the renderer
-        // decides between the crisp and the soft optics from the theme, so mode 4 (柔光玻璃)
-        // under a global 液态玻璃 must switch the soft recipe on — and mode 2 must switch it off.
-        // "Follow global" (0) already carries the right recipe.
-        if (model.ThemeMode == 4 && !effectiveTheme.IsSoftGlow)
-            effectiveTheme = effectiveTheme with { Surface = SurfaceStyle.SoftGlow };
-        else if (model.ThemeMode == 2 && effectiveTheme.IsSoftGlow)
-            // Clearing the surface is no longer enough: 柔光玻璃 was merged into 液态玻璃 and the
-            // soft recipe is selected by 柔光晕 / 光谱弥散 too, so an explicit crisp mode has to
-            // zero both. The optics underneath are kept, which is what this mode always did.
-            effectiveTheme = effectiveTheme with
-            {
-                Surface = SurfaceStyle.LiquidGlass,
-                LiquidGlass = effectiveTheme.EffectiveLiquidGlass with { Glow = 0, Spectrum = 0 }
-            };
-
-        // The widget's own 染色强度 is a legacy override of the theme's edge tint. On 柔光玻璃 the
-        // dye *is* the material — the bloomed colour along the rim — so a low widget value (the
-        // default is 10%) would leave the numerals looking like plain frosted glass while the
-        // desktop around them is 柔光玻璃. There the theme's tint is the floor; more is still
-        // allowed, less is not.
-        var themeTint = effectiveTheme.EffectiveLiquidGlass.EdgeTint;
-        var dyeTint = effectiveTheme.IsSoftGlow ? Math.Max(model.DyeIntensity, themeTint) : model.DyeIntensity;
-        var lg = (effectiveTheme.LiquidGlass ?? new LiquidGlassSettings()) with { EdgeTint = dyeTint };
-        effectiveTheme = effectiveTheme with { LiquidGlass = lg };
+        // The material is whatever the global theme says — the clock carries no per-widget theme
+        // override, and no widget-level optics override either: the edge tint and the lens width
+        // both come from the global liquid glass settings. 液态玻璃 therefore renders the current
+        // merged optics (with the global 柔光晕 / 光谱弥散 knobs selecting the soft recipe).
+        var effectiveTheme = theme ?? new Theme(null, null, 0.8, false, false, "Segoe UI");
 
         if (model.EnableOverlay)
         {
@@ -521,7 +499,9 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
             // The snapshot carries a reference the caller owns; hold it for the whole render.
             using var wallpaper = LiquidGlassWallpaper.Get();
             if (token.IsCancellationRequested) return;
-            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask, model.RefractionWidth);
+            // No widget-level lens override: the adaptive lens derived from the global optics is
+            // the only path the clock renders with (null == adaptive in ResolveLens).
+            var pngBytes = GlyphLiquidGlassRenderer.Render(frame, wallpaper, glyphMask);
             if (token.IsCancellationRequested || pngBytes == null || pngBytes.Length == 0) return;
 
             Dispatcher.UIThread.Post(() =>
@@ -906,8 +886,11 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
 
     private static void DrawSpecularRim(DrawingContext context, Geometry geometry, double targetW, double targetH, bool isDark, FramelessClockModel model, Theme? theme)
     {
-        var optics = theme?.EffectiveLiquidGlass ?? new LiquidGlassSettings();
-        var edgeTint = (float)Math.Clamp(model.DyeIntensity / 100.0, 0.0, 1.0);
+        // The rim dye strength follows the global 边缘染色强度 (LiquidGlassSettings.EdgeTint): the
+        // clock has no widget-level 染色强度 override any more, so the global optics are the only
+        // source for how strongly the accent / overlay colour bleeds into the specular rim.
+        var edgeTint = (float)Math.Clamp(
+            (theme?.EffectiveLiquidGlass.EdgeTint ?? LiquidGlassSettings.DefaultEdgeTint) / 100.0, 0.0, 1.0);
 
         Color dye = isDark ? Color.FromRgb(200, 220, 245) : Color.FromRgb(240, 240, 245);
         bool hasDye = false;
@@ -993,27 +976,48 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return new FontFamily(fontName);
     }
 
+    /// <summary>Last-resort overlay colour, used only when neither the accent nor a custom hex resolves.</summary>
+    private static readonly Color DefaultOverlayColor = Color.FromRgb(0, 120, 215);
+
+    /// <summary>The overlay wash colour, already carrying the model's opacity.</summary>
     private static Color ResolveOverlayColor(FramelessClockModel model, Theme? theme)
     {
-        Color baseColor = Color.FromRgb(0, 120, 215);
-
-        if (model.FollowAccentColor)
-        {
-            var hex = theme?.AccentColor;
-            if (!string.IsNullOrEmpty(hex) && Color.TryParse(hex, out var parsed))
-            {
-                baseColor = parsed;
-            }
-        }
-        else
-        {
-            if (!string.IsNullOrEmpty(model.OverlayColor) && Color.TryParse(model.OverlayColor, out var parsed))
-            {
-                baseColor = parsed;
-            }
-        }
+        var baseColor = model.FollowAccentColor
+            ? ResolveAccentColor(theme) ?? DefaultOverlayColor
+            : ParseHex(model.OverlayColor) ?? DefaultOverlayColor;
 
         var opacity = Math.Clamp(model.OverlayOpacity, 0.0, 1.0);
         return Color.FromArgb((byte)(opacity * 255), baseColor.R, baseColor.G, baseColor.B);
     }
+
+    /// <summary>
+    /// The accent colour actually in effect, which is a two-step resolution:
+    /// <list type="number">
+    /// <item>an explicitly picked accent (<see cref="Theme.AccentColor"/>) wins;</item>
+    /// <item>跟随系统强调色 — the default, where <c>AccentColor</c> is <c>null</c> — falls through to
+    /// the <c>SystemAccentColor</c> resource. <c>ThemeService.ApplyAccent</c> writes a hand-picked
+    /// accent there, and Avalonia's Fluent theme seeds the same key (plus its shade ramp) from the
+    /// OS accent when the app leaves the choice to the system.</item>
+    /// </list>
+    /// Reading only <see cref="Theme.AccentColor"/> made the overlay a hard-coded Windows blue for
+    /// every user who left the accent on 跟随系统, whatever their actual accent was. This is the same
+    /// lookup the other accent-driven widgets use (<c>Calendar/Views/Month.axaml.cs</c>,
+    /// <c>Notes/Views/Note.axaml.cs</c>, <c>Fixed/ViewModels/AggregateViewModel</c>).
+    /// </summary>
+    private static Color? ResolveAccentColor(Theme? theme)
+    {
+        if (ParseHex(theme?.AccentColor) is { } picked)
+            return picked;
+
+        if (Application.Current is { } app &&
+            app.TryFindResource("SystemAccentColor", out var value) &&
+            value is Color systemAccent)
+            return systemAccent;
+
+        return null;
+    }
+
+    /// <summary>Parse a <c>#hex</c> colour, or <c>null</c> when absent or malformed.</summary>
+    private static Color? ParseHex(string? hex) =>
+        !string.IsNullOrEmpty(hex) && Color.TryParse(hex, out var parsed) ? parsed : null;
 }

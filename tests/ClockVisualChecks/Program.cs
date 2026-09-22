@@ -10,6 +10,9 @@ using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Clock.Models;
 using Clock.Views;
+using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models;
+using uWidgets.Core.Models.Settings;
 
 namespace ClockVisualChecks;
 
@@ -30,10 +33,18 @@ class Program
         app.Styles.Add(new FluentTheme());
         app.RequestedThemeVariant = ThemeVariant.Dark;
 
+        // Fix the accent so the snapshots are deterministic — and so the 跟随强调色 cases
+        // (4x2-overlay-tint) actually prove they resolve it: green is unmistakably not the
+        // hard-coded Windows blue the overlay used to fall back to.
+        app.Resources["SystemAccentColor"] = Color.Parse("#12C46A");
+
         // Verify tight bounds and stretch math
         TestGeometryStretchMath();
 
-        // Visual test cases covering curated artistic fonts and themes
+        // Visual test cases covering curated artistic fonts and sizes.
+        // There is no per-widget theme case any more: the frameless clock always follows the
+        // global theme (see tests/ClockThemeChecks for the material resolution checks), and these
+        // snapshots render without a settings provider, i.e. on the acrylic fallback.
         var testCases = new (string CaseName, double Width, double Height, FramelessClockModel Model)[]
         {
             ("4x2-harmonyos-condensed", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true)),
@@ -46,10 +57,7 @@ class Program
             ("2x2-regular-uniform", 152, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 700, StretchFill: false)),
             ("4x1-seconds-fill", 312, 72, new FramelessClockModel(Use24Hours: true, ShowSeconds: true, FontFamily: "Impact", FontWeight: 700, StretchFill: true)),
             ("4x2-overlay-tint", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true, EnableOverlay: true, FollowAccentColor: true, OverlayOpacity: 0.40)),
-            ("4x2-gold-tint", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "Impact", FontWeight: 700, StretchFill: true, EnableOverlay: true, FollowAccentColor: false, OverlayColor: "#FFCC00", OverlayOpacity: 0.50)),
-            ("4x2-acrylic-theme", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true, ThemeMode: 1)),
-            ("4x2-liquid-glass-refined", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true, ThemeMode: 2)),
-            ("4x2-solid-theme", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true, ThemeMode: 3))
+            ("4x2-gold-tint", 312, 152, new FramelessClockModel(Use24Hours: true, FontFamily: "Impact", FontWeight: 700, StretchFill: true, EnableOverlay: true, FollowAccentColor: false, OverlayColor: "#FFCC00", OverlayOpacity: 0.50))
         };
 
         foreach (var tc in testCases)
@@ -124,8 +132,11 @@ class Program
     private static void TestPreCachingAndAutoCleanup()
     {
         Console.WriteLine("\n--- Testing Liquid Glass Pre-Caching & Automatic Cleanup Logic ---");
-        var model = new FramelessClockModel(Use24Hours: true, ShowSeconds: false, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true, ThemeMode: 2);
-        var clock = new FramelessDigital(model)
+        var model = new FramelessClockModel(Use24Hours: true, ShowSeconds: false, FontFamily: "HarmonyOS Sans Condensed", FontWeight: 800, StretchFill: true);
+
+        // The clock takes its material from the global theme, so the liquid glass pipeline is only
+        // reached by injecting a provider whose theme is 液态玻璃.
+        var clock = new FramelessDigital(model, null, new LiquidGlassSettingsProvider())
         {
             Width = 312,
             Height = 152
@@ -139,7 +150,36 @@ class Program
         using var rtb = new RenderTargetBitmap(new PixelSize(624, 304), new Vector(192, 192));
         rtb.Render(clock);
 
-        Console.WriteLine("  PASS: Liquid Glass mode initialized, pre-caching scheduled, and frame rendered.");
+        Console.WriteLine("  PASS: Liquid Glass material resolved from the global theme, pre-caching scheduled, and frame rendered.");
+    }
+
+    /// <summary>Minimal settings provider whose global theme is 液态玻璃.</summary>
+    private sealed class LiquidGlassSettingsProvider : IAppSettingsProvider
+    {
+        public event DataChangedEvent<AppSettings>? DataChanging;
+        public event DataChangedEvent<AppSettings>? DataChanged;
+
+        public AppSettings Get() => new(
+            new Theme(
+                DarkMode: null,
+                AccentColor: null,
+                OpacityLevel: 0.8,
+                Monochrome: false,
+                UseNativeFrame: false,
+                FontFamily: "Segoe UI",
+                Surface: SurfaceStyle.LiquidGlass),
+            Templates: [],
+            new Layout(GridMode.Manual, true, false, true, false),
+            new Dimensions(72, 8, 16),
+            new Region("zh-Hans"),
+            RunOnStartup: false,
+            IgnoreUpdate: null);
+
+        public void Save(AppSettings data)
+        {
+            DataChanging?.Invoke(this, data, data);
+            DataChanged?.Invoke(this, data, data);
+        }
     }
 }
 

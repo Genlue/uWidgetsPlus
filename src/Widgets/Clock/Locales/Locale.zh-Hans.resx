@@ -231,34 +231,4 @@
   <data name="Clock_FontWeight_900" xml:space="preserve">
     <value>黑体 Black (900)</value>
   </data>
-  <data name="Clock_ThemeMode" xml:space="preserve">
-    <value>视觉主题</value>
-  </data>
-  <data name="Clock_ThemeMode_FollowGlobal" xml:space="preserve">
-    <value>跟随全局主题</value>
-  </data>
-  <data name="Clock_ThemeMode_Acrylic" xml:space="preserve">
-    <value>毛玻璃</value>
-  </data>
-  <data name="Clock_ThemeMode_LiquidGlass" xml:space="preserve">
-    <value>液态玻璃</value>
-  </data>
-  <data name="Clock_ThemeMode_SoftGlow" xml:space="preserve">
-    <value>柔光玻璃</value>
-  </data>
-  <data name="Clock_ThemeMode_Solid" xml:space="preserve">
-    <value>纯色</value>
-  </data>
-  <data name="Clock_DyeIntensity" xml:space="preserve">
-    <value>边缘染色强度</value>
-  </data>
-  <data name="Clock_DyeIntensity_Subtitle" xml:space="preserve">
-    <value>调节数字轮廓弯月面吸收壁纸与主题环境色的浓度（默认 10%）</value>
-  </data>
-  <data name="Clock_RefractionWidth" xml:space="preserve">
-    <value>边缘折射宽度</value>
-  </data>
-  <data name="Clock_RefractionWidth_Subtitle" xml:space="preserve">
-    <value>调节数字边缘折射透镜的宽度（0 = 自动跟随全局液态玻璃折射参数；大于 0 时为手动指定的 px 宽度）</value>
-  </data>
 </root>

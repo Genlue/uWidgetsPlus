@@ -170,4 +170,13 @@ public partial class Settings : Window
             }
         }
     }
+
+    public void SelectPage(Type pageType)
+    {
+        var target = viewModel.AllItems.FirstOrDefault(x => x.Type == pageType);
+        if (target != null)
+        {
+            ListBox.SelectedItem = target;
+        }
+    }
 }

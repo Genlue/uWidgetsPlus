@@ -297,9 +297,13 @@ public partial class Widget : Window, INotifyPropertyChanged
         return baseRadius;
     }
 
+    public double EffectiveBaseRadius =>
+        displayMonitor.Find(this)?.Config?.Radius
+        ?? appSettingsProvider.Get().Dimensions.Radius;
+
     public CornerRadius Radius => (isFrameless || appSettingsProvider.Get().Theme.UseNativeFrame)
         ? new(0)
-        : new(ResolveEffectiveRadius(appSettingsProvider.Get().Dimensions.Radius) / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
+        : new(ResolveEffectiveRadius(EffectiveBaseRadius) / (Screens.ScreenFromWindow(this)?.Scaling ?? 1.0));
 
     /// <summary>
     /// Concentric inner corner radius for cards/boxes placed inside the widget (e.g. Translator textboxes, Clipboard item cards).
@@ -573,9 +577,13 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// <summary>
     /// Margin between the widget content and the grid lines (manual grid mode).
     /// </summary>
+    public double EffectiveMargin =>
+        displayMonitor.Find(this)?.Config?.Margin
+        ?? appSettingsProvider.Get().Dimensions.Margin;
+
     public Thickness WidgetMargin => isFrameless ? new Thickness(0) :
         (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual
-            ? new Thickness(appSettingsProvider.Get().Dimensions.Margin)
+            ? new Thickness(EffectiveMargin)
             : new Thickness(0));
 
     public IBrush WidgetCardBackground
@@ -1623,8 +1631,20 @@ public partial class Widget : Window, INotifyPropertyChanged
         var oldConfig = oldScreens?.FindById(widgetLayoutProvider.ScreenId);
         if (config == null) return; // this widget is no longer in the layout
 
-        if (Equals(oldConfig?.Grid, config.Grid) && Equals(oldConfig?.ContentScale, config.ContentScale))
+        if (Equals(oldConfig?.Grid, config.Grid) && Equals(oldConfig?.ContentScale, config.ContentScale)
+            && oldConfig?.Margin == config.Margin && oldConfig?.Radius == config.Radius)
             return;
+
+        if (oldConfig?.Margin != config.Margin || oldConfig?.Radius != config.Radius)
+        {
+            AfterResize();
+            Notify(nameof(WidgetMargin));
+            Notify(nameof(Radius));
+            Notify(nameof(InnerRadius));
+            Notify(nameof(PillRadius));
+            UpdateContentSize();
+            ApplyWidgetRegion();
+        }
 
         if (appSettingsProvider.Get().Layout.GridMode == GridMode.Manual && !Equals(oldConfig?.Grid, config.Grid))
         {

@@ -16,6 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Reminders.Locales;
 using Reminders.Models;
+using Reminders.Services;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
@@ -119,6 +120,7 @@ public partial class RemindersPopupWindow : Window
         PopulateItems();
 
         PopupLiquidGlassService.PreRenderCompleted += OnPreRenderCompleted;
+        RemindersStore.ModelChanged += OnStoreModelChanged;
     }
 
     public static void ShowPopup(
@@ -518,8 +520,17 @@ public partial class RemindersPopupWindow : Window
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        RemindersStore.ModelChanged -= OnStoreModelChanged;
         PopupLiquidGlassService.PreRenderCompleted -= OnPreRenderCompleted;
         if (activePopup == this)
             activePopup = null;
+    }
+
+    private void OnStoreModelChanged(RemindersListModel newModel, object? sender)
+    {
+        if (Equals(currentModel, newModel)) return;
+        currentModel = newModel;
+        TitleBox.Text = !string.IsNullOrWhiteSpace(currentModel.ListName) ? currentModel.ListName : Locale.Reminders_List_Title;
+        PopulateItems();
     }
 }

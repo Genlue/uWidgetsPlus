@@ -31,6 +31,7 @@ public class RemindersViewModel : ReactiveObject
         this.model = model;
         foreach (var reminder in model.Reminders)
             Reminders.Add(reminder);
+        Reminders.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(Count));
     }
 
     /// <summary>

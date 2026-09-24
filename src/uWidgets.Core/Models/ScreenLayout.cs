@@ -16,6 +16,8 @@ namespace uWidgets.Core.Models;
 /// <param name="ContentScale">This screen's content scale (per-widget scale wins over it).
 /// <c>null</c> falls back to 1.0.</param>
 /// <param name="Layout">Widgets placed on this screen (positions relative to the screen's working area).</param>
+/// <param name="Margin">This screen's widget margin/padding. <c>null</c> falls back to global AppSettings.Dimensions.Margin.</param>
+/// <param name="Radius">This screen's widget corner radius. <c>null</c> falls back to global AppSettings.Dimensions.Radius.</param>
 public record ScreenLayout(
     string Id,
     string? Key,
@@ -23,7 +25,9 @@ public record ScreenLayout(
     string? DeviceName,
     Grid? Grid,
     double? ContentScale,
-    List<WidgetLayout> Layout)
+    List<WidgetLayout> Layout,
+    double? Margin = null,
+    double? Radius = null)
 {
     /// <summary>
     /// Display name for the UI: the user alias when set, otherwise the friendly name part of the <see cref="Key"/>.

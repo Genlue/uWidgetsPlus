@@ -34,6 +34,10 @@ public static class Const
     /// </summary>
     public static readonly string LayoutFile = Path.Combine(DataFolder, LayoutFileName);
     /// <summary>
+    /// The path to the unified reminders/checklist data file.
+    /// </summary>
+    public static readonly string RemindersFile = Path.Combine(DataFolder, RemindersFileName);
+    /// <summary>
     /// The folder for configuration profiles.
     /// </summary>
     public static readonly string ProfilesFolder = Path.Combine(DataFolder, ProfilesFolderName);
@@ -41,6 +45,7 @@ public static class Const
     private static string WidgetsFolderName => "Widgets";
     private static string AppSettingsFileName => "appSettings.json";
     private static string LayoutFileName => "layout.json";
+    private static string RemindersFileName => "reminders.json";
     private static string ProfilesFolderName => "Profiles";
 
     private static string GetDataFolder()

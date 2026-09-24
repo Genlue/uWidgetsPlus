@@ -13,50 +13,11 @@
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_GridMode_Subtitle}">
             <ComboBox ItemsSource="{Binding GridModes}" SelectedItem="{Binding GridMode}" MinWidth="150" />
         </controls:Setting>
-        <StackPanel Orientation="Vertical" Spacing="3" IsVisible="{Binding IsManualGrid}">
-            <controls:Setting Icon="{DynamicResource SnapPosition}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridTargetScreen}" 
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridTargetScreen_Subtitle}">
-                <ComboBox ItemsSource="{Binding ScreenTargets}" SelectedItem="{Binding SelectedScreenTarget}" MinWidth="220">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Label}" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </controls:Setting>
-            <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridColumns_Title}" 
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridColumns_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" Value="{Binding GridColumns}" />
-            </controls:Setting>
-            <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridRows_Title}" 
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridRows_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="1" Increment="1" FormatString="F0" ParsingNumberStyle="Integer" Value="{Binding GridRows}" />
-            </controls:Setting>
-            <controls:Setting Icon="{DynamicResource WidgetSize}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Title}" 
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridCellSize_Subtitle}">
-                <NumericUpDown MinWidth="130" Minimum="0.01" Increment="0.1" FormatString="0.##" Value="{Binding GridCellPercent}" />
-            </controls:Setting>
-            <controls:Setting Icon="{DynamicResource SnapPosition}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridPosition_Title}" 
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridPosition_Subtitle}">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <NumericUpDown MinWidth="80" Minimum="0" Maximum="100" Increment="1" Value="{Binding GridXPercent, StringFormat=F0}" />
-                    <NumericUpDown MinWidth="80" Minimum="0" Maximum="100" Increment="1" Value="{Binding GridYPercent, StringFormat=F0}" />
-                </StackPanel>
-            </controls:Setting>
-            <controls:Setting Icon="{DynamicResource SnapPosition}" 
-                              Title="{x:Static locales:Locale.Settings_Advanced_GridEdit}"
-                              Subtitle="{x:Static locales:Locale.Settings_Advanced_GridEdit_Subtitle}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="{x:Static locales:Locale.Settings_Advanced_GridEdit}" Click="OnEditGridClicked" />
-                    <Button Content="{x:Static locales:Locale.Settings_MultiScreen_ResetGrid}" Click="OnResetGridClicked" IsVisible="{Binding CanResetScreenGrid}" />
-                </StackPanel>
-            </controls:Setting>
-        </StackPanel>
+        <controls:Setting Icon="{DynamicResource SnapPosition}" 
+                          Title="{x:Static locales:Locale.Settings_MultiScreen}"
+                          Subtitle="{x:Static locales:Locale.Settings_Advanced_GridEdit_Subtitle}">
+            <Button Content="{x:Static locales:Locale.Settings_MultiScreen}" Click="OnGoToMultiScreenClicked" />
+        </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Size}"/>
         <controls:Setting Icon="{DynamicResource Lock}" 

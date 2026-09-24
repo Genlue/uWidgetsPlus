@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Reminders.Locales;
 using Reminders.Models;
+using Reminders.Services;
 using Reminders.ViewModels;
 using Reminders.Views.Controls;
 using uWidgets.Core.Interfaces;
@@ -18,25 +19,32 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     private readonly RemindersViewModel viewModel;
 
     public List(IWidgetLayoutProvider widgetLayoutProvider) 
-        : this(new RemindersListModel(Locale.Reminders_List_Title, []), widgetLayoutProvider) {}
+        : this(RemindersStore.Get(), widgetLayoutProvider) {}
     
     public List(RemindersListModel model, IWidgetLayoutProvider widgetLayoutProvider)
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
-        viewModel = new RemindersViewModel(model);
+        var unifiedModel = RemindersStore.Get();
+        viewModel = new RemindersViewModel(unifiedModel);
         Content = new ListSmall(this, viewModel);
         SizeChanged += OnSizeChanged;
         Unloaded += OnUnloaded;
         PointerEntered += OnPointerEntered;
+        RemindersStore.ModelChanged += OnStoreModelChanged;
         InitializeComponent();
+    }
+
+    private void OnStoreModelChanged(RemindersListModel newModel, object? sender)
+    {
+        if (ReferenceEquals(sender, this)) return;
+        viewModel.Update(newModel);
     }
 
     /// <inheritdoc />
     public void Refresh(WidgetLayout layout)
     {
-        var newModel = layout.GetModel<RemindersListModel>();
-        if (newModel == null) return;
-        viewModel.Update(newModel);
+        var model = RemindersStore.Get();
+        viewModel.Update(model);
     }
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
@@ -44,6 +52,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
         SizeChanged -= OnSizeChanged;
         Unloaded -= OnUnloaded;
         PointerEntered -= OnPointerEntered;
+        RemindersStore.ModelChanged -= OnStoreModelChanged;
     }
 
     private void OnPointerEntered(object? sender, Avalonia.Input.PointerEventArgs e)
@@ -113,7 +122,7 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     {
         var (screenCenter, _) = GetScreenCenterAndTopLevel();
         var owner = VisualRoot as Window;
-        RemindersPopupWindow.ShowPopup(viewModel.Model, screenCenter, owner, UpdateModel);
+        RemindersPopupWindow.ShowPopup(RemindersStore.Get(), screenCenter, owner, UpdateModel);
     }
 
     private (Point? ScreenCenter, TopLevel? TopLevel) GetScreenCenterAndTopLevel()
@@ -135,10 +144,15 @@ public partial class List : UserControl, IWidgetSelfRefreshing
     private void UpdateModel(RemindersListModel newModel)
     {
         viewModel.Update(newModel);
-        var newSettings = JsonSerializer.SerializeToElement(newModel);
-        var newLayout = widgetLayoutProvider.Get() with { Settings = newSettings };
-        
-        widgetLayoutProvider.Save(newLayout);
+        RemindersStore.Save(newModel, sender: this);
+
+        try
+        {
+            var newSettings = JsonSerializer.SerializeToElement(newModel);
+            var newLayout = widgetLayoutProvider.Get() with { Settings = newSettings };
+            widgetLayoutProvider.Save(newLayout);
+        }
+        catch { }
     }
 
     public void CompleteReminder(object? sender, RoutedEventArgs e)

@@ -30,6 +30,11 @@ public partial class Advanced : UserControl
         Unloaded += (_, _) => viewModel.Dispose();
     }
 
+    private void OnGoToMultiScreenClicked(object? sender, RoutedEventArgs e)
+    {
+        (TopLevel.GetTopLevel(this) as Settings)?.SelectPage(typeof(MultiScreen));
+    }
+
     private void OnEditGridClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AdvancedViewModel vm) return;

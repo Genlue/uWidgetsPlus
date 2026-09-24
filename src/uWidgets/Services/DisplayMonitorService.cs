@@ -110,6 +110,12 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
                 screen.Scaling);
 
             var config = ScreenMatcher.Match(storedLayout.Screens, identity, consumedConfigIds);
+            if (config != null && config.Key != null && config.Key != identity.Key && config.Key.EndsWith($"|{identity.Width}x{identity.Height}"))
+            {
+                config = config with { Key = identity.Key };
+                storedLayout = storedLayout.WithScreen(config);
+                layoutProvider.Save(storedLayout);
+            }
             attached.Add(new AttachedScreen(screen, identity, config));
         }
 
@@ -197,7 +203,8 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     {
         var stored = layoutProvider.Get();
         var primary = stored.FindById(ScreensLayout.LegacyPrimaryId);
-        if (primary == null) return;
+        // Only unmigrated legacy v1 buckets (Key == null) need migration. Real v2 screens must never be touched.
+        if (primary == null || primary.Key != null) return;
 
         var moved = false;
         foreach (var widget in primary.Layout.ToList())
@@ -282,11 +289,59 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool EnumDisplaySettings(string? lpszDeviceName, uint iModeNum, ref DEVMODE lpDevMode);
 
-    private sealed record Win32Device(string Name, string FriendlyName, int Width, int Height);
+    private sealed record Win32Device(string Name, string FriendlyName, int X, int Y, int Width, int Height);
+
+    private static Dictionary<string, string>? cachedWmiNames;
+    private static DateTime lastWmiQuery = DateTime.MinValue;
+
+#pragma warning disable CA1416
+    private static Dictionary<string, string> GetWmiMonitorNames()
+    {
+        if (cachedWmiNames != null && (DateTime.UtcNow - lastWmiQuery).TotalSeconds < 30)
+            return cachedWmiNames;
+
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(@"root\wmi", "SELECT InstanceName, UserFriendlyName, ProductCodeID FROM WmiMonitorID");
+            foreach (var obj in searcher.Get())
+            {
+                var instanceName = obj["InstanceName"]?.ToString() ?? "";
+                var nameCodes = obj["UserFriendlyName"] as ushort[];
+                var productCodes = obj["ProductCodeID"] as ushort[];
+
+                string friendly = "";
+                if (nameCodes != null)
+                {
+                    friendly = new string(nameCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim();
+                }
+                if (string.IsNullOrEmpty(friendly) && productCodes != null)
+                {
+                    friendly = new string(productCodes.Where(c => c != 0).Select(c => (char)c).ToArray()).Trim();
+                }
+
+                if (!string.IsNullOrEmpty(friendly))
+                {
+                    var parts = instanceName.Split('\\');
+                    if (parts.Length > 1) dict[parts[1]] = friendly;
+                    dict[instanceName] = friendly;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore WMI query failures
+        }
+
+        lastWmiQuery = DateTime.UtcNow;
+        return cachedWmiNames = dict;
+    }
+#pragma warning restore CA1416
 
     private static List<Win32Device> EnumerateDevices()
     {
         var result = new List<Win32Device>();
+        var wmiNames = GetWmiMonitorNames();
 
         for (uint index = 0; ; index++)
         {
@@ -297,9 +352,64 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
             var mode = new DEVMODE { dmSize = (short) Marshal.SizeOf<DEVMODE>() };
             EnumDisplaySettings(device.DeviceName, ENUM_CURRENT_SETTINGS, ref mode);
 
+            // Probe monitor attached to this display adapter
+            string friendlyName = string.Empty;
+            string hardwareId = string.Empty;
+
+            for (uint monIndex = 0; ; monIndex++)
+            {
+                var monitor = new DISPLAY_DEVICE { cb = (uint) Marshal.SizeOf<DISPLAY_DEVICE>() };
+                if (!EnumDisplayDevices(device.DeviceName, monIndex, ref monitor, 1 /* EDID_PHYSICAL_MONITOR */))
+                    break;
+
+                var rawName = monitor.DeviceString?.Trim() ?? string.Empty;
+                var devId = monitor.DeviceID ?? string.Empty;
+
+                if (!string.IsNullOrEmpty(devId))
+                {
+                    var parts = devId.Split(new[] { '\\', '#' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 1 && parts[0].Equals("DISPLAY", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hardwareId = parts[1];
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(rawName)
+                    && !rawName.Equals("Generic PnP Monitor", StringComparison.OrdinalIgnoreCase)
+                    && !rawName.Equals("通用即插即用监视器", StringComparison.OrdinalIgnoreCase))
+                {
+                    friendlyName = rawName;
+                    break;
+                }
+            }
+
+            // Check WMI friendly name by hardware ID
+            if (!string.IsNullOrEmpty(hardwareId) && wmiNames.TryGetValue(hardwareId, out var wmiFriendly) && !string.IsNullOrEmpty(wmiFriendly))
+            {
+                friendlyName = wmiFriendly;
+            }
+
+            if (string.IsNullOrEmpty(friendlyName))
+            {
+                if (!string.IsNullOrEmpty(hardwareId))
+                {
+                    friendlyName = hardwareId;
+                }
+                else if (!string.IsNullOrEmpty(device.DeviceString) && device.DeviceString.Contains("Virtual", StringComparison.OrdinalIgnoreCase))
+                {
+                    friendlyName = device.DeviceString;
+                }
+                else
+                {
+                    friendlyName = !string.IsNullOrWhiteSpace(device.DeviceString) ? device.DeviceString : "Screen";
+                }
+            }
+
             result.Add(new Win32Device(
                 device.DeviceName,
-                string.IsNullOrWhiteSpace(device.DeviceString) ? "Screen" : device.DeviceString,
+                friendlyName,
+                mode.dmPositionX,
+                mode.dmPositionY,
                 mode.dmPelsWidth,
                 mode.dmPelsHeight));
         }
@@ -309,15 +419,27 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
 
     private static Win32Device? MatchDevice(Screen screen, List<Win32Device> devices, HashSet<string> used)
     {
-        // Prefer an exact resolution match (unique when resolutions differ);
-        // fall back to the first unused device in enumeration order.
-        var exact = devices.FirstOrDefault(d => !used.Contains(d.Name) && d.Width == screen.Bounds.Width && d.Height == screen.Bounds.Height);
-        if (exact != null)
+        // 1. Exact coordinate and resolution match (dmPositionX/Y == screen.Bounds.X/Y && Width/Height)
+        var exactPos = devices.FirstOrDefault(d => !used.Contains(d.Name)
+            && d.X == screen.Bounds.X
+            && d.Y == screen.Bounds.Y
+            && d.Width == screen.Bounds.Width
+            && d.Height == screen.Bounds.Height);
+        if (exactPos != null)
         {
-            used.Add(exact.Name);
-            return exact;
+            used.Add(exactPos.Name);
+            return exactPos;
         }
 
+        // 2. Exact resolution match
+        var exactRes = devices.FirstOrDefault(d => !used.Contains(d.Name) && d.Width == screen.Bounds.Width && d.Height == screen.Bounds.Height);
+        if (exactRes != null)
+        {
+            used.Add(exactRes.Name);
+            return exactRes;
+        }
+
+        // 3. Fallback to the first unused device
         var fallback = devices.FirstOrDefault(d => !used.Contains(d.Name));
         if (fallback != null) used.Add(fallback.Name);
         return fallback;

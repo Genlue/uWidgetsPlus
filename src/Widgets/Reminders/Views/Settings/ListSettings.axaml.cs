@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Reminders.Models;
+using Reminders.Services;
 using uWidgets.Core.Interfaces;
 
 namespace Reminders.Views.Settings;
@@ -14,39 +16,52 @@ public partial class ListSettings : UserControl
     {
         this.widgetLayoutProvider = widgetLayoutProvider;
         InitializeComponent();
-        DeleteOnCheckToggle.IsChecked =
-            widgetLayoutProvider.Get().GetModel<RemindersListModel>()?.DeleteOnCheck ?? false;
+        DeleteOnCheckToggle.IsChecked = RemindersStore.Get().DeleteOnCheck;
     }
 
     private void DeleteOnCheckChanged(object? sender, RoutedEventArgs e)
     {
-        var layout = widgetLayoutProvider.Get();
-        var model = layout.GetModel<RemindersListModel>() ?? new RemindersListModel(null, []);
+        var model = RemindersStore.Get();
         model = model with { DeleteOnCheck = DeleteOnCheckToggle.IsChecked == true };
+        RemindersStore.Save(model, this);
 
-        layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
-        widgetLayoutProvider.Save(layout);
+        try
+        {
+            var layout = widgetLayoutProvider.Get();
+            layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
+            widgetLayoutProvider.Save(layout);
+        }
+        catch { }
     }
 
     private void DeleteCompleted(object? sender, RoutedEventArgs e)
     {
-        var layout = widgetLayoutProvider.Get();
-        var model = layout.GetModel<RemindersListModel>()!;
+        var model = RemindersStore.Get();
         model = model with { Reminders = model.Reminders
             .Where(entry => !entry.Completed)
             .ToList() };
+        RemindersStore.Save(model, this);
 
-        layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
-        widgetLayoutProvider.Save(layout);
+        try
+        {
+            var layout = widgetLayoutProvider.Get();
+            layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
+            widgetLayoutProvider.Save(layout);
+        }
+        catch { }
     }
 
     private void DeleteAll(object? sender, RoutedEventArgs e)
     {
-        var layout = widgetLayoutProvider.Get();
-        var model = layout.GetModel<RemindersListModel>()!;
-        model = model with { Reminders = [] };
+        var model = RemindersStore.Get() with { Reminders = [] };
+        RemindersStore.Save(model, this);
 
-        layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
-        widgetLayoutProvider.Save(layout);
+        try
+        {
+            var layout = widgetLayoutProvider.Get();
+            layout = layout with { Settings = JsonSerializer.SerializeToElement(model) };
+            widgetLayoutProvider.Save(layout);
+        }
+        catch { }
     }
 }

@@ -71,6 +71,19 @@ public static class ScreenMatcher
             return byKey;
         }
 
+        // Fallback for upgrade from older builds where Key contained GPU adapter name instead of monitor friendly name
+        var byResolution = Find(entry => entry.Key != null && entry.Key.EndsWith($"|{screen.Width}x{screen.Height}")
+            && (entry.Key.Contains("GeForce", StringComparison.OrdinalIgnoreCase)
+                || entry.Key.Contains("Radeon", StringComparison.OrdinalIgnoreCase)
+                || entry.Key.Contains("Intel", StringComparison.OrdinalIgnoreCase)
+                || entry.Key.Contains("Graphics", StringComparison.OrdinalIgnoreCase)
+                || entry.Key.Contains("Virtual Display Adapter", StringComparison.OrdinalIgnoreCase)));
+        if (byResolution != null)
+        {
+            consumedIds?.Add(byResolution.Id);
+            return byResolution;
+        }
+
         // Legacy primary entry (Key = null) follows whichever screen is primary.
         if (screen.IsPrimary)
         {

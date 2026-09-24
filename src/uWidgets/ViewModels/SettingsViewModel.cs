@@ -99,9 +99,9 @@ public class SettingsViewModel : ReactiveObject
             new(null, null, "系统设置"),
             new(typeof(General), GetIcon(nameof(General)), Locale.Settings_General),
             new(typeof(Appearance), GetIcon(nameof(Appearance)), Locale.Settings_Appearance),
-            new(typeof(Profiles), SafeParseIcon("M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"), Locale.Settings_Profiles ?? "配置方案"),
-            new(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
             new(typeof(MultiScreen), GetIcon(nameof(MultiScreen)), Locale.Settings_MultiScreen),
+            new(typeof(Advanced), GetIcon(nameof(Advanced)), Locale.Settings_Advanced),
+            new(typeof(Profiles), SafeParseIcon("M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"), Locale.Settings_Profiles ?? "配置方案"),
             new(typeof(About), GetIcon(nameof(About)), Locale.Settings_About),
 
             // Separator between sections

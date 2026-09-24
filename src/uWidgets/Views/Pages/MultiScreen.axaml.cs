@@ -94,11 +94,11 @@ public partial class MultiScreen : UserControl
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(14),
-            Child = new StackPanel { Spacing = 8 }
+            Child = new StackPanel { Spacing = 10 }
         };
         var panel = (StackPanel) card.Child!;
 
-        // Status + name
+        // 1. Status + Primary badge + Display name
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         header.Children.Add(new Border
         {
@@ -113,6 +113,22 @@ public partial class MultiScreen : UserControl
                 Foreground = Brushes.White
             }
         });
+        if (identity.IsPrimary)
+        {
+            header.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(0x35, 0xE5, 0xA0, 0x0D)),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new TextBlock
+                {
+                    Text = "主屏幕",
+                    FontSize = 11,
+                    Foreground = Brushes.Gold
+                }
+            });
+        }
         header.Children.Add(new TextBlock
         {
             Text = config?.DisplayName ?? (identity.FriendlyName.Length > 0 ? identity.FriendlyName : "Screen"),
@@ -122,87 +138,226 @@ public partial class MultiScreen : UserControl
         });
         panel.Children.Add(header);
 
-        // Identity line
-        panel.Children.Add(new TextBlock
+        // 2. Hardware info & widget count
+        var infoPanel = new StackPanel { Spacing = 2 };
+        infoPanel.Children.Add(new TextBlock
         {
-            Text = $"{identity.FriendlyName} · {identity.Width}×{identity.Height} · {(int) Math.Round(identity.Scaling * 100)}%",
+            Text = $"{identity.FriendlyName} · {identity.Width}×{identity.Height} · {(int) Math.Round(identity.Scaling * 100)}% DPI",
             FontSize = 12,
-            Opacity = 0.6
+            Opacity = 0.65
         });
-        panel.Children.Add(new TextBlock
+        infoPanel.Children.Add(new TextBlock
         {
             Text = string.Format(Locale.Settings_MultiScreen_WidgetCount, config?.Layout.Count ?? 0),
             FontSize = 12,
-            Opacity = 0.6
+            Opacity = 0.65
         });
+        panel.Children.Add(infoPanel);
 
-        // Grid summary line
-        var hasCustomGrid = config?.Grid != null;
-        var globalGrid = appSettingsProvider.Get().Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
-        var gridSummary = hasCustomGrid
-            ? string.Format(Locale.Settings_MultiScreen_Grid_Custom, config!.Grid!.Columns, config.Grid.Rows, config.Grid.CellPercent, config.Grid.XPercent, config.Grid.YPercent)
-            : string.Format(Locale.Settings_MultiScreen_Grid_Default, globalGrid.Columns, globalGrid.Rows);
-        panel.Children.Add(new TextBlock
-        {
-            Text = gridSummary,
-            FontSize = 12,
-            Opacity = hasCustomGrid ? 0.95 : 0.6,
-            FontWeight = hasCustomGrid ? FontWeight.Medium : FontWeight.Normal
-        });
-
-        // Alias
+        // 3. Screen alias
+        var aliasRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        aliasRow.Children.Add(new TextBlock { Text = "屏幕别名", FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.8 });
         var alias = new TextBox
         {
             Text = config?.Alias ?? "",
             Watermark = Locale.Settings_MultiScreen_AliasPlaceholder,
             FontSize = 12,
-            MaxWidth = 260
+            MinWidth = 240
         };
         alias.LostFocus += (_, _) => SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Alias = string.IsNullOrWhiteSpace(alias.Text) ? null : alias.Text.Trim() });
-        panel.Children.Add(alias);
+        aliasRow.Children.Add(alias);
+        panel.Children.Add(aliasRow);
 
-        // Buttons: grid / reset grid / export / import
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        buttons.Children.Add(Button(Locale.Settings_MultiScreen_EditGrid, (_, _) =>
+        panel.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 2) });
+
+        // 4. Per-Screen Grid Section (本屏独立网格)
+        var gridSection = new StackPanel { Spacing = 6 };
+        var hasCustomGrid = config?.Grid != null;
+        var globalGrid = appSettingsProvider.Get().Grid ?? uWidgets.Core.Models.Settings.Grid.Default;
+        var effectiveGrid = config?.Grid ?? globalGrid;
+
+        gridSection.Children.Add(new TextBlock
+        {
+            Text = "📐 桌面网格 (本屏独立)",
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold
+        });
+
+        gridSection.Children.Add(new TextBlock
+        {
+            Text = hasCustomGrid
+                ? $"当前为本屏独立网格 · {effectiveGrid.Columns}列 × {effectiveGrid.Rows}行 · 格子 {effectiveGrid.CellPercent:0.##}%"
+                : $"当前跟随全局默认 · {globalGrid.Columns}列 × {globalGrid.Rows}行 (在此修改将转为本屏专属网格)",
+            FontSize = 11,
+            Opacity = hasCustomGrid ? 0.9 : 0.6
+        });
+
+        // Grid parameters: Columns, Rows, CellSize
+        var gridInputs = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2) };
+
+        var colsBox = new NumericUpDown
+        {
+            Minimum = 1, Maximum = 60, Increment = 1, FormatString = "F0",
+            Value = effectiveGrid.Columns, MinWidth = 100, Margin = new Thickness(0, 0, 10, 4)
+        };
+        colsBox.LostFocus += (_, _) =>
+        {
+            int cols = (int) Math.Clamp(colsBox.Value ?? effectiveGrid.Columns, 1, 60);
+            var cur = config?.Grid ?? globalGrid;
+            if (cur.Columns == cols && config?.Grid != null) return;
+            var nextGrid = cur with { Columns = cols };
+            SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Grid = nextGrid });
+            Reload();
+        };
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "列数 (Columns)", FontSize = 11, Opacity = 0.7 }, colsBox } });
+
+        var rowsBox = new NumericUpDown
+        {
+            Minimum = 1, Maximum = 40, Increment = 1, FormatString = "F0",
+            Value = effectiveGrid.Rows, MinWidth = 100, Margin = new Thickness(0, 0, 10, 4)
+        };
+        rowsBox.LostFocus += (_, _) =>
+        {
+            int rows = (int) Math.Clamp(rowsBox.Value ?? effectiveGrid.Rows, 1, 40);
+            var cur = config?.Grid ?? globalGrid;
+            if (cur.Rows == rows && config?.Grid != null) return;
+            var nextGrid = cur with { Rows = rows };
+            SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Grid = nextGrid });
+            Reload();
+        };
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "行数 (Rows)", FontSize = 11, Opacity = 0.7 }, rowsBox } });
+
+        var cellBox = new NumericUpDown
+        {
+            Minimum = 0.1m, Maximum = 50m, Increment = 0.1m, FormatString = "0.##",
+            Value = (decimal) effectiveGrid.CellPercent, MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
+        };
+        cellBox.LostFocus += (_, _) =>
+        {
+            double cell = Math.Round((double) (cellBox.Value ?? (decimal) effectiveGrid.CellPercent), 2);
+            var cur = config?.Grid ?? globalGrid;
+            if (Math.Abs(cur.CellPercent - cell) < 0.001 && config?.Grid != null) return;
+            var nextGrid = cur with { CellPercent = cell };
+            SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Grid = nextGrid });
+            Reload();
+        };
+        gridInputs.Children.Add(new StackPanel { Spacing = 2, Children = { new TextBlock { Text = "格子宽度 (%)", FontSize = 11, Opacity = 0.7 }, cellBox } });
+
+        gridSection.Children.Add(gridInputs);
+
+        var gridButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 2) };
+        gridButtons.Children.Add(Button("✏️ 全屏可视化网格编辑", (_, _) =>
         {
             var targetConfig = config ?? displayMonitor.EnsureConfig(attached);
             new GridEditor(appSettingsProvider, layoutProvider, displayMonitor, targetConfig.Id, attached.Screen).Show();
         }));
         if (hasCustomGrid)
         {
-            buttons.Children.Add(Button(Locale.Settings_MultiScreen_ResetGrid, (_, _) =>
+            gridButtons.Children.Add(Button(Locale.Settings_MultiScreen_ResetGrid ?? "重置为全局默认", (_, _) =>
             {
                 SaveConfig(config!, entry => entry with { Grid = null });
                 Reload();
             }));
         }
-        buttons.Children.Add(Button(Locale.Settings_MultiScreen_Export, async (_, _) => await ExportScreen(config ?? displayMonitor.EnsureConfig(attached))));
-        buttons.Children.Add(Button(Locale.Settings_MultiScreen_Import, async (_, _) => await ImportScreen(attached)));
-        panel.Children.Add(buttons);
+        gridSection.Children.Add(gridButtons);
+        panel.Children.Add(gridSection);
 
-        // Content scale (free-form input, saved on focus loss so spinning
-        // through values doesn't hammer the layout file)
-        var scaleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        scaleRow.Children.Add(new TextBlock { Text = Locale.Settings_MultiScreen_ContentScale, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
+        panel.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 2) });
+
+        // 5. Per-Screen Margin & Content Scale Section (边距与缩放)
+        var dimsSection = new StackPanel { Spacing = 6 };
+        dimsSection.Children.Add(new TextBlock
+        {
+            Text = "📏 边距与缩放 (本屏独立)",
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold
+        });
+
+        var dimsRow = new WrapPanel { Orientation = Orientation.Horizontal };
+
+        // Margin
+        var globalMargin = appSettingsProvider.Get().Dimensions.Margin;
+        var hasCustomMargin = config?.Margin != null;
+        var marginBox = new NumericUpDown
+        {
+            Minimum = 0, Maximum = 48, Increment = 1, FormatString = "F0",
+            Value = (decimal)(config?.Margin ?? globalMargin),
+            MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
+        };
+        marginBox.LostFocus += (_, _) =>
+        {
+            var val = (double)Math.Clamp(marginBox.Value ?? (decimal)globalMargin, 0m, 48m);
+            if (config?.Margin == val) return;
+            SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { Margin = val });
+            Reload();
+        };
+
+        var marginContainer = new StackPanel
+        {
+            Spacing = 2,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = hasCustomMargin ? "组件内边距 Margin (专属)" : $"组件内边距 Margin (默认 {globalMargin:0}px)",
+                    FontSize = 11,
+                    Opacity = hasCustomMargin ? 0.95 : 0.7
+                },
+                marginBox
+            }
+        };
+        dimsRow.Children.Add(marginContainer);
+
+        // Content Scale
         var scaleInput = new NumericUpDown
         {
-            Minimum = 0.1m,
-            Maximum = 5m,
-            Increment = 0.05m,
-            FormatString = "0.00",
+            Minimum = 0.2m, Maximum = 3.0m, Increment = 0.05m, FormatString = "0.00",
             Value = (decimal)(config?.ContentScale ?? 1.0),
-            MinWidth = 110
+            MinWidth = 110, Margin = new Thickness(0, 0, 10, 4)
         };
         scaleInput.LostFocus += (_, _) =>
         {
-            var value = (double)Math.Clamp(scaleInput.Value ?? 1.0m, 0.1m, 5m);
+            var value = (double)Math.Clamp(scaleInput.Value ?? 1.0m, 0.2m, 3.0m);
             if (config?.ContentScale is { } current && Math.Abs(current - value) < 0.001) return;
             SaveConfig(config ?? displayMonitor.EnsureConfig(attached), entry => entry with { ContentScale = value });
         };
-        scaleRow.Children.Add(scaleInput);
-        panel.Children.Add(scaleRow);
+        dimsRow.Children.Add(new StackPanel
+        {
+            Spacing = 2,
+            Children =
+            {
+                new TextBlock { Text = Locale.Settings_MultiScreen_ContentScale ?? "内容整体缩放", FontSize = 11, Opacity = 0.7 },
+                scaleInput
+            }
+        });
 
-        // Manual rebinding: pick which saved configuration belongs to THIS screen.
+        if (hasCustomMargin)
+        {
+            var resetMarginBtn = Button("恢复默认边距", (_, _) =>
+            {
+                SaveConfig(config!, entry => entry with { Margin = null });
+                Reload();
+            });
+            resetMarginBtn.VerticalAlignment = VerticalAlignment.Bottom;
+            resetMarginBtn.Margin = new Thickness(0, 0, 0, 4);
+            dimsRow.Children.Add(resetMarginBtn);
+        }
+
+        dimsSection.Children.Add(dimsRow);
+        panel.Children.Add(dimsSection);
+
+        panel.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Color.FromArgb(0x18, 0xFF, 0xFF, 0xFF)), Margin = new Thickness(0, 2) });
+
+        // 6. Maintenance & Rebinding
+        var maintSection = new StackPanel { Spacing = 6 };
+        maintSection.Children.Add(new TextBlock { Text = "⚙️ 布局维护与端口绑定", FontSize = 13, FontWeight = FontWeight.SemiBold });
+
+        var maintButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        maintButtons.Children.Add(Button(Locale.Settings_MultiScreen_Export, async (_, _) => await ExportScreen(config ?? displayMonitor.EnsureConfig(attached))));
+        maintButtons.Children.Add(Button(Locale.Settings_MultiScreen_Import, async (_, _) => await ImportScreen(attached)));
+        maintSection.Children.Add(maintButtons);
+
+        // Manual rebinding
         var stored = screens.Screens.ToList();
         var bindItems = new List<object> { Locale.Settings_MultiScreen_Rebind };
         foreach (var entry in stored)
@@ -211,11 +366,13 @@ public partial class MultiScreen : UserControl
         {
             ItemsSource = bindItems,
             SelectedIndex = config != null ? bindItems.IndexOf(config) : 0,
-            MinWidth = 180
+            MinWidth = 200
         };
         bindCombo.SelectionChanged += (_, _) => Rebind(attached, bindCombo, config);
-        panel.Children.Add(new TextBlock { Text = Locale.Settings_MultiScreen_RebindHint, FontSize = 11, Opacity = 0.55 });
-        panel.Children.Add(bindCombo);
+        maintSection.Children.Add(new TextBlock { Text = Locale.Settings_MultiScreen_RebindHint, FontSize = 11, Opacity = 0.55 });
+        maintSection.Children.Add(bindCombo);
+
+        panel.Children.Add(maintSection);
 
         return card;
     }

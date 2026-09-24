@@ -17,6 +17,7 @@ using Folders.Models;
 using Folders.Services;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Core.Services;
+using uWidgets.Services;
 using Grid = Avalonia.Controls.Grid;
 
 namespace Folders.Views;
@@ -148,6 +149,7 @@ public partial class BigFolderPopupWindow : Window
 
     private void OnPreRenderCompleted()
     {
+        if (LiquidGlassWallpaper.LiveSamplingEnabled) return;
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
@@ -177,26 +179,42 @@ public partial class BigFolderPopupWindow : Window
         if (theme.UsesRenderedGlass)
         {
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassBgImage.IsVisible = true;
-            LiquidGlassOverlay.IsVisible = false;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-
-            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
-
-            if (bmp != null)
+            if (LiquidGlassWallpaper.LiveSamplingEnabled)
             {
-                LiquidGlassBgImage.Source = bmp;
+                LiquidGlassSurfaceControl.Material = theme;
+                LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
+                LiquidGlassSurfaceControl.IsVisible = true;
+                LiquidGlassBgImage.IsVisible = false;
+                LiquidGlassOverlay.IsVisible = false;
+                CardBorder.Background = Brushes.Transparent;
+                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+                LiquidGlassSurfaceControl.RequestRender(immediate: true);
             }
             else
             {
-                CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
-                _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
+                LiquidGlassSurfaceControl.IsVisible = false;
+                LiquidGlassBgImage.IsVisible = true;
+                LiquidGlassOverlay.IsVisible = false;
+                CardBorder.Background = Brushes.Transparent;
+                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+
+                var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
+                var bmp = LiquidGlassPreRenderService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+
+                if (bmp != null)
+                {
+                    LiquidGlassBgImage.Source = bmp;
+                }
+                else
+                {
+                    CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
+                    _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
+                }
             }
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
         {
+            LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
@@ -209,6 +227,7 @@ public partial class BigFolderPopupWindow : Window
         }
         else // Acrylic (毛玻璃)
         {
+            LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
@@ -418,6 +437,7 @@ public partial class BigFolderPopupWindow : Window
     private void OnWindowClosed(object? sender, EventArgs e)
     {
         isClosing = true;
+        LiquidGlassSurfaceControl.IsVisible = false;
         lastCloseTime = DateTime.UtcNow;
         UninstallMouseHook();
         LiquidGlassPreRenderService.PreRenderCompleted -= OnPreRenderCompleted;
@@ -565,6 +585,10 @@ public partial class BigFolderPopupWindow : Window
         loadedTime = DateTime.UtcNow;
         PositionWindow();
         ApplyWindowRegion();
+        if (LiquidGlassSurfaceControl.IsVisible)
+        {
+            LiquidGlassSurfaceControl.RequestRender(immediate: true);
+        }
         PlayZoomInAnimation();
         InstallMouseHook();
     }

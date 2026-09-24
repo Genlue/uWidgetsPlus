@@ -2,29 +2,37 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Batteries.Locales;
 using Batteries.Models;
 using Batteries.Services;
+using uWidgets.Core.Interfaces;
+using uWidgets.Core.Models.Settings;
+using uWidgets.Core.Services;
 
 namespace Batteries.ViewModels;
 
 public class BatteryDeviceItem : INotifyPropertyChanged
 {
+    private readonly IAppSettingsProvider? appSettingsProvider;
     private string name = string.Empty;
     private int percentage;
     private bool isCharging;
     private bool hasDevice;
     private DeviceKind kind;
 
-    public BatteryDeviceItem(string name, DeviceKind kind, int percentage, bool isCharging, bool hasDevice = true)
+    public BatteryDeviceItem(string name, DeviceKind kind, int percentage, bool isCharging, bool hasDevice = true, IAppSettingsProvider? appSettingsProvider = null)
     {
         this.name = name;
         this.kind = kind;
         this.percentage = Math.Clamp(percentage, 0, 100);
         this.isCharging = isCharging;
         this.hasDevice = hasDevice;
+        this.appSettingsProvider = appSettingsProvider;
     }
 
     public bool HasDevice
@@ -109,11 +117,49 @@ public class BatteryDeviceItem : INotifyPropertyChanged
         get
         {
             if (!hasDevice) return Brushes.Transparent;
+            var theme = appSettingsProvider?.Get()?.Theme;
+            if (theme != null && !theme.IsColorful && theme.Monochrome)
+            {
+                if (theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
+                {
+                    var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                    return isDark ? Brushes.White : Brushes.Black;
+                }
+                else // Accent
+                {
+                    if (!string.IsNullOrWhiteSpace(theme.AccentColor) && Color.TryParse(theme.AccentColor, out var parsedAccent))
+                        return new SolidColorBrush(parsedAccent);
+                    if (Application.Current != null && Application.Current.TryGetResource("SystemControlForegroundAccentBrush", Application.Current.ActualThemeVariant, out var res) && res is IBrush ab)
+                        return ab;
+                    var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                    return isDark ? new SolidColorBrush(Color.Parse("#70A5FF")) : new SolidColorBrush(Color.Parse("#0078D4"));
+                }
+            }
             if (IsCharging) return new SolidColorBrush(Color.Parse("#34C759"));
             if (Percentage > 20) return new SolidColorBrush(Color.Parse("#34C759"));
             if (Percentage > 10) return new SolidColorBrush(Color.Parse("#FF9500"));
             return new SolidColorBrush(Color.Parse("#FF3B30"));
         }
+    }
+
+    public IBrush ChargingBadgeForeground
+    {
+        get
+        {
+            var theme = appSettingsProvider?.Get()?.Theme;
+            if (theme != null && !theme.IsColorful && theme.Monochrome && theme.EffectiveMonochromeVariant == MonochromeStyle.BlackWhite)
+            {
+                var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+                return isDark ? Brushes.Black : Brushes.White;
+            }
+            return Brushes.White;
+        }
+    }
+
+    public void NotifyStatusBrushChanged()
+    {
+        OnPropertyChanged(nameof(StatusBrush));
+        OnPropertyChanged(nameof(ChargingBadgeForeground));
     }
 
     public string StatusText => !hasDevice ? string.Empty : (IsCharging ? "⚡ 充电中" : $"{Percentage}%");
@@ -139,23 +185,29 @@ public class BatteryDeviceItem : INotifyPropertyChanged
 
 public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
 {
+    private readonly IAppSettingsProvider appSettingsProvider;
     private BatteriesModel model;
     private readonly DispatcherTimer timer;
     private string summaryText = string.Empty;
 
-    public ObservableCollection<BatteryDeviceItem> Items { get; } = [
-        new BatteryDeviceItem(Locale.Batteries_MainDevice, DeviceKind.Computer, 100, true, true),
-        new BatteryDeviceItem(string.Empty, DeviceKind.Mouse, 0, false, false),
-        new BatteryDeviceItem(string.Empty, DeviceKind.Keyboard, 0, false, false),
-        new BatteryDeviceItem(string.Empty, DeviceKind.Headphones, 0, false, false)
-    ];
+    public ObservableCollection<BatteryDeviceItem> Items { get; }
 
     public ObservableCollection<BatteryDeviceItem> Devices => Items;
     public BatteryDeviceItem MainDevice => Items[0];
 
-    public BatteriesViewModel(BatteriesModel? initialModel = null)
+    public BatteriesViewModel(BatteriesModel? initialModel = null, IAppSettingsProvider? settingsProvider = null)
     {
         model = initialModel ?? new BatteriesModel();
+        appSettingsProvider = settingsProvider 
+            ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) 
+            ?? new AppSettingsProvider();
+
+        Items = [
+            new BatteryDeviceItem(Locale.Batteries_MainDevice, DeviceKind.Computer, 100, true, true, appSettingsProvider),
+            new BatteryDeviceItem(string.Empty, DeviceKind.Mouse, 0, false, false, appSettingsProvider),
+            new BatteryDeviceItem(string.Empty, DeviceKind.Keyboard, 0, false, false, appSettingsProvider),
+            new BatteryDeviceItem(string.Empty, DeviceKind.Headphones, 0, false, false, appSettingsProvider)
+        ];
 
         timer = new DispatcherTimer
         {
@@ -164,7 +216,22 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
         timer.Tick += (_, _) => PollPowerStatus();
         timer.Start();
 
+        appSettingsProvider.DataChanged += OnSettingsChanged;
+
         PollPowerStatus();
+    }
+
+    private void OnSettingsChanged(object sender, AppSettings? oldData, AppSettings newData)
+    {
+        Dispatcher.UIThread.Post(RefreshStatusBrushes);
+    }
+
+    public void RefreshStatusBrushes()
+    {
+        foreach (var item in Items)
+        {
+            item.NotifyStatusBrushChanged();
+        }
     }
 
     public BatteriesModel Model => model;
@@ -252,6 +319,7 @@ public class BatteriesViewModel : INotifyPropertyChanged, IDisposable
     public void Dispose()
     {
         timer.Stop();
+        appSettingsProvider.DataChanged -= OnSettingsChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

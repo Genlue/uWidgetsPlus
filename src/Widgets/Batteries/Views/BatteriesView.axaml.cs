@@ -37,6 +37,7 @@ public partial class BatteriesView : UserControl, IWidgetSelfRefreshing
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += OnSizeChanged;
+        ActualThemeVariantChanged += (_, _) => viewModel?.RefreshStatusBrushes();
         ApplyLayout();
     }
 

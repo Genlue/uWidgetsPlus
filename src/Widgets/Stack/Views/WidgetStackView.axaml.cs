@@ -93,7 +93,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         this.model = model ?? new WidgetStackModel();
         this.widgetLayoutProvider = widgetLayoutProvider;
         this.assemblyProvider = assemblyProvider;
-        this.appSettingsProvider = appSettingsProvider ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider);
+        this.appSettingsProvider = appSettingsProvider ?? (uWidgets.App.Services?.GetService(typeof(IAppSettingsProvider)) as IAppSettingsProvider) ?? new uWidgets.Core.Services.AppSettingsProvider();
 
         InitializeComponent();
         Classes.Add("Flush");
@@ -118,9 +118,9 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
 
         ActualThemeVariantChanged += (_, _) => UpdateAllCardStyles();
 
-        if (appSettingsProvider != null)
+        if (this.appSettingsProvider != null)
         {
-            appSettingsProvider.DataChanged += (_, _, _) => Dispatcher.UIThread.Post(UpdateAllCardStyles);
+            this.appSettingsProvider.DataChanged += (_, _, _) => Dispatcher.UIThread.Post(UpdateAllCardStyles);
         }
 
         PropertyChanged += (s, e) =>
@@ -890,6 +890,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         model = newModel;
         SaveModelDirect();
         RenderCurrentState();
+        UpdateAllCardStyles();
     }
 
     private void RequestSaveModel()
@@ -985,6 +986,7 @@ public partial class WidgetStackView : UserControl, IWidgetSelfRefreshing, IStac
         childControls.Clear();
         emptyCard = null;
         RenderCurrentState();
+        UpdateAllCardStyles();
     }
 
     private static bool AreEntriesStructurallyEqual(List<StackedWidgetEntry>? a, List<StackedWidgetEntry>? b)

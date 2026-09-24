@@ -219,8 +219,6 @@ public sealed class LiquidGlassSurface : Control
             RequestRender();
     }
 
-    public void RequestRender() => RequestRender(immediate: false);
-
     /// <summary>
     /// A newer wallpaper frame is available.
     /// <para>
@@ -241,7 +239,7 @@ public sealed class LiquidGlassSurface : Control
         RenderMaterial();
     }
 
-    private void RequestRender(bool immediate)
+    public void RequestRender(bool immediate = false)
     {
         revision++;
         if (!attached) return;

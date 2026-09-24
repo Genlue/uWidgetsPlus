@@ -45,9 +45,9 @@
                         <Border IsVisible="{Binding IsCharging}"
                                 Canvas.Left="78" Canvas.Top="8"
                                 Width="24" Height="24" CornerRadius="12"
-                                Background="#34C759">
+                                Background="{Binding StatusBrush}">
                             <Path Width="12" Height="14" Stretch="Fill"
-                                  Fill="White"
+                                  Fill="{Binding ChargingBadgeForeground}"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"
                                   Data="M 12,2 L 4,13 L 10,13 L 8,22 L 18,10 L 12,10 Z" />
                         </Border>

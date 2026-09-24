@@ -112,6 +112,10 @@ public partial class WeatherPopupWindow : Window
     {
         loadedTime = DateTime.UtcNow;
         PositionWindow();
+        if (LiquidGlassSurfaceControl.IsVisible)
+        {
+            LiquidGlassSurfaceControl.RequestRender(immediate: true);
+        }
         PlayZoomInAnimation();
     }
 
@@ -206,26 +210,42 @@ public partial class WeatherPopupWindow : Window
         if (theme.UsesRenderedGlass)
         {
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
-            LiquidGlassBgImage.IsVisible = true;
-            LiquidGlassOverlay.IsVisible = false;
-            CardBorder.Background = Brushes.Transparent;
-            CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
-
-            var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
-            var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
-
-            if (bmp != null)
+            if (LiquidGlassWallpaper.LiveSamplingEnabled)
             {
-                LiquidGlassBgImage.Source = bmp;
+                LiquidGlassSurfaceControl.Material = theme;
+                LiquidGlassSurfaceControl.CornerRadius = CardBorder.CornerRadius;
+                LiquidGlassSurfaceControl.IsVisible = true;
+                LiquidGlassBgImage.IsVisible = false;
+                LiquidGlassOverlay.IsVisible = false;
+                CardBorder.Background = Brushes.Transparent;
+                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+                LiquidGlassSurfaceControl.RequestRender(immediate: true);
             }
             else
             {
-                CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
-                _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
+                LiquidGlassSurfaceControl.IsVisible = false;
+                LiquidGlassBgImage.IsVisible = true;
+                LiquidGlassOverlay.IsVisible = false;
+                CardBorder.Background = Brushes.Transparent;
+                CardBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 255, 255, 255));
+
+                var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
+                var bmp = PopupLiquidGlassService.GetCachedBitmapFor(spawnScreenCenter, Width, Height, screen, Screens.All);
+
+                if (bmp != null)
+                {
+                    LiquidGlassBgImage.Source = bmp;
+                }
+                else
+                {
+                    CardBorder.Background = new SolidColorBrush(isDark ? Color.FromArgb(40, 28, 28, 32) : Color.FromArgb(40, 245, 245, 248));
+                    _ = TriggerDirectLiquidGlassRender(theme, isDark, screen);
+                }
             }
         }
         else if (theme.IsColorful)
         {
+            LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
@@ -234,6 +254,7 @@ public partial class WeatherPopupWindow : Window
         }
         else if (theme.EffectiveSurface == SurfaceStyle.Solid)
         {
+            LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
@@ -245,6 +266,7 @@ public partial class WeatherPopupWindow : Window
         }
         else // Acrylic
         {
+            LiquidGlassSurfaceControl.IsVisible = false;
             TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur];
             LiquidGlassBgImage.IsVisible = false;
             LiquidGlassOverlay.IsVisible = false;
@@ -289,6 +311,7 @@ public partial class WeatherPopupWindow : Window
 
     private void OnPreRenderCompleted()
     {
+        if (LiquidGlassWallpaper.LiveSamplingEnabled) return;
         if (LiquidGlassBgImage.IsVisible)
         {
             var screen = spawnScreenCenter.HasValue ? Screens.ScreenFromPoint(new PixelPoint((int)spawnScreenCenter.Value.X, (int)spawnScreenCenter.Value.Y)) : Screens.Primary;
@@ -348,6 +371,7 @@ public partial class WeatherPopupWindow : Window
 
     private void OnWindowClosed(object? sender, EventArgs e)
     {
+        LiquidGlassSurfaceControl.IsVisible = false;
         PopupLiquidGlassService.PreRenderCompleted -= OnPreRenderCompleted;
         if (activePopup == this)
             activePopup = null;

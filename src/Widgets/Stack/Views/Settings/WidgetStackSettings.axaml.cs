@@ -40,7 +40,15 @@ public partial class WidgetStackSettings : UserControl
         new("Batteries", "BatteriesView", "电池电量"),
         new("Pomodoro", "PomodoroView", "番茄工作法"),
         new("Progress", "ProgressView", "进度刻度"),
-        new("Search", "SearchView", "快捷搜索")
+        new("Search", "SearchView", "快捷搜索"),
+        new("Tools", "ClipboardView", "剪贴板"),
+        new("Tools", "TranslatorView", "翻译工具"),
+        new("Folders", "Folder", "文件夹 (标准)"),
+        new("Folders", "BigFolder", "大文件夹"),
+        new("Picture", "PictureView", "相册照片"),
+        new("Map", "MapView", "全景地图"),
+        new("Calendar", "Date", "日历 (日期)"),
+        new("Calendar", "Month", "日历 (月历)")
     ];
 
     public WidgetStackSettings() : this(null!, null!)
@@ -132,9 +140,11 @@ public partial class WidgetStackSettings : UserControl
             var widgetInfo = assembly?
                 .GetCustomAttributes<WidgetInfoAttribute>()
                 .FirstOrDefault(a => a.ViewType.Name == layout.SubType);
-            if (widgetInfo != null && !string.IsNullOrEmpty(widgetInfo.Title))
+            if (assembly != null && widgetInfo != null && !string.IsNullOrEmpty(widgetInfo.Title))
             {
-                return widgetInfo.Title;
+                var locale = assemblyProvider?.GetLocaleResourceManager(assembly);
+                var localized = locale?.GetString(widgetInfo.Title);
+                return !string.IsNullOrEmpty(localized) ? localized : widgetInfo.Title;
             }
         }
         catch { }

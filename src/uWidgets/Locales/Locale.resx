@@ -619,10 +619,7 @@
         <value>0–100% · how far the edge colour reaches into the card; 0 = a clean rim with no wash over the content</value>
     </data>
     <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
-        <value>Liquid glass · static</value>
-    </data>
-    <data name="Settings_Appearance_Glass_Description" xml:space="preserve">
-        <value>Static wallpaper refraction with directional highlights. Changes apply immediately; text stays sharp. For live wallpapers or different images per monitor, the Windows wallpaper image is used.</value>
+        <value>Liquid glass</value>
     </data>
     <data name="Settings_Appearance_Glass_Blur" xml:space="preserve">
         <value>Blur radius</value>

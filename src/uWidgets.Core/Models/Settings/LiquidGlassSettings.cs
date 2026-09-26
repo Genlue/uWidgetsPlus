@@ -36,7 +36,7 @@ namespace uWidgets.Core.Models.Settings;
 /// share of the aura; the sideways 晕染 between neighbouring rim colours is
 /// unaffected. Ignored by <see cref="SurfaceStyle.LiquidGlass"/>.
 /// </param>
-/// <param name="LiveSampling">Continuously sample the wallpaper; false freezes the latest frame.</param>
+/// <param name="LiveSampling">Continuously sample the wallpaper; false (the default) freezes the latest frame — the static material.</param>
 /// <param name="LiveSamplingInterval">Target interval in milliseconds; frames are dropped under load.</param>
 /// <param name="BackdropClarity">
 /// 背景清晰度: the resolution the shared blurred backdrop is built at, as a percentage of the
@@ -51,28 +51,27 @@ namespace uWidgets.Core.Models.Settings;
 /// </para>
 /// </param>
 public record LiquidGlassSettings(
-    double Blur = 12,
-    double Refraction = 28,
-    double EdgeWidth = 24,
-    double Highlight = 65,
-    double Dispersion = 18,
+    double Blur = 100,
+    double Refraction = 50,
+    double EdgeWidth = 10,
+    double Highlight = 50,
+    double Dispersion = 100,
     double LightAngle = 225,
-    double EdgeTint = 50,
+    double EdgeTint = 25,
     double WallpaperOffsetX = 0,
     double WallpaperOffsetY = 0,
     double Glow = 0,
     double Spectrum = 0,
-    double DyeSpread = 35,
-    bool LiveSampling = true,
-    int LiveSamplingInterval = 100,   // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
-    double BackdropClarity = 50)      // = DefaultBackdropClarity
+    double DyeSpread = 0,
+    bool LiveSampling = false,
+    int LiveSamplingInterval = 5,     // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
+    double BackdropClarity = 25)      // = DefaultBackdropClarity
 {
     /// <summary>
-    /// Default 染色扩散 (%). Deliberately moderate: a wide wash over the content reads as
-    /// dirty, so a stored theme that predates the knob gets a rim-confined dye rather than
-    /// the deepest spread.
+    /// Default 染色扩散 (%). The dye stays in the outermost band: a wide wash over the content
+    /// reads as dirty, so the factory recipe confines the colour to the rim.
     /// </summary>
-    public const double DefaultDyeSpread = 35;
+    public const double DefaultDyeSpread = 0;
 
     /// <summary>
     /// True when either of the soft recipe's signature ingredients is switched on. The soft
@@ -81,11 +80,10 @@ public record LiquidGlassSettings(
     public bool IsSoftRecipe => Glow > 0 || Spectrum > 0;
 
     /// <summary>
-    /// Default 背景清晰度 (%). Half the desktop is the measured sweet spot: it is where the
-    /// backdrop build stops dominating the sampling round, and the material's own blur hides the
-    /// reduced grid.
+    /// Default 背景清晰度 (%). A quarter of the desktop keeps the backdrop build cheap even on
+    /// the fastest sampling interval — and the material's own blur hides the reduced grid.
     /// </summary>
-    public const double DefaultBackdropClarity = 50;
+    public const double DefaultBackdropClarity = 25;
 
     /// <summary>
     /// Lowest 背景清晰度 (%). A quarter of the desktop still reads as a blurred wallpaper behind
@@ -108,10 +106,11 @@ public record LiquidGlassSettings(
     public const int MinLiveSamplingInterval = 3;
 
     /// <summary>
-    /// Default live sampling interval. A blurred backdrop hides motion, so 10 fps reads as
-    /// perfectly fluid while costing a third of what 30 fps would.
+    /// Default live sampling interval: 5 ms — with the demand-driven sampler this reads as
+    /// "as fast as this machine can go". The static material (the <c>LiveSampling</c> default)
+    /// never samples at all.
     /// </summary>
-    public const int DefaultLiveSamplingInterval = 100;
+    public const int DefaultLiveSamplingInterval = 5;
 
     /// <summary>Dye band width as a fraction of the card's short side, at 染色扩散 = 0 / 100.</summary>
     public const double MinDyeBandFraction = 0.04;
@@ -119,7 +118,7 @@ public record LiquidGlassSettings(
     /// <summary>Dye band width as a fraction of the card's short side at 染色扩散 = 100.</summary>
     public const double MaxDyeBandFraction = 0.14;
     /// <summary>Default edge tint strength (%) — the soft colored rim at the glass border.</summary>
-    public const double DefaultEdgeTint = 50;
+    public const double DefaultEdgeTint = 25;
 
     /// <summary>How much the auto-derived rim color is chroma-boosted (0-1).</summary>
     public const double DefaultEdgeTintChromaBoost = 0.55;
@@ -149,11 +148,11 @@ public record LiquidGlassSettings(
     /// <summary>Keep imported or hand-edited values finite and within the UI ranges.</summary>
     public LiquidGlassSettings Normalize() => this with
     {
-        Blur = Clamp(Blur, 0, 100, 12),
-        Refraction = Clamp(Refraction, 0, 100, 28),
-        EdgeWidth = Clamp(EdgeWidth, 0, 80, 24),
-        Highlight = Clamp(Highlight, 0, 100, 65),
-        Dispersion = Clamp(Dispersion, 0, 100, 18),
+        Blur = Clamp(Blur, 0, 100, 100),
+        Refraction = Clamp(Refraction, 0, 100, 50),
+        EdgeWidth = Clamp(EdgeWidth, 0, 80, 10),
+        Highlight = Clamp(Highlight, 0, 100, 50),
+        Dispersion = Clamp(Dispersion, 0, 100, 100),
         LightAngle = Clamp(LightAngle, 0, 360, 225),
         EdgeTint = Clamp(EdgeTint, 0, 100, DefaultEdgeTint),
         WallpaperOffsetX = Clamp(WallpaperOffsetX, -WallpaperOffsetLimit, WallpaperOffsetLimit, 0),

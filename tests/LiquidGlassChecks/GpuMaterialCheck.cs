@@ -45,8 +45,9 @@ internal static class GpuMaterialCheck
         using var backdrop = MakeBackdrop(640, 400);
         using var aura = MakeAura(29, 18);
 
-        // --- crisp (default) recipe: what the merged 液态玻璃 theme ships with -------------
-        var crispTheme = Material(new LiquidGlassSettings());
+        // --- crisp (iOS reference) recipe: the historic factory optics, pinned explicitly
+        // because the shipped defaults now sit at the heavy-blur end of the range -------------
+        var crispTheme = Material(OpticsProfile.CrispReference);
         var crispFrame = Frame(crispTheme, 400, 260);
         var crisp = LiquidGlassGpuEffect.BuildParams(crispFrame, 0.67f);
 

@@ -24,6 +24,14 @@ public static class OpticsProfile
     private const int WallWidth = 800;
     private const int WallHeight = 400;
 
+    /// <summary>
+    /// The crisp, macOS-faithful optics recipe — the historic factory defaults. The shipped
+    /// defaults are now the heavy-blur end of the range, so probes that assert centre legibility
+    /// or pin the iOS-reference uniforms use this recipe explicitly instead of following
+    /// <c>new LiquidGlassSettings()</c>.
+    /// </summary>
+    internal static LiquidGlassSettings CrispReference { get; } = new(12, 28, 24, 65, 18, 225, 50);
+
     private static Theme Material(LiquidGlassSettings glass, double opacity = 0) =>
         new(null, null, opacity, false, false, "Inter", SurfaceStyle.LiquidGlass, LiquidGlass: glass);
 
@@ -272,7 +280,9 @@ public static class OpticsProfile
                 new WallpaperSnapshot(grid, SKColors.Black)));
             Console.WriteLine($"  clarity @ blur {blur,2}: {Contrast(probe, 120, 90, 160, 120, 4) / outside:P0} of backdrop structure");
         }
-        using var card = Decode(LiquidGlassRenderer.Render(Frame(Material(new LiquidGlassSettings(), 0.18)),
+        // Centre legibility is a property of a *sane* recipe; the shipped default is the
+        // heavy-blur end of the range (a milky centre is its intent), so probe the crisp one.
+        using var card = Decode(LiquidGlassRenderer.Render(Frame(Material(CrispReference, 0.18)),
             new WallpaperSnapshot(grid, SKColors.Black)));
         var inside = Contrast(card, 120, 90, 160, 120, 4);
         var transmission = inside / outside;
@@ -345,8 +355,11 @@ public static class OpticsProfile
         var y0 = Math.Max(0, wallpaper.Height / 2 - cardHeight / 2);
         var variants = new (string Name, LiquidGlassSettings Glass)[]
         {
-            ("default  12/28/24/65/18", new LiquidGlassSettings()),
-            ("strong   12/100/32/90/60", new LiquidGlassSettings(12, 100, 32, 90, 60, 225, 70))
+            // "the rim lens visibly moves content" is a lens-recipe property: the shipped
+            // default sits at the heavy-blur end (its washed-out rim is by design), so pin
+            // recipes instead of following <c>new LiquidGlassSettings()</c>.
+            ("crisp   12/28/24/65/18", CrispReference),
+            ("strong  12/100/32/90/60", new LiquidGlassSettings(12, 100, 32, 90, 60, 225, 70))
         };
 
         foreach (var (name, glass) in variants)
@@ -500,7 +513,7 @@ public static class OpticsProfile
 
             var variants = new (string Name, LiquidGlassSettings Glass)[]
             {
-                ("iOS reference 12/28/24/65/18", new LiquidGlassSettings()),
+                ("iOS reference 12/28/24/65/18", CrispReference),
                 ("refraction 100 · 12/100/32/65/18", new LiquidGlassSettings(12, 100, 32, 65, 18, 225, 50))
             };
             for (var i = 0; i < variants.Length; i++)
@@ -528,7 +541,7 @@ public static class OpticsProfile
         sheet.Canvas.DrawBitmap(grid, 0, gridTop);
         var gridVariants = new (string Name, LiquidGlassSettings Glass)[]
         {
-            ("grid · iOS reference", new LiquidGlassSettings()),
+            ("grid · iOS reference", CrispReference),
             ("grid · refraction 100", new LiquidGlassSettings(12, 100, 24, 65, 18, 225, 50))
         };
         for (var i = 0; i < gridVariants.Length; i++)

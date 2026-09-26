@@ -37,14 +37,14 @@ Check(oldTheme.EffectiveSurface == SurfaceStyle.Acrylic && oldTheme.UsesNativeBl
 Check((oldTheme with { OpacityLevel = 1 }).EffectiveSurface == SurfaceStyle.Solid, "old solid config migration");
 Check(oldTheme.EffectiveLiquidGlass == new LiquidGlassSettings(), "old config receives glass defaults");
 var invalid = new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900).Normalize();
-Check(invalid == new LiquidGlassSettings(12, 100, 0, 65, 0, 360), "invalid optics are clamped");
+Check(invalid == new LiquidGlassSettings(100, 100, 0, 50, 0, 360), "invalid optics are clamped");
 Check(new LiquidGlassSettings(12, 28, 0, 65, 18, 225).Normalize().EdgeWidth == 0,
     "EdgeWidth 0 survives validation (no lens ring is a legal setting)");
 var offsetClamp = new LiquidGlassSettings(0, 0, 4, 0, 0, 0, EdgeTint: 0, WallpaperOffsetX: 2500, WallpaperOffsetY: -9999).Normalize();
 Check(offsetClamp.WallpaperOffsetX == LiquidGlassSettings.WallpaperOffsetLimit && offsetClamp.WallpaperOffsetY == -LiquidGlassSettings.WallpaperOffsetLimit,
     "wallpaper offsets are clamped");
 Check(new LiquidGlassSettings(double.NaN, 300, -1, double.PositiveInfinity, -9, 900, 400, 2500, -9999).Normalize()
-        == new LiquidGlassSettings(12, 100, 0, 65, 0, 360, 100, 1000, -1000),
+        == new LiquidGlassSettings(100, 100, 0, 50, 0, 360, 100, 1000, -1000),
     "edge tint and offsets are clamped together");
 
 // Live sampling: the floor is 3 ms ("as fast as this machine can go"), and the sampler is
@@ -57,14 +57,14 @@ Check(new LiquidGlassSettings(LiveSamplingInterval: 1).Normalize().LiveSamplingI
 Check(new LiquidGlassSettings(LiveSamplingInterval: 99999).Normalize().LiveSamplingInterval == 1000,
     "an absurd sampling interval clamps down to 1000 ms");
 Check(new LiquidGlassSettings().LiveSamplingInterval == LiquidGlassSettings.DefaultLiveSamplingInterval,
-    "the default sampling interval is unchanged (10 fps)");
-Check(new LiquidGlassSettings().LiveSampling, "live sampling is on by default");
+    "the default sampling interval is unchanged (5 ms — as fast as this machine goes)");
+Check(!new LiquidGlassSettings().LiveSampling, "live sampling is off by default (the static material)");
 
 // 背景清晰度 is the knob that trades the sampling round's cost against backdrop detail, and it is
 // the user's own setting — so it must survive validation untouched across its whole range and only
 // be clamped at the documented floor. Silently capping it is the defect it exists to fix.
 Check(new LiquidGlassSettings().BackdropClarity == LiquidGlassSettings.DefaultBackdropClarity,
-    "backdrop clarity defaults to 50% (the measured cost/detail sweet spot)");
+    "backdrop clarity defaults to 25% (cheap backdrop builds, blur hides the reduced grid)");
 Check(new LiquidGlassSettings(BackdropClarity: 100).Normalize().BackdropClarity == 100,
     "backdrop clarity 100% (native resolution) survives validation");
 Check(new LiquidGlassSettings(BackdropClarity: 25).Normalize().BackdropClarity == 25,

@@ -28,7 +28,6 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(ShowGlassOpticsSettings));
             this.RaisePropertyChanged(nameof(ShowSoftGlowSettings));
             this.RaisePropertyChanged(nameof(GlassOpticsTitle));
-            this.RaisePropertyChanged(nameof(GlassOpticsDescription));
             this.RaisePropertyChanged(nameof(OpacityLevel));
             this.RaisePropertyChanged(nameof(GlassBlur));
             this.RaisePropertyChanged(nameof(GlassRefraction));
@@ -79,7 +78,7 @@ public class AppearanceViewModel : ReactiveObject
     /// 柔光玻璃 is deliberately <b>not</b> a preset any more: it was merged into 液态玻璃, which is
     /// one surface and one pipeline, and the soft look is reached through the 柔光晕 / 光谱弥散
     /// knobs. Its recipe survives as <see cref="LiquidGlassSettings.SoftGlowPreset"/> for stored
-    /// configurations, and the liquid-glass preset below keeps the crisp factory optics so the
+    /// configurations, and the liquid-glass preset below keeps the factory optics so the
     /// default material is unchanged by the merge.
     /// </para>
     /// </summary>
@@ -115,8 +114,17 @@ public class AppearanceViewModel : ReactiveObject
     /// <summary>Section title of the optics block.</summary>
     public string GlassOpticsTitle => Locale.Settings_Appearance_Glass_Title;
 
-    /// <summary>Section description of the optics block.</summary>
-    public string GlassOpticsDescription => Locale.Settings_Appearance_Glass_Description;
+    /// <summary>
+    /// Whether the optics rows (实时采样 → 染色扩散) are unfolded. They are collapsed by
+    /// default — expert knobs behind a working out-of-the-box theme — and the state is
+    /// session-local on purpose: it is a reading aid, not a preference.
+    /// </summary>
+    public bool OpticsExpanded
+    {
+        get => opticsExpanded;
+        set { if (opticsExpanded == value) return; opticsExpanded = value; this.RaisePropertyChanged(); }
+    }
+    private bool opticsExpanded;
 
     public double GlassBlur
     {
@@ -223,9 +231,9 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Reset the optics to the merged 液态玻璃 theme's factory defaults — the crisp, macOS-faithful
-    /// recipe. 柔光玻璃 has no separate defaults any more: its look is a set of knob positions on
-    /// this same theme, and 柔光晕 / 光谱弥散 are what switch it back on.
+    /// Reset the optics to the merged 液态玻璃 theme's factory defaults (the shipped recipe in
+    /// <see cref="LiquidGlassSettings"/>). 柔光玻璃 has no separate defaults any more: its look is
+    /// a set of knob positions on this same theme, and 柔光晕 / 光谱弥散 are what switch it back on.
     /// </summary>
     public void ResetLiquidGlass() => UpdateGlass(_ => new LiquidGlassSettings());
 

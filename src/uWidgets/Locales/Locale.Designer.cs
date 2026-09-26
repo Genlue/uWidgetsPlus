@@ -37,7 +37,6 @@ namespace uWidgets.Locales {
         public static string Settings_Appearance_Glass_LiveSamplingInterval => ResourceManager.GetString("Settings_Appearance_Glass_LiveSamplingInterval", resourceCulture);
         public static string Settings_Appearance_Glass_LiveSamplingIntervalHint => ResourceManager.GetString("Settings_Appearance_Glass_LiveSamplingIntervalHint", resourceCulture);
         public static string Settings_Appearance_Glass_Title => ResourceManager.GetString("Settings_Appearance_Glass_Title", resourceCulture);
-        public static string Settings_Appearance_Glass_Description => ResourceManager.GetString("Settings_Appearance_Glass_Description", resourceCulture);
         public static string Settings_Appearance_Glass_Blur => ResourceManager.GetString("Settings_Appearance_Glass_Blur", resourceCulture);
         public static string Settings_Appearance_Glass_BlurHint => ResourceManager.GetString("Settings_Appearance_Glass_BlurHint", resourceCulture);
         public static string Settings_Appearance_Glass_Refraction => ResourceManager.GetString("Settings_Appearance_Glass_Refraction", resourceCulture);

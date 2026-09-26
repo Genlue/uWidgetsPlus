@@ -622,7 +622,7 @@
         <value>备份操作失败：{0}</value>
     </data>
     <data name="Settings_MultiScreen" xml:space="preserve">
-        <value>多屏</value>
+        <value>屏幕</value>
     </data>
     <data name="Settings_MultiScreen_Description" xml:space="preserve">
         <value>每个显示器独立管理自己的小组件布局、网格与内容缩放。按型号与分辨率识别屏幕；拔掉屏幕时组件自动隐藏，重新连接后自动恢复原位。每块屏幕可分别导出/导入为独立备份文件。</value>
@@ -718,10 +718,7 @@
         <value>0–100% · 边缘染色向卡内扩散的程度；0 = 染色只留在最外一圈，卡面完全不被染色覆盖</value>
     </data>
     <data name="Settings_Appearance_Glass_Title" xml:space="preserve">
-        <value>液态玻璃 · 静态</value>
-    </data>
-    <data name="Settings_Appearance_Glass_Description" xml:space="preserve">
-        <value>基于 Windows 静态壁纸模拟折射与定向高光，调整即时生效，文字保持清晰。动态壁纸或多屏不同壁纸时，以系统壁纸图像为准。</value>
+        <value>液态玻璃</value>
     </data>
     <data name="Settings_Appearance_Glass_Blur" xml:space="preserve">
         <value>模糊度</value>

@@ -172,6 +172,9 @@ public partial class GridEditor : Window
             if (screen != null)
             {
                 layoutProvider.Save(screens.WithScreen(screen with { Grid = grid }));
+                // Re-match the attached screens right away so widget windows and the
+                // screen settings page see the new grid without waiting for the poller.
+                displayMonitor.Refresh();
             }
             // Do NOT overwrite global appSettings when editing a specific screen!
             return;

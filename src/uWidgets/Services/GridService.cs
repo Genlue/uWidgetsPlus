@@ -73,7 +73,7 @@ public class GridService(IAppSettingsProvider appSettingsProvider, DisplayMonito
     /// </summary>
     private static Grid GetGrid(Widget window, IAppSettingsProvider appSettingsProvider, DisplayMonitorService displayMonitor)
     {
-        var perScreen = displayMonitor.Find(window)?.Config?.Grid;
+        var perScreen = displayMonitor.CurrentConfig(window)?.Grid;
         if (perScreen != null) return perScreen;
         return appSettingsProvider.Get().Grid ?? Grid.Default;
     }

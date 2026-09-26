@@ -32,20 +32,6 @@
                           Subtitle="{x:Static locales:Locale.Settings_Advanced_LockPosition_Subtitle}">
             <ToggleSwitch IsChecked="{Binding LockPosition}" />
         </controls:Setting>
-        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10" 
-                   Text="{x:Static locales:Locale.Settings_Advanced_Dimensions}"/>
-        <controls:Setting Icon="{DynamicResource WidgetMargin}" 
-            Title="{x:Static locales:Locale.Settings_Advanced_WidgetMargin_Title}"
-            Subtitle="{x:Static locales:Locale.Settings_Advanced_WidgetMargin_Subtitle}">
-            <NumericUpDown MinWidth="130" Minimum="0" Maximum="32" Value="{Binding Margin, StringFormat=F0}" />
-        </controls:Setting>
-        <controls:Setting Icon="{DynamicResource WidgetRadius}" 
-                          RestartRequired="True"
-                          Title="{x:Static locales:Locale.Settings_Advanced_WidgetRadius_Title}"
-                          IsEnabled="{Binding RadiusEnabled}"
-                          Subtitle="{x:Static locales:Locale.Settings_Advanced_WidgetRadius_Subtitle}">
-            <NumericUpDown MinWidth="130" Minimum="0" Maximum="48" Value="{Binding Radius, StringFormat=F0}" />
-        </controls:Setting>
         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0 20 0 10"
                    Text="{x:Static locales:Locale.Settings_Advanced_Network}"/>
         <controls:Setting Icon="{DynamicResource SnapPosition}" 

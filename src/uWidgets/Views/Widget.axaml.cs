@@ -298,7 +298,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     }
 
     public double EffectiveBaseRadius =>
-        displayMonitor.Find(this)?.Config?.Radius
+        displayMonitor.CurrentConfig(this)?.Radius
         ?? appSettingsProvider.Get().Dimensions.Radius;
 
     public CornerRadius Radius => (isFrameless || appSettingsProvider.Get().Theme.UseNativeFrame)
@@ -578,7 +578,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// Margin between the widget content and the grid lines (manual grid mode).
     /// </summary>
     public double EffectiveMargin =>
-        displayMonitor.Find(this)?.Config?.Margin
+        displayMonitor.CurrentConfig(this)?.Margin
         ?? appSettingsProvider.Get().Dimensions.Margin;
 
     public Thickness WidgetMargin => isFrameless ? new Thickness(0) :
@@ -811,7 +811,7 @@ public partial class Widget : Window, INotifyPropertyChanged
     /// </summary>
     private double EffectiveContentScale =>
         widgetLayoutProvider.Get().ContentScale
-        ?? displayMonitor.Find(this)?.Config?.ContentScale
+        ?? displayMonitor.CurrentConfig(this)?.ContentScale
         ?? 1.0;
 
     /// <summary>Context-menu scale entry, showing the current effective ratio.</summary>
@@ -1609,7 +1609,7 @@ public partial class Widget : Window, INotifyPropertyChanged
         var area = screen?.WorkingArea;
         // Per-screen manual grid (the screen the widget currently sits on),
         // falling back to the global grid, then the default.
-        var grid = displayMonitor.Find(this)?.Config?.Grid
+        var grid = displayMonitor.CurrentConfig(this)?.Grid
                    ?? appSettingsProvider.Get().Grid
                    ?? uWidgets.Core.Models.Settings.Grid.Default;
         return GridMetrics.Resolve(

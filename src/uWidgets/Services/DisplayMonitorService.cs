@@ -145,6 +145,21 @@ public class DisplayMonitorService(ILayoutProvider layoutProvider)
         Attached.FirstOrDefault(a => a.Config?.Id == configId);
 
     /// <summary>
+    /// The stored configuration of the screen the window currently sits on, re-read by
+    /// id from the layout provider. <see cref="AttachedScreen.Config"/> entries are
+    /// snapshots taken at the last <see cref="Refresh"/> — reading values through them
+    /// can lag up to one poll interval behind a just-saved change (grid editor saves,
+    /// screen-settings edits), so value consumers (grid / margin / radius / scale)
+    /// resolve through this instead of the snapshot.
+    /// </summary>
+    public ScreenLayout? CurrentConfig(Window window)
+    {
+        var snapshot = Find(window)?.Config;
+        if (snapshot == null) return null;
+        return layoutProvider.Get().FindById(snapshot.Id) ?? snapshot;
+    }
+
+    /// <summary>
     /// Ensure a stored configuration exists for an attached screen (new screens
     /// get a fresh entry on their first use) and return it.
     /// </summary>

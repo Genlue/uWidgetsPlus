@@ -136,8 +136,6 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(LockSize));
         this.RaisePropertyChanged(nameof(SnapPosition));
         this.RaisePropertyChanged(nameof(LockPosition));
-        this.RaisePropertyChanged(nameof(Margin));
-        this.RaisePropertyChanged(nameof(Radius));
         this.RaisePropertyChanged(nameof(ProxyMode));
         this.RaisePropertyChanged(nameof(ProxyCustomUrl));
         this.RaisePropertyChanged(nameof(UpdateUrl));
@@ -319,28 +317,6 @@ public class AdvancedViewModel : ReactiveObject, IDisposable
     }
 
     // ---------- Sizing ----------
-
-    public int Margin
-    {
-        get => appSettingsProvider.Get().Dimensions.Margin;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { Margin = value } });
-        }
-    }
-
-    public int Radius
-    {
-        get => appSettingsProvider.Get().Dimensions.Radius;
-        set
-        {
-            var settings = appSettingsProvider.Get();
-            appSettingsProvider.Save(settings with { Dimensions = settings.Dimensions with { Radius = value } });
-        }
-    }
-
-    public bool RadiusEnabled => !appSettingsProvider.Get().Theme.UseNativeFrame;
 
     public bool SnapPosition
     {

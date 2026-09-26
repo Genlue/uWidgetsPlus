@@ -334,6 +334,17 @@ public sealed class LiquidGlassSurface : Control
             nextAura = result.Aura;
             wallpaper = result.Wallpaper;
 
+            // A snapshot with no pixels anywhere — the capture failed and the wallpaper file is
+            // missing too — still "renders": as one flat fill of the desktop colour. Mid-session
+            // that is the sudden blink to a solid card, so keep the previous material until a
+            // real frame exists again. The first material still publishes: a flat card beats no
+            // card. Checked before the CPU path so the wasted ~100 ms render is skipped too.
+            if (nextSource == null && wallpaper.CachedBitmap == null && wallpaper.ImageBytes == null && prepared != null)
+            {
+                GlassDiagnostics.Note("capture has no pixels — keeping the previous material", started, frame);
+                return;
+            }
+
             if (nextSource != null)
             {
                 path = "gpu";

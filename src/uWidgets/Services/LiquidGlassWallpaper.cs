@@ -39,6 +39,24 @@ public static class LiquidGlassWallpaper
     private static WallpaperSnapshot? cached;
     private static string? cachedKey;
 
+    // The last good live frame, kept alive so a failed or flat capture can be masked with it
+    // instead of flashing every glass card to one flat colour. Reference counted: handing it to
+    // a render only lends it, so dropping the field later cannot pull pixels from under a draw.
+    private static WallpaperSnapshot? stale;
+
+    // When the current run of unusable captures (failed or flat) began; reset by the next good one.
+    private static long firstUnusableAt;
+
+    /// <summary>How long a run of unusable captures is masked with the previous frame before the normal fallback chain takes over.</summary>
+    private const int UnusableGraceMs = 250;
+
+    // Coarse grid of the last accepted capture, and the host it came from. The grid is the
+    // reference for the temporal check (a frame that replaced nearly everything at once is an
+    // MPO overlay transition, not wallpaper content); the host handle lets a genuinely NEW host
+    // (a wallpaper engine restarting with different content) skip the check entirely.
+    private static int[]? lastAcceptedSamples;
+    private static IntPtr lastAcceptedHost;
+
     private static bool liveSamplingEnabled = true;
     private static int liveIntervalMs = DefaultIntervalMs;
     private static bool suspended;
@@ -194,9 +212,15 @@ public static class LiquidGlassWallpaper
         // The cache owns one reference and the caller gets another; the caller releases it with
         // WallpaperSnapshot.Dispose. Nothing here is kept alive by a timer — a capture is a full
         // desktop bitmap and live sampling replaces it ten times a second.
-        var snapshot = GetShared();
-        snapshot.AddRef();
-        return snapshot;
+        // The AddRef happens under the Gate on purpose: Invalidate / DropStale run on other
+        // threads and free the snapshot the moment the cache lets go, so between GetShared's
+        // return and an AddRef here a concurrent swap could dispose the pixels under us.
+        lock (Gate)
+        {
+            var snapshot = GetShared();
+            snapshot.AddRef();
+            return snapshot;
+        }
     }
 
     private static WallpaperSnapshot GetShared()
@@ -219,6 +243,14 @@ public static class LiquidGlassWallpaper
                     if (CaptureOnce() is { } once) return once;
                 }
 
+                // Live sampling with a persistently unreadable host (a long MPO overlay
+                // transition, a wallpaper engine restarting): the frozen last frame is the
+                // wallpaper the user actually has — the static file is whatever image was last
+                // set through Windows, a different picture entirely. Freezing beats swapping
+                // to it.
+                if (liveSamplingEnabled && stale != null)
+                    return stale;
+
                 return FromFileFallback();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -231,16 +263,20 @@ public static class LiquidGlassWallpaper
     /// <summary>Force a fresh capture (e.g. the user pressed 刷新壁纸 or the wallpaper changed).</summary>
     public static void Invalidate()
     {
-        WallpaperSnapshot? old;
+        WallpaperSnapshot? previousStale;
         lock (Gate)
         {
-            old = cached;
+            previousStale = stale;
+            // Keep the last good frame as the mask for a run of unusable captures: the very next
+            // capture is the one most likely to come back flat (a wallpaper change is exactly
+            // when hosts re-composite), and masking it avoids a one-round flat flash.
+            stale = cached;
             cached = null;
             cachedKey = null;
         }
 
         Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
-        old?.Dispose();
+        previousStale?.Dispose();
 
         NotifyInvalidated();
     }
@@ -259,14 +295,18 @@ public static class LiquidGlassWallpaper
     public static void Release()
     {
         WallpaperSnapshot? old;
+        WallpaperSnapshot? oldStale;
         lock (Gate)
         {
             old = cached;
             cached = null;
             cachedKey = null;
+            oldStale = stale;
+            stale = null;
         }
 
         old?.Dispose();
+        oldStale?.Dispose();
     }
 
     private static void NotifyInvalidated()
@@ -295,8 +335,63 @@ public static class LiquidGlassWallpaper
         // wallpaper engine restarting) and re-resolving usually succeeds on the second try.
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var bmp = DesktopCapturer.CaptureBitmap();
-            if (bmp == null) continue;
+            var bmp = DesktopCapturer.CaptureBitmap(out var flat);
+            var jumped = false;
+
+            if (bmp != null && !flat)
+            {
+                var samples = DesktopCapturer.SampleGrid(bmp);
+                if (lastAcceptedSamples != null
+                    && lastAcceptedHost == DesktopCapturer.ResolvedHost
+                    && DesktopCapturer.IsWildJump(samples, lastAcceptedSamples))
+                {
+                    // Almost nothing this frame shows matches the last accepted frame: an MPO
+                    // overlay transition handed us the bare redirection surface instead of the
+                    // wallpaper. Publish it and every glass card blinks to a solid colour.
+                    bmp.Dispose();
+                    bmp = null;
+                    jumped = true;
+                }
+                else
+                {
+                    lastAcceptedSamples = samples;
+                }
+            }
+            else if (bmp != null && flat)
+            {
+                bmp.Dispose();
+                bmp = null;
+            }
+
+            if (bmp == null)
+            {
+                // Nothing usable this attempt. Mask with the last good frame for a short grace
+                // instead of flashing the glass to a flat card / the static file for a round —
+                // the usual cause clears within a few sampling rounds. Once the failure outlives
+                // the grace, the normal fallback chain takes over; a persistently unusable host
+                // is also forgiven so it is re-resolved with full validation instead of trusted.
+                var now = Environment.TickCount64;
+                if (firstUnusableAt == 0)
+                {
+                    firstUnusableAt = now;
+                    GlassDiagnostics.Event(flat ? "wallpaper capture flat — masking with the previous frame"
+                        : jumped ? "wallpaper capture jumped (overlay transition?) — masking with the previous frame"
+                        : "wallpaper capture failed — masking with the previous frame");
+                }
+                else if ((flat || jumped) && now - firstUnusableAt >= UnusableGraceMs)
+                {
+                    DesktopCapturer.ForgetResolvedHost();
+                    GlassDiagnostics.Event("unusable wallpaper capture persisted — re-resolving the wallpaper host");
+                }
+
+                if (now - firstUnusableAt < UnusableGraceMs && stale != null)
+                    return stale;
+                continue;
+            }
+
+            firstUnusableAt = 0;
+            DropStale();
+            lastAcceptedHost = DesktopCapturer.ResolvedHost;
 
             var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true);
             WallpaperSnapshot? old;
@@ -316,6 +411,14 @@ public static class LiquidGlassWallpaper
             return snapshot;
         }
         return null;
+    }
+
+    /// <summary>Drop the masking frame. Callers must hold <see cref="Gate"/>; in-flight renders keep their own references.</summary>
+    private static void DropStale()
+    {
+        var old = stale;
+        stale = null;
+        old?.Dispose();
     }
 
     /// <summary>Static file based fallback (Windows wallpaper image + registry placement).</summary>
@@ -350,6 +453,9 @@ public static class LiquidGlassWallpaper
         cached = WallpaperSnapshot.FromBitmap(bytes, background, bmp, style, tile);
         cachedKey = key;
         old?.Dispose();
+        // The static file is the source of truth now, so the last live frame no longer masks
+        // anything — release it.
+        DropStale();
         return cached;
     }
 }
@@ -438,17 +544,28 @@ public static class DesktopCapturer
         get { lock (HostGate) return resolvedHostDescription; }
     }
 
-    public static SKBitmap? CaptureBitmap()
+    public static SKBitmap? CaptureBitmap() => CaptureBitmap(out _);
+
+    /// <summary>
+    /// Capture the resolved wallpaper host, or <c>null</c> when nothing usable was captured.
+    /// <paramref name="flat"/> is true when a frame came back but is one uniform colour — the
+    /// transiently empty surface <c>PrintWindow</c> hands out while the host re-composites. The
+    /// caller masks it with the previous frame instead of re-resolving here: falling through to
+    /// the next source on every flat frame would flip a genuinely dark animated scene back to
+    /// Progman, a visible jump the fast path exists to avoid.
+    /// </summary>
+    public static SKBitmap? CaptureBitmap(out bool flat)
     {
+        flat = false;
         var width = GetSystemMetrics(SmCXVirtualScreen);
         var height = GetSystemMetrics(SmCYVirtualScreen);
         if (width <= 0 || height <= 0) return null;
 
         // Fast path: the host resolved last time. This runs once per sampled frame, so it must not
-        // walk every top-level window to rediscover a window that has not changed. The frame is
-        // trusted as-is — re-validating every frame would make a genuinely dark scene in an animated
-        // wallpaper look like a failed capture and flip the glass back to Progman, which is a
-        // visible jump between the animated and the static wallpaper.
+        // walk every top-level window to rediscover a window that has not changed. The frame gets
+        // one cheap validation — a coarse grid sample, well under a millisecond: a flat frame
+        // published as real wallpaper paints every glass card as one solid colour until the next
+        // round, which is the "widget suddenly blinks to a blank card" flicker.
         IntPtr remembered;
         lock (HostGate) remembered = resolvedHost;
         if (remembered != IntPtr.Zero && IsWindow(remembered))
@@ -456,6 +573,11 @@ public static class DesktopCapturer
             var fast = CaptureWindow(remembered, width, height);
             if (fast != null)
             {
+                if (!LooksLikeWallpaper(fast))
+                {
+                    flat = true;
+                    return fast;
+                }
                 fast.SetImmutable();
                 return fast;
             }
@@ -484,10 +606,75 @@ public static class DesktopCapturer
         return null;
     }
 
+    /// <summary>
+    /// Drop the remembered host so the next capture re-resolves from scratch. Called when the
+    /// remembered window keeps printing flat frames: it either died without its handle going
+    /// invalid or a genuinely uniform wallpaper took over, and in both cases trusting it again
+    /// needs full validation.
+    /// </summary>
+    public static void ForgetResolvedHost()
+    {
+        lock (HostGate)
+        {
+            resolvedHost = IntPtr.Zero;
+            resolvedHostDescription = "forgiven after persistent unusable captures";
+        }
+    }
+
+    /// <summary>The host the current capture comes from, for cross-checking capture coherence.</summary>
+    public static IntPtr ResolvedHost
+    {
+        get { lock (HostGate) return resolvedHost; }
+    }
+
+    /// <summary>
+    /// Sample the same coarse 16x9 grid the validity check uses, as RGB ints. Cheap enough to run
+    /// once per sampled frame.
+    /// </summary>
+    public static int[] SampleGrid(SKBitmap bmp)
+    {
+        var stepX = Math.Max(1, bmp.Width / 16);
+        var stepY = Math.Max(1, bmp.Height / 9);
+        var cols = Math.Max(1, (bmp.Width + stepX - 1) / stepX);
+        var rows = Math.Max(1, (bmp.Height + stepY - 1) / stepY);
+        var samples = new int[rows * cols];
+        var index = 0;
+        for (var y = stepY / 2; y < bmp.Height; y += stepY)
+        for (var x = stepX / 2; x < bmp.Width; x += stepX)
+        {
+            var c = bmp.GetPixel(x, y);
+            samples[index++] = (c.Red << 16) | (c.Green << 8) | c.Blue;
+        }
+        return samples;
+    }
+
+    /// <summary>
+    /// True when a frame replaced nearly everything the last accepted one showed. Real wallpaper
+    /// content never does that between two rounds; what does is the MPO overlay transition —
+    /// while the wallpaper's hardware plane is promoted or demoted, PrintWindow reads the bare
+    /// redirection surface: the desktop colour, sometimes with slivers of real content. Such a
+    /// frame is unusable no matter how non-uniform it is.
+    /// </summary>
+    public static bool IsWildJump(int[] samples, int[] previous)
+    {
+        if (samples.Length != previous.Length || samples.Length == 0) return false;
+        var changed = 0;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var a = samples[i];
+            var b = previous[i];
+            var dr = Math.Abs(((a >> 16) & 255) - ((b >> 16) & 255));
+            var dg = Math.Abs(((a >> 8) & 255) - ((b >> 8) & 255));
+            var db = Math.Abs((a & 255) - (b & 255));
+            if ((dr + dg + db) / 3 >= 35) changed++;
+        }
+        return changed >= samples.Length * 0.85;
+    }
+
     /// <summary>Encode a one-off capture as PNG (diagnostics only).</summary>
     public static byte[] Capture()
     {
-        using var bmp = CaptureBitmap();
+        using var bmp = CaptureBitmap(out _);
         if (bmp == null) return [];
         using var img = SKImage.FromBitmap(bmp);
         using var data = img.Encode(SKEncodedImageFormat.Png, 90);

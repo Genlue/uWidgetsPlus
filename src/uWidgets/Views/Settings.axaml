@@ -6,6 +6,7 @@
         x:Class="uWidgets.Views.Settings"
         Background="Transparent"
         TransparencyLevelHint="AcrylicBlur, None"
+        TransparencyBackgroundFallback="{DynamicResource SettingsBackground}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="50"
         WindowStartupLocation="CenterScreen"
@@ -13,6 +14,15 @@
         x:DataType="viewModels:SettingsViewModel">
 
     <Window.Styles>
+        <!-- The surface tint is style-driven (not a local attribute) so code can swap it for the
+             fully opaque fallback by toggling the "opaque" class when the acrylic backdrop drops
+             (see Settings.ApplySurfaceFallback). -->
+        <Style Selector="Border#WindowSurface">
+            <Setter Property="Background" Value="{DynamicResource SettingsWindowBackground}" />
+        </Style>
+        <Style Selector="Border#WindowSurface.opaque">
+            <Setter Property="Background" Value="{DynamicResource SettingsBackground}" />
+        </Style>
         <Style Selector="ListBoxItem">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Margin" Value="2,1" />
@@ -33,7 +43,6 @@
          square tint rectangle painted past the backdrop's arc, leaving a no-blur notch in every
          corner that looked like a second, transparent corner. -->
     <Border x:Name="WindowSurface"
-            Background="{DynamicResource SettingsWindowBackground}"
             CornerRadius="{DynamicResource SettingsWindowCornerRadius}"
             ClipToBounds="True">
         <Grid RowDefinitions="Auto,*">

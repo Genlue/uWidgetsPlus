@@ -39,6 +39,10 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
     private readonly HashSet<string> inFlightRenders = new();
     private CancellationTokenSource? preRenderCts;
 
+    // A newer wallpaper frame arrived while a glyph render was in flight; one follow-up render is
+    // queued once the in-flight one finishes (see OnWallpaperInvalidated).
+    private bool wallpaperStale;
+
     /// <summary>
     /// Memory budget for the pre-rendered frame cache (see <c>EvictExpiredCacheEntries</c>).
     /// 48 MB comfortably holds the current frame plus the whole seconds lookahead at any normal
@@ -172,15 +176,39 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         }
 
         lastRegionKey = null;
-        ClearLiquidGlassCache();
         UpdateTransparencyLevel();
+
+        // Live sampling raises this once per sampling round — far faster than one glyph render
+        // (tens of ms). Clearing the cache and cancelling the in-flight render every round made
+        // the first frame after attach lose that race for seconds (the flat glyph wash) and kept
+        // the pre-rendered lookahead permanently burned. Let the running render finish and queue
+        // exactly one follow-up with the newer wallpaper instead.
+        if (inFlightRenders.Count > 0)
+        {
+            wallpaperStale = true;
+            InvalidateVisual();
+            return;
+        }
+
         RequestBackdropRender();
         InvalidateVisual();
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
     {
-        OnWallpaperInvalidated();
+        // The variant changes how every glyph is rendered (dark/light material), so all cached
+        // frames are wrong — a full rebuild, not the wallpaper-stale deferral above.
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnActualThemeVariantChanged(sender, e));
+            return;
+        }
+
+        lastRegionKey = null;
+        ClearLiquidGlassCache();
+        UpdateTransparencyLevel();
+        RequestBackdropRender();
+        InvalidateVisual();
     }
 
     private void OnSizeChanged()
@@ -306,13 +334,20 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
         return (material.IsAcrylic, material.IsRenderedGlass, material.IsSolid);
     }
 
+    // Cached hint arrays: UpdateTransparencyLevel runs on every wallpaper invalidation (every
+    // live-sampling round), and re-assigning the hint makes the Win32 impl re-apply the window
+    // transparency each time — a per-round window-attribute poke that used to come with a fresh
+    // array literal whose reference never compared equal to the previous one.
+    private static readonly WindowTransparencyLevel[] AcrylicHint = [WindowTransparencyLevel.AcrylicBlur];
+    private static readonly WindowTransparencyLevel[] TransparentHint = [WindowTransparencyLevel.Transparent];
+
     private void UpdateTransparencyLevel()
     {
         if (window == null || !IsDesktopWidget) return;
         var (isAcrylic, _, _) = ResolveEffectiveTheme();
-        window.TransparencyLevelHint = isAcrylic
-            ? [WindowTransparencyLevel.AcrylicBlur]
-            : [WindowTransparencyLevel.Transparent];
+        var hint = isAcrylic ? AcrylicHint : TransparentHint;
+        if (!hint.SequenceEqual(window.TransparencyLevelHint))
+            window.TransparencyLevelHint = hint;
     }
 
     private void OnTimerTick()
@@ -535,6 +570,14 @@ public partial class FramelessDigital : UserControl, IFramelessWidget, IWidgetSe
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to cache pre-rendered liquid glass frame: {ex.Message}");
+                }
+
+                // The render that was in flight when the wallpaper advanced has finished; catch
+                // up with one render against the newer frame (OnWallpaperInvalidated deferred).
+                if (inFlightRenders.Count == 0 && wallpaperStale)
+                {
+                    wallpaperStale = false;
+                    RequestBackdropRender();
                 }
             });
         }, token).ContinueWith(t =>

@@ -6,6 +6,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using uWidgets.Core.Interfaces;
 using uWidgets.Core.Models.Settings;
 using uWidgets.Services;
@@ -15,11 +16,24 @@ namespace uWidgets.Views;
 
 public partial class Settings : Window
 {
+    // One shared array: assigning the hint makes Avalonia re-run the Win32 transparency setup on
+    // the live window (a fresh array literal never compares equal to the previous one), so every
+    // settings save used to tear down and rebuild the composited acrylic backdrop — the exact
+    // moment a DWM hiccup can leave the window with a dead backdrop and no content behind it.
+    private static readonly WindowTransparencyLevel[] TransparencyHint =
+        [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None];
+
     private readonly SettingsViewModel viewModel;
     private readonly IAppSettingsProvider appSettingsProvider;
     private readonly WidgetFactory? widgetFactory;
 
-    public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider, 
+    /// <summary>Periodic check that the acrylic backdrop is still alive while the window is shown.</summary>
+    private readonly DispatcherTimer transparencyWatch;
+
+    /// <summary>The transparency level at the previous check, to detect a fresh drop (see VerifyTransparency).</summary>
+    private WindowTransparencyLevel lastLevel = WindowTransparencyLevel.None;
+
+    public Settings(IAppSettingsProvider appSettingsProvider, IAssemblyProvider assemblyProvider,
         ILayoutProvider layoutProvider, DisplayMonitorService displayMonitor, IWidgetFactory<Window, UserControl> widgetFactory,
         ProfileService profileService, UpdateService updateService)
     {
@@ -30,6 +44,11 @@ public partial class Settings : Window
         DataContext = viewModel;
         Resized += OnResized;
         KeyDown += OnKeyDown;
+        // Self-heal is timer-driven only: an Activated-time check fires while the window is
+        // still transitioning (level momentarily reads non-acrylic on every re-show) and would
+        // tear down and rebuild the composited backdrop on every open.
+        transparencyWatch = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        transparencyWatch.Tick += (_, _) => VerifyTransparency();
         appSettingsProvider.DataChanged += (_, _, _) =>
         {
             ApplyTransparencyHint();
@@ -65,6 +84,10 @@ public partial class Settings : Window
             // time it was opened from the tray. Let it place the window exactly once, then hand
             // placement over to the position the user left it at.
             WindowStartupLocation = WindowStartupLocation.Manual;
+
+            // The Hide/Show reuse path is one of the moments the composited backdrop can be lost;
+            // watch for a drop for as long as the window is on screen.
+            transparencyWatch.Start();
         }
 
         if (WindowState == WindowState.Minimized)
@@ -84,7 +107,73 @@ public partial class Settings : Window
     private void ApplyTransparencyHint()
     {
         GlassSurface.IsVisible = false;
-        TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None];
+        // Assign only when the hint actually differs — see the comment on TransparencyHint for
+        // why every assignment is a live backdrop rebuild.
+        if (!TransparencyHint.SequenceEqual(TransparencyLevelHint))
+            TransparencyLevelHint = TransparencyHint;
+    }
+
+    /// <summary>
+    /// Force the platform to rebuild the acrylic backdrop. Toggling through <c>None</c> is a real
+    /// level change, which the Win32 impl always re-applies — an equal-content re-assert alone
+    /// might be short-circuited.
+    /// </summary>
+    private void ForceTransparencyReapply()
+    {
+        TransparencyLevelHint = [WindowTransparencyLevel.None];
+        TransparencyLevelHint = TransparencyHint;
+    }
+
+    /// <summary>
+    /// Assert the acrylic backdrop is still alive. Windows tears the composited backdrop down on
+    /// DWM resets (screen sharing, lock screen, display changes, driver resets), and with
+    /// <c>Background="Transparent"</c> the window then shows the bare desktop through everything
+    /// but the traffic lights — it reads as "the whole window disappeared". A fresh drop is
+    /// healed by re-asserting the hint (which rebuilds the backdrop); the opaque surface fallback
+    /// below keeps the window legible in the meantime and in states the platform genuinely cannot
+    /// do acrylic (transparency effects off).
+    /// </summary>
+    private void VerifyTransparency()
+    {
+        ApplySurfaceFallback();
+
+        var level = ActualTransparencyLevel;
+        var wasAcrylic = lastLevel == WindowTransparencyLevel.AcrylicBlur;
+        lastLevel = level;
+        // Heal only a fresh dropout: a persistent non-acrylic level is the platform's answer
+        // (transparency effects off, unsupported GPU), and re-asserting that every tick would
+        // just churn the backdrop.
+        if (!IsVisible || !wasAcrylic || level == WindowTransparencyLevel.AcrylicBlur) return;
+        GlassDiagnostics.Event($"settings window transparency dropped to {level} — re-asserting acrylic");
+        ForceTransparencyReapply();
+    }
+
+    /// <summary>
+    /// The window has no opaque background of its own — everything but the traffic lights is
+    /// semi-transparent by design — so when the compositor is not showing the acrylic backdrop,
+    /// the 0.80-alpha tint over the raw wallpaper reads as "the window is gone". Whenever the
+    /// achieved transparency level is anything but acrylic, swap the tint for the fully opaque
+    /// <c>SettingsBackground</c> (the XAML "opaque" class on the surface Border).
+    /// </summary>
+    private void ApplySurfaceFallback()
+    {
+        // Called from OnPropertyChanged while the XAML is still populating: setting the
+        // TransparencyLevelHint attribute raises an actual-level change before the surface
+        // Border exists. There is nothing to swap yet.
+        if (WindowSurface == null) return;
+
+        var wantOpaque = ActualTransparencyLevel != WindowTransparencyLevel.AcrylicBlur;
+        var hasClass = WindowSurface.Classes.Contains("opaque");
+        if (wantOpaque == hasClass) return;
+        if (wantOpaque) WindowSurface.Classes.Add("opaque");
+        else WindowSurface.Classes.Remove("opaque");
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == TopLevel.ActualTransparencyLevelProperty)
+            ApplySurfaceFallback();
     }
 
     /// <summary>
@@ -134,6 +223,7 @@ public partial class Settings : Window
         if (!AppShutdown.IsShuttingDown && widgetFactory?.HasWidgets == true)
         {
             e.Cancel = true;
+            transparencyWatch.Stop();
             Hide();
             InteropService.TrimProcessMemory();
             return;

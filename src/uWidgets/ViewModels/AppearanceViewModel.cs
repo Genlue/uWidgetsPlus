@@ -26,6 +26,8 @@ public class AppearanceViewModel : ReactiveObject
         {
             this.RaisePropertyChanged(nameof(ShowGlassSettings));
             this.RaisePropertyChanged(nameof(ShowGlassOpticsSettings));
+            this.RaisePropertyChanged(nameof(ShowLegacyOptics));
+            this.RaisePropertyChanged(nameof(ShowV2Settings));
             this.RaisePropertyChanged(nameof(ShowSoftGlowSettings));
             this.RaisePropertyChanged(nameof(GlassOpticsTitle));
             this.RaisePropertyChanged(nameof(OpacityLevel));
@@ -42,6 +44,14 @@ public class AppearanceViewModel : ReactiveObject
             this.RaisePropertyChanged(nameof(GlassBackdropClarity));
             this.RaisePropertyChanged(nameof(LiveSampling));
             this.RaisePropertyChanged(nameof(LiveSamplingInterval));
+            this.RaisePropertyChanged(nameof(V2Blur));
+            this.RaisePropertyChanged(nameof(V2Refraction));
+            this.RaisePropertyChanged(nameof(V2Highlight));
+            this.RaisePropertyChanged(nameof(V2Vibrancy));
+            this.RaisePropertyChanged(nameof(V2Dispersion));
+            this.RaisePropertyChanged(nameof(V2LiveSampling));
+            this.RaisePropertyChanged(nameof(V2LiveSamplingInterval));
+            this.RaisePropertyChanged(nameof(V2BackdropClarity));
             this.RaisePropertyChanged(nameof(Monochrome));
             this.RaisePropertyChanged(nameof(MonochromeVariant));
             this.RaisePropertyChanged(nameof(ShowMonochromeVariant));
@@ -72,8 +82,8 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// The four surface presets, in the order they are shown: frosted glass, solid, liquid glass
-    /// and colorful (macOS).
+    /// The surface presets, in the order they are shown: frosted glass, solid, liquid glass,
+    /// new liquid glass and colorful (macOS).
     /// <para>
     /// 柔光玻璃 is deliberately <b>not</b> a preset any more: it was merged into 液态玻璃, which is
     /// one surface and one pipeline, and the soft look is reached through the 柔光晕 / 光谱弥散
@@ -88,6 +98,8 @@ public class AppearanceViewModel : ReactiveObject
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Solid),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 0.18, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlass,
             LiquidGlass: new LiquidGlassSettings()),
+        new(DarkMode: null, AccentColor: null, OpacityLevel: 0.20, Monochrome: true, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.LiquidGlassV2,
+            LiquidGlassV2: new LiquidGlassV2Settings()),
         new(DarkMode: null, AccentColor: null, OpacityLevel: 1.0, Monochrome: false, UseNativeFrame: false, FontFamily: "Inter", Surface: SurfaceStyle.Colorful)
     ];
 
@@ -100,19 +112,31 @@ public class AppearanceViewModel : ReactiveObject
     public bool ShowGlassSettings => appSettingsProvider.Get().Theme.IsGlass;
 
     /// <summary>
-    /// True for the wallpaper-sampled material: 液态玻璃 (which absorbed 柔光玻璃) exposes the
-    /// optics rows; they are hidden for 毛玻璃 and 纯色.
+    /// True for the wallpaper-sampled materials: 液态玻璃 and 新液态玻璃 expose an optics section;
+    /// it is hidden for 毛玻璃 and 纯色.
     /// </summary>
     public bool ShowGlassOpticsSettings => appSettingsProvider.Get().Theme.UsesRenderedGlass;
+
+    /// <summary>True while the older lens material (液态玻璃, incl. its 柔光 recipe) is active:
+    /// the optics rows below bind to <see cref="LiquidGlassSettings"/>.</summary>
+    public bool ShowLegacyOptics => appSettingsProvider.Get().Theme.UsesRenderedGlass && !appSettingsProvider.Get().Theme.IsLiquidGlassV2;
+
+    /// <summary>True while 新液态玻璃 is active: its own spec-aligned rows are shown instead.</summary>
+    public bool ShowV2Settings => appSettingsProvider.Get().Theme.IsLiquidGlassV2;
 
     /// <summary>
     /// The soft-recipe rows (halo / spectrum / dye spread). They belong to the merged theme now,
     /// so they are always offered alongside the other optics.
     /// </summary>
-    public bool ShowSoftGlowSettings => ShowGlassOpticsSettings;
+    public bool ShowSoftGlowSettings => ShowLegacyOptics;
 
-    /// <summary>Section title of the optics block.</summary>
-    public string GlassOpticsTitle => Locale.Settings_Appearance_Glass_Title;
+    /// <summary>
+    /// Section title of the optics block, named after the active material: 液态玻璃 (the
+    /// LiquidGlassV2 recipe) or 柔光玻璃 (the older lens recipe).
+    /// </summary>
+    public string GlassOpticsTitle => appSettingsProvider.Get().Theme.IsLiquidGlassV2
+        ? Locale.Settings_Appearance_Surface_LiquidGlassV2
+        : Locale.Settings_Appearance_Surface_LiquidGlass;
 
     /// <summary>
     /// Whether the optics rows (实时采样 → 染色扩散) are unfolded. They are collapsed by
@@ -215,6 +239,75 @@ public class AppearanceViewModel : ReactiveObject
         set => UpdateGlass(glass => glass with { LiveSamplingInterval = value });
     }
 
+    // ---------- 新液态玻璃 optics (LiquidGlassV2Settings) ----------
+
+    /// <summary>模糊 (0-100): the light backdrop blur.</summary>
+    public double V2Blur
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Blur;
+        set => UpdateV2(glass => glass with { Blur = value });
+    }
+
+    /// <summary>折射 (0-100): the rim lens strength — quarter-circle displacement peaking at the outline.</summary>
+    public double V2Refraction
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Refraction;
+        set => UpdateV2(glass => glass with { Refraction = value });
+    }
+
+    /// <summary>边缘高光 (0-100): the hairline rim stroke's alpha.</summary>
+    public double V2Highlight
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Highlight;
+        set => UpdateV2(glass => glass with { Highlight = value });
+    }
+
+    /// <summary>活力 (0-100): the iOS vibrancy colour boost (33 ≈ the library's saturation ×1.5).</summary>
+    public double V2Vibrancy
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Vibrancy;
+        set => UpdateV2(glass => glass with { Vibrancy = value });
+    }
+
+    /// <summary>色散 (0-100): the seven-tap spectral split along the rim displacement.</summary>
+    public double V2Dispersion
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.Dispersion;
+        set => UpdateV2(glass => glass with { Dispersion = value });
+    }
+
+    /// <summary>Sample the desktop continuously so animated wallpapers stay live behind the glass.</summary>
+    public bool V2LiveSampling
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSampling;
+        set => UpdateV2(glass => glass with { LiveSampling = value });
+    }
+
+    /// <summary>Sampling interval in milliseconds; shorter is smoother and more expensive.</summary>
+    public int V2LiveSamplingInterval
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.LiveSamplingInterval;
+        set => UpdateV2(glass => glass with { LiveSamplingInterval = value });
+    }
+
+    /// <summary>
+    /// 背景清晰度 (25-100%): the resolution the shared backdrop is built at. The material leans
+    /// on the lens rather than a heavy pre-blur, so its factory default is richer than 液态玻璃's.
+    /// </summary>
+    public double V2BackdropClarity
+    {
+        get => appSettingsProvider.Get().Theme.EffectiveLiquidGlassV2.BackdropClarity;
+        set => UpdateV2(glass => glass with { BackdropClarity = value });
+    }
+
+    private void UpdateV2(Func<LiquidGlassV2Settings, LiquidGlassV2Settings> update)
+    {
+        var settings = appSettingsProvider.Get();
+        var glass = update(settings.Theme.EffectiveLiquidGlassV2).Normalize();
+        if (glass == settings.Theme.EffectiveLiquidGlassV2) return;
+        SaveTheme(settings.Theme with { LiquidGlassV2 = glass });
+    }
+
     private void UpdateGlass(Func<LiquidGlassSettings, LiquidGlassSettings> update)
     {
         var settings = appSettingsProvider.Get();
@@ -231,11 +324,17 @@ public class AppearanceViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Reset the optics to the merged 液态玻璃 theme's factory defaults (the shipped recipe in
-    /// <see cref="LiquidGlassSettings"/>). 柔光玻璃 has no separate defaults any more: its look is
-    /// a set of knob positions on this same theme, and 柔光晕 / 光谱弥散 are what switch it back on.
+    /// Reset the active rendered material's optics to its factory recipe: 新液态玻璃 goes back
+    /// to <see cref="LiquidGlassV2Settings"/>' spec-aligned defaults, the merged 液态玻璃 theme
+    /// to <see cref="LiquidGlassSettings"/>. 柔光玻璃 has no separate defaults any more: its look
+    /// is a set of knob positions on the lens theme, and 柔光晕 / 光谱弥散 are what switch it
+    /// back on.
     /// </summary>
-    public void ResetLiquidGlass() => UpdateGlass(_ => new LiquidGlassSettings());
+    public void ResetLiquidGlass()
+    {
+        if (appSettingsProvider.Get().Theme.IsLiquidGlassV2) UpdateV2(_ => new LiquidGlassV2Settings());
+        else UpdateGlass(_ => new LiquidGlassSettings());
+    }
 
     public void RefreshLiquidGlassWallpaper()
     {

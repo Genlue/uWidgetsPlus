@@ -29,18 +29,27 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
     public IBrush SelectionBrush => IsSelected ? Brushes.DodgerBlue : Brushes.Transparent;
     /// <summary>
     /// Material handed to the preview <see cref="LiquidGlassSurface"/>: the preset's own
-    /// surface (液态玻璃 and 柔光玻璃 are two different recipes of the same pipeline) and —
-    /// unless this button is the active one — the preset's own optics, so the preview shows
-    /// what choosing the preset will actually look like rather than the current settings.
+    /// surface (the two liquid glass materials are different recipes of the same pipeline)
+    /// and — unless this button is the active one — the preset's own optics, so the preview
+    /// shows what choosing the preset will actually look like rather than the current settings.
     /// </summary>
-    public Theme GlassMaterial => appSettingsProvider.Get().Theme with
+    public Theme GlassMaterial
     {
-        Surface = AppTheme.UsesRenderedGlass ? AppTheme.EffectiveSurface : SurfaceStyle.LiquidGlass,
-        OpacityLevel = IsSelected ? appSettingsProvider.Get().Theme.OpacityLevel : AppTheme.OpacityLevel,
-        LiquidGlass = IsSelected
-            ? appSettingsProvider.Get().Theme.EffectiveLiquidGlass
-            : AppTheme.EffectiveLiquidGlass
-    };
+        get
+        {
+            var current = appSettingsProvider.Get().Theme;
+            var theme = current with
+            {
+                Surface = AppTheme.UsesRenderedGlass ? AppTheme.EffectiveSurface : SurfaceStyle.LiquidGlass,
+                OpacityLevel = IsSelected ? current.OpacityLevel : AppTheme.OpacityLevel
+            };
+            if (AppTheme.EffectiveSurface == SurfaceStyle.LiquidGlassV2)
+                theme = theme with { LiquidGlassV2 = IsSelected ? current.EffectiveLiquidGlassV2 : AppTheme.EffectiveLiquidGlassV2 };
+            else
+                theme = theme with { LiquidGlass = IsSelected ? current.EffectiveLiquidGlass : AppTheme.EffectiveLiquidGlass };
+            return theme;
+        }
+    }
     public Brush WidgetBackground
     {
         get
@@ -76,9 +85,9 @@ public partial class ThemeButton : UserControl, INotifyPropertyChanged
         ? new FontFamily("avares://Avalonia.Fonts.Inter#Inter")
         : new FontFamily(AppTheme.FontFamily);
 
-    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 柔光玻璃 / 多彩).</summary>
+    /// <summary>The preset name shown below the preview (毛玻璃 / 纯色 / 液态玻璃 / 新液态玻璃 / 多彩).</summary>
     public string ThemeName => IsRenderedGlass
-        ? (AppTheme.IsSoftGlow ? Locale.Settings_Appearance_Surface_SoftGlow : Locale.Settings_Appearance_Surface_LiquidGlass)
+        ? (AppTheme.IsLiquidGlassV2 ? Locale.Settings_Appearance_Surface_LiquidGlassV2 : Locale.Settings_Appearance_Surface_LiquidGlass)
         : IsColorful ? Locale.Settings_Appearance_Surface_Colorful
         : AppTheme.IsGlass ? Locale.Settings_Appearance_Surface_Frosted
         : Locale.Settings_Appearance_Surface_Solid;

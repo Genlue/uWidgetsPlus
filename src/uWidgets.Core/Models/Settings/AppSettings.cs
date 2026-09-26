@@ -65,6 +65,14 @@ public record AppSettings(
                 Surface: SurfaceStyle.LiquidGlass, MonochromeVariant: MonochromeStyle.BlackWhite,
                 AutoTheme: Theme.AutoTheme, LiquidGlass: new LiquidGlassSettings()),
 
+            // 新液态玻璃 factory recipe: a hair more neutral light than 液态玻璃 (the material's
+            // subtle 中性漫射层), everything else lives in LiquidGlassV2Settings' spec-aligned defaults.
+            SurfaceStyle.LiquidGlassV2 => new Theme(
+                DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 0.20, Monochrome: true,
+                UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,
+                Surface: SurfaceStyle.LiquidGlassV2, MonochromeVariant: MonochromeStyle.BlackWhite,
+                AutoTheme: Theme.AutoTheme, LiquidGlassV2: new LiquidGlassV2Settings()),
+
             SurfaceStyle.Solid => new Theme(
                 DarkMode: Theme.DarkMode, AccentColor: null, OpacityLevel: 1.0, Monochrome: true,
                 UseNativeFrame: Theme.UseNativeFrame, FontFamily: Theme.FontFamily,

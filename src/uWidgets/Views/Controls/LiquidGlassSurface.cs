@@ -350,7 +350,7 @@ public sealed class LiquidGlassSurface : Control
                 try
                 {
                     if (!attached || revision != current) return;
-                    nextCpu = await Task.Run(() => LiquidGlassRenderer.RenderBitmap(frame, wallpaper!));
+                    nextCpu = await Task.Run(() => LiquidGlassDispatch.RenderBitmap(frame, wallpaper!));
                 }
                 finally { RenderSlots.Release(); }
             }
@@ -420,17 +420,31 @@ public sealed class LiquidGlassSurface : Control
             material, ActualThemeVariant == ThemeVariant.Dark, SettingsSurface, (float)quality,
             Columns: cols, Rows: rows);
         if (!Preview) return frame;
-        return frame with
-        {
-            DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
-            DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
-            ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
-            Theme = material with
+        // The preview card is tiny (45×45 in the theme button): calm both materials down so the
+        // miniature shows the recipe rather than a bloated lens / flooded diffusion.
+        return frame.Theme.IsLiquidGlassV2
+            ? frame with
             {
-                LiquidGlass = material.EffectiveLiquidGlass with
-                { Blur = material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = material.EffectiveLiquidGlass.EdgeWidth * 0.35 }
+                DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
+                DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
+                ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
+                Theme = frame.Theme with
+                {
+                    LiquidGlassV2 = frame.Theme.EffectiveLiquidGlassV2 with
+                    { Blur = frame.Theme.EffectiveLiquidGlassV2.Blur * 0.35, Refraction = frame.Theme.EffectiveLiquidGlassV2.Refraction * 0.35 }
+                }
             }
-        };
+            : frame with
+            {
+                DesktopX = 70 * renderScale, DesktopY = 40 * renderScale, ScreenX = 0, ScreenY = 0,
+                DesktopWidth = 120 * renderScale, DesktopHeight = 90 * renderScale,
+                ScreenWidth = 120 * renderScale, ScreenHeight = 90 * renderScale,
+                Theme = material with
+                {
+                    LiquidGlass = material.EffectiveLiquidGlass with
+                    { Blur = material.EffectiveLiquidGlass.Blur * 0.35, EdgeWidth = material.EffectiveLiquidGlass.EdgeWidth * 0.35 }
+                }
+            };
     }
 
     /// <summary>
@@ -568,19 +582,37 @@ public sealed class LiquidGlassSurface : Control
                 return;
             }
 
-            var parameters = LiquidGlassGpuEffect.BuildParams(frame, source.Scale,
-                (float)Bounds.Width, (float)Bounds.Height) with
+            // The 新液态玻璃 material runs its own shader; the lens materials share the older one.
+            var isV2 = material.EffectiveSurface == SurfaceStyle.LiquidGlassV2;
+            var v2Parameters = default(LiquidGlassV2Effect.Params);
+            var parameters = default(LiquidGlassGpuEffect.Params);
+            if (isV2)
             {
-                DestOriginX = (float)Bounds.X,
-                DestOriginY = (float)Bounds.Y,
-                AuraEnabled = aura.IsUsable,
-                AuraColumns = aura.Columns,
-                AuraRows = aura.Rows,
-                AuraStep = aura.Step,
-                AuraMargin = aura.Margin
-            };
+                v2Parameters = LiquidGlassV2Effect.BuildParams(frame, source.Scale,
+                    (float)Bounds.Width, (float)Bounds.Height) with
+                {
+                    DestOriginX = (float)Bounds.X,
+                    DestOriginY = (float)Bounds.Y
+                };
+            }
+            else
+            {
+                parameters = LiquidGlassGpuEffect.BuildParams(frame, source.Scale,
+                    (float)Bounds.Width, (float)Bounds.Height) with
+                {
+                    DestOriginX = (float)Bounds.X,
+                    DestOriginY = (float)Bounds.Y,
+                    AuraEnabled = aura.IsUsable,
+                    AuraColumns = aura.Columns,
+                    AuraRows = aura.Rows,
+                    AuraStep = aura.Step,
+                    AuraMargin = aura.Margin
+                };
+            }
 
-            using var shader = LiquidGlassGpuEffect.Create(source.Backdrop, aura.Bitmap, parameters);
+            using var shader = isV2
+                ? LiquidGlassV2Effect.Create(source.Backdrop, v2Parameters)
+                : LiquidGlassGpuEffect.Create(source.Backdrop, aura.Bitmap, parameters);
             if (shader == null)
             {
                 GlassDiagnostics.Event("draw: runtime shader could not be built — drawing the plain backdrop");
@@ -594,8 +626,9 @@ public sealed class LiquidGlassSurface : Control
 
             // One-off readback of what the shader actually produces. The GPU path cannot be
             // validated offline, so this is the only way to tell "the shader drew nothing" apart
-            // from "the shader drew something that never reached the screen".
-            if (Interlocked.Exchange(ref probedShader, 1) == 0) Probe(lease, shader, destination);
+            // from "the shader drew something that never reached the screen". The staged walk is
+            // tuned to the lens material; the new material relies on the opaque self-test below.
+            if (!isV2 && Interlocked.Exchange(ref probedShader, 1) == 0) Probe(lease, shader, destination);
 
             // A runtime-effect program is only built for the device at draw time, from a narrower
             // dialect than SKRuntimeEffect.Create accepts, and a program that fails to build there

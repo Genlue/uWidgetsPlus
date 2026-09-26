@@ -46,6 +46,8 @@
                 </StackPanel>
             </Button>
             <StackPanel IsVisible="{Binding OpticsExpanded}" Spacing="3">
+            <!-- 液态玻璃 (lens recipe) rows. -->
+            <StackPanel IsVisible="{Binding ShowLegacyOptics}" Spacing="3">
                 <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
                                   Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
                     <ToggleSwitch IsChecked="{Binding LiveSampling}" HorizontalAlignment="Right"
@@ -164,6 +166,77 @@
                         </Grid>
                     </controls:Setting>
                 </StackPanel>
+            </StackPanel>
+            <!-- 新液态玻璃 rows: Kyant0/AndroidLiquidGlass 2.0's knobs (模糊 / 折射 / 色散 /
+                 边缘高光 / 活力) plus the sampling-pipeline knobs of its own settings record. -->
+            <StackPanel IsVisible="{Binding ShowV2Settings}" Spacing="3">
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingHint}">
+                    <ToggleSwitch IsChecked="{Binding V2LiveSampling}" HorizontalAlignment="Right"
+                                  AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSampling}" />
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingIntervalHint}"
+                                  IsVisible="{Binding V2LiveSampling}">
+                    <NumericUpDown MinWidth="130" Minimum="3" Maximum="1000" Increment="10" FormatString="F0"
+                                   Value="{Binding V2LiveSamplingInterval}"
+                                   AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_LiveSamplingInterval}" />
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Blur}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_BlurHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2Blur, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding V2Blur}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Blur}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_RefractionHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2Refraction, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding V2Refraction}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Refraction}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_DispersionHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2Dispersion, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding V2Dispersion}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Dispersion}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_HighlightHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2Highlight, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding V2Highlight}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Highlight}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_V2_VibrancyHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2Vibrancy, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
+                        <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Increment="1" FormatString="F0"
+                                       Value="{Binding V2Vibrancy}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_V2_Vibrancy}" />
+                    </Grid>
+                </controls:Setting>
+                <controls:Setting Title="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}"
+                                  Subtitle="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarityHint}">
+                    <Grid ColumnDefinitions="*,130" Width="264" Margin="14 0 0 0">
+                        <Slider Minimum="25" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0 0 10 0"
+                                Value="{Binding V2BackdropClarity, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                        <NumericUpDown Grid.Column="1" Minimum="25" Maximum="100" Increment="5" FormatString="F0"
+                                       Value="{Binding V2BackdropClarity}" AutomationProperties.Name="{x:Static locales:Locale.Settings_Appearance_Glass_BackdropClarity}" />
+                    </Grid>
+                </controls:Setting>
+            </StackPanel>
             </StackPanel>
             <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
                 <Button Content="{x:Static locales:Locale.Settings_Appearance_Glass_Align}" Click="OpenWallpaperAlign" Margin="0 0 8 6" />

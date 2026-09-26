@@ -66,6 +66,7 @@ public record LiquidGlassSettings(
     bool LiveSampling = false,
     int LiveSamplingInterval = 5,     // = DefaultLiveSamplingInterval; a primary-constructor default cannot name it
     double BackdropClarity = 25)      // = DefaultBackdropClarity
+    : IRenderedGlassSettings          // the sampling-pipeline subset shared with LiquidGlassV2Settings
 {
     /// <summary>
     /// Default 染色扩散 (%). The dye stays in the outermost band: a wide wash over the content

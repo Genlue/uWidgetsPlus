@@ -5,8 +5,10 @@ using uWidgets.Core.Models.Settings;
 namespace Folders.Services;
 
 /// <summary>
-/// Safely invokes uWidgets LiquidGlassRenderer and LiquidGlassWallpaper via reflection.
-/// Allows Folders widget to render liquid glass without direct project reference to SkiaSharp.
+/// Safely invokes uWidgets LiquidGlassDispatch and LiquidGlassWallpaper via reflection.
+/// LiquidGlassDispatch routes to the optical model of the active material (液态玻璃 or
+/// 新液态玻璃), so the Folders widget renders the right recipe without a direct project
+/// reference to SkiaSharp.
 /// </summary>
 public static class LiquidGlassBridge
 {
@@ -29,14 +31,16 @@ public static class LiquidGlassBridge
                 var uWidgetsAsm = assemblies.FirstOrDefault(a => a.GetName().Name == "uWidgets");
                 if (uWidgetsAsm != null)
                 {
-                    var rendererType = uWidgetsAsm.GetType("uWidgets.Services.LiquidGlassRenderer");
+                    var dispatchType = uWidgetsAsm.GetType("uWidgets.Services.LiquidGlassDispatch");
                     var wallpaperType = uWidgetsAsm.GetType("uWidgets.Services.LiquidGlassWallpaper");
-                    if (rendererType != null && wallpaperType != null)
+                    if (dispatchType != null && wallpaperType != null)
                     {
-                        renderMethod = rendererType.GetMethod("Render", BindingFlags.Public | BindingFlags.Static);
+                        renderMethod = dispatchType.GetMethod("Render", BindingFlags.Public | BindingFlags.Static);
                         getWallpaperMethod = wallpaperType.GetMethod("Get", BindingFlags.Public | BindingFlags.Static);
                         wallpaperInvalidatedEvent = wallpaperType.GetEvent("WallpaperInvalidated", BindingFlags.Public | BindingFlags.Static);
-                        frameType = rendererType.GetNestedType("Frame");
+                        // The Frame record still lives on the classic renderer; both dispatch
+                        // targets take it.
+                        frameType = uWidgetsAsm.GetType("uWidgets.Services.LiquidGlassRenderer")?.GetNestedType("Frame");
                     }
                 }
             }

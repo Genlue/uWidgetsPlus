@@ -35,5 +35,17 @@ public enum SurfaceStyle
     /// and an optional full-spectrum dispersion
     /// (see <see cref="LiquidGlassSettings.Spectrum"/>).
     /// </summary>
-    SoftGlow = 5
+    SoftGlow = 5,
+
+    /// <summary>
+    /// 新液态玻璃 (new liquid glass): an independent optical material built from scratch
+    /// against the macOS/iOS 26 Liquid Glass spec — highly transparent, low-saturation,
+    /// environment-adaptive glass. Multi-scale diffusion keeps large colour masses while
+    /// suppressing fine detail, refraction stays at the rim and in the single-digit
+    /// percent range, and the rim light is a thin, soft, environment-tinted highlight
+    /// rather than a drawn border. Shares the wallpaper sampling pipeline (capture +
+    /// shared blurred backdrop) but runs its own shader and CPU renderer; see
+    /// <see cref="LiquidGlassV2Settings"/>.
+    /// </summary>
+    LiquidGlassV2 = 6
 }

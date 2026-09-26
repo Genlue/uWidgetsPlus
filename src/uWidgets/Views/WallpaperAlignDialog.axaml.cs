@@ -23,7 +23,7 @@ public partial class WallpaperAlignDialog : Window
     {
         this.appSettingsProvider = appSettingsProvider;
         InitializeComponent();
-        var glass = appSettingsProvider.Get().Theme.EffectiveLiquidGlass;
+        var glass = appSettingsProvider.Get().Theme.EffectiveGlass;
         OffsetX.Value = (decimal)glass.WallpaperOffsetX;
         OffsetY.Value = (decimal)glass.WallpaperOffsetY;
         ready = true;
@@ -42,13 +42,26 @@ public partial class WallpaperAlignDialog : Window
     private void ApplyOffsets()
     {
         var settings = appSettingsProvider.Get();
-        var glass = settings.Theme.EffectiveLiquidGlass;
-        var next = (glass with
-        {
-            WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
-            WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
-        }).Normalize();
-        appSettingsProvider.Save(settings with { Theme = settings.Theme with { LiquidGlass = next } });
+        var theme = settings.Theme;
+        // Write the offsets back into the active material's own settings record.
+        var nextTheme = theme.IsLiquidGlassV2
+            ? theme with
+            {
+                LiquidGlassV2 = (theme.EffectiveLiquidGlassV2 with
+                {
+                    WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
+                    WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
+                }).Normalize()
+            }
+            : theme with
+            {
+                LiquidGlass = (theme.EffectiveLiquidGlass with
+                {
+                    WallpaperOffsetX = (double)(OffsetX.Value ?? 0),
+                    WallpaperOffsetY = (double)(OffsetY.Value ?? 0)
+                }).Normalize()
+            };
+        appSettingsProvider.Save(settings with { Theme = nextTheme });
     }
 
     private void ResetOffsets(object? sender, RoutedEventArgs e)

@@ -88,11 +88,12 @@ public class ThemeService : IThemeService
         Application.Current.Resources["BackgroundOpacity"] = theme.IsColorful ? 1.0 : theme.OpacityLevel;
 
         // Animated wallpapers are sampled periodically. Turning this off keeps the
-        // last captured frame and makes liquid glass deterministic/static.
+        // last captured frame and makes liquid glass deterministic/static. Both
+        // rendered materials carry their own sampling settings.
         if (theme.UsesRenderedGlass)
         {
-            var optics = theme.EffectiveLiquidGlass;
-            LiquidGlassWallpaper.ConfigureLiveSampling(optics.LiveSampling, optics.LiveSamplingInterval);
+            var glass = theme.EffectiveGlass;
+            LiquidGlassWallpaper.ConfigureLiveSampling(glass.LiveSampling, glass.LiveSamplingInterval);
         }
 
         if (theme.IsColorful)

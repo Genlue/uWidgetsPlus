@@ -23,6 +23,17 @@ namespace uWidgets.Locales {
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Locale {
         public static string Settings_Appearance_Surface_LiquidGlass => ResourceManager.GetString("Settings_Appearance_Surface_LiquidGlass", resourceCulture);
+        public static string Settings_Appearance_Surface_LiquidGlassV2 => ResourceManager.GetString("Settings_Appearance_Surface_LiquidGlassV2", resourceCulture);
+        public static string Settings_Appearance_V2_Blur => ResourceManager.GetString("Settings_Appearance_V2_Blur", resourceCulture);
+        public static string Settings_Appearance_V2_BlurHint => ResourceManager.GetString("Settings_Appearance_V2_BlurHint", resourceCulture);
+        public static string Settings_Appearance_V2_Refraction => ResourceManager.GetString("Settings_Appearance_V2_Refraction", resourceCulture);
+        public static string Settings_Appearance_V2_RefractionHint => ResourceManager.GetString("Settings_Appearance_V2_RefractionHint", resourceCulture);
+        public static string Settings_Appearance_V2_Dispersion => ResourceManager.GetString("Settings_Appearance_V2_Dispersion", resourceCulture);
+        public static string Settings_Appearance_V2_DispersionHint => ResourceManager.GetString("Settings_Appearance_V2_DispersionHint", resourceCulture);
+        public static string Settings_Appearance_V2_Highlight => ResourceManager.GetString("Settings_Appearance_V2_Highlight", resourceCulture);
+        public static string Settings_Appearance_V2_HighlightHint => ResourceManager.GetString("Settings_Appearance_V2_HighlightHint", resourceCulture);
+        public static string Settings_Appearance_V2_Vibrancy => ResourceManager.GetString("Settings_Appearance_V2_Vibrancy", resourceCulture);
+        public static string Settings_Appearance_V2_VibrancyHint => ResourceManager.GetString("Settings_Appearance_V2_VibrancyHint", resourceCulture);
         public static string Settings_Appearance_Surface_SoftGlow => ResourceManager.GetString("Settings_Appearance_Surface_SoftGlow", resourceCulture);
         public static string Settings_Appearance_SoftGlow_Title => ResourceManager.GetString("Settings_Appearance_SoftGlow_Title", resourceCulture);
         public static string Settings_Appearance_SoftGlow_Description => ResourceManager.GetString("Settings_Appearance_SoftGlow_Description", resourceCulture);

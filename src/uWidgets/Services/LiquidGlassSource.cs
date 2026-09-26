@@ -117,9 +117,11 @@ internal static class LiquidGlassSourceCache
         // 背景清晰度 is the user's own cost/quality trade for the shared backdrop, so it is honoured
         // directly instead of being capped by a constant of ours — and it is the knob that actually
         // moves the sampling round, because the blur below is what the round spends its time on.
-        var scale = Math.Clamp(
-            (float)(frame.Theme.EffectiveLiquidGlass.BackdropClarity / 100.0), MinBackdropScale, 1f);
-        var sigma = (float)frame.Theme.EffectiveLiquidGlass.Blur * frame.Scale / 8f * scale;
+        // Read through the active material's pipeline settings: 液态玻璃 and 新液态玻璃 carry
+        // their own clarity/blur values on the shared cache.
+        var glass = frame.Theme.EffectiveGlass;
+        var scale = Math.Clamp((float)(glass.BackdropClarity / 100.0), MinBackdropScale, 1f);
+        var sigma = (float)glass.Blur * frame.Scale / 8f * scale;
         var key = new GlassSourceKey(wallpaper, sigma, scale);
 
         GlassSource? built;

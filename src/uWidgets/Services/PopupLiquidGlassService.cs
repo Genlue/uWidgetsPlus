@@ -146,9 +146,9 @@ public static class PopupLiquidGlassService
 
         var p = ComputePlacement(screenCenter, logicalWidth, logicalHeight, targetScreen, allScreens);
 
-        // The key covers the surface as well: 液态玻璃 and 柔光玻璃 share the pipeline but
-        // not the recipe, and Glow/Spectrum only exist on the soft one.
-        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{theme.EffectiveSurface}_{theme.EffectiveLiquidGlass.Blur}_{theme.EffectiveLiquidGlass.Refraction}_{theme.EffectiveLiquidGlass.LightAngle}_{theme.EffectiveLiquidGlass.Glow}_{theme.EffectiveLiquidGlass.Spectrum}";
+        // The key covers the surface as well: the two glass materials share the sampling
+        // pipeline but not the recipe, so each carries its own optics into the key.
+        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{LiquidGlassDispatch.OpticsKey(theme)}";
         var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
 
         lock (renderLock)
@@ -187,7 +187,7 @@ public static class PopupLiquidGlassService
                         PixelScale: 1.0f);
 
                     using var wallpaper = LiquidGlassWallpaper.Get();
-                    var bytes = LiquidGlassRenderer.Render(frame, wallpaper);
+                    var bytes = LiquidGlassDispatch.Render(frame, wallpaper);
 
                     if (bytes == null || bytes.Length == 0 || token.IsCancellationRequested) return;
 
@@ -248,7 +248,7 @@ public static class PopupLiquidGlassService
         Screen? targetScreen,
         IReadOnlyList<Screen>? allScreens)
     {
-        if (theme?.IsLiquidGlass != true) return null;
+        if (theme?.UsesRenderedGlass != true) return null;
 
         targetScreen ??= allScreens?.FirstOrDefault();
         if (targetScreen == null) return null;
@@ -279,7 +279,7 @@ public static class PopupLiquidGlassService
                     PixelScale: 1.0f);
 
                 using var wallpaper = LiquidGlassWallpaper.Get();
-                return LiquidGlassRenderer.Render(frame, wallpaper);
+                return LiquidGlassDispatch.Render(frame, wallpaper);
             });
 
             if (bytes == null || bytes.Length == 0) return null;

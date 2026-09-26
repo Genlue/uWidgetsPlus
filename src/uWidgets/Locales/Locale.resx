@@ -589,7 +589,40 @@
         <value>Widgets: {0}</value>
     </data>
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
+        <value>Soft glow glass</value>
+    </data>
+    <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
         <value>Liquid glass</value>
+    </data>
+    <data name="Settings_Appearance_V2_Blur" xml:space="preserve">
+        <value>Blur</value>
+    </data>
+    <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
+        <value>A light backdrop blur — the glass stays readable, like the iOS material.</value>
+    </data>
+    <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
+        <value>Refraction</value>
+    </data>
+    <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
+        <value>The rim lens: a quarter-circle bend that peaks at the outline and magnifies the backdrop, gone across the interior.</value>
+    </data>
+    <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
+        <value>Dispersion</value>
+    </data>
+    <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
+        <value>A seven-tap spectral split along the rim displacement, strongest on the light-facing diagonal.</value>
+    </data>
+    <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
+        <value>Edge highlight</value>
+    </data>
+    <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
+        <value>The hairline rim stroke: additive white lit from the top-left and bottom-right diagonals, like the iOS double rim.</value>
+    </data>
+    <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
+        <value>Vibrancy</value>
+    </data>
+    <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
+        <value>The iOS vibrancy colour boost; 33 ≈ the reference saturation ×1.5.</value>
     </data>
     <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
         <value>Soft glow glass</value>

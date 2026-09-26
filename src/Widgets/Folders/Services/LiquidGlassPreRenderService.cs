@@ -147,9 +147,13 @@ public static class LiquidGlassPreRenderService
 
         var p = ComputePlacement(screenCenter, logicalWidth, logicalHeight, targetScreen, allScreens);
 
-        // The key covers the surface as well: 液态玻璃 and 柔光玻璃 share the pipeline but
-        // not the recipe, and Glow/Spectrum only exist on the soft one.
-        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{theme.EffectiveSurface}_{theme.EffectiveLiquidGlass.Blur}_{theme.EffectiveLiquidGlass.Refraction}_{theme.EffectiveLiquidGlass.LightAngle}_{theme.EffectiveLiquidGlass.Glow}_{theme.EffectiveLiquidGlass.Spectrum}";
+        // The key covers the surface as well: the two glass materials share the sampling
+        // pipeline but not the recipe, so each carries its own optics into the key. Mirrors
+        // uWidgets' LiquidGlassDispatch.OpticsKey (Folders has no direct host reference).
+        var opticsKey = theme.EffectiveSurface == SurfaceStyle.LiquidGlassV2
+            ? $"v2_{theme.EffectiveLiquidGlassV2.Blur}_{theme.EffectiveLiquidGlassV2.Refraction}_{theme.EffectiveLiquidGlassV2.Highlight}_{theme.EffectiveLiquidGlassV2.Vibrancy}_{theme.EffectiveLiquidGlassV2.Dispersion}"
+            : $"lg_{theme.EffectiveLiquidGlass.Blur}_{theme.EffectiveLiquidGlass.Refraction}_{theme.EffectiveLiquidGlass.LightAngle}_{theme.EffectiveLiquidGlass.Glow}_{theme.EffectiveLiquidGlass.Spectrum}";
+        var key = $"{wallpaperRevision}_{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}_{p.scale}_{isDark}_{theme.EffectiveSurface}_{opticsKey}";
         var locKey = $"{(int)p.targetX}_{(int)p.targetY}_{p.renderW}_{p.renderH}";
 
         lock (renderLock)
@@ -250,7 +254,7 @@ public static class LiquidGlassPreRenderService
         Screen? targetScreen,
         IReadOnlyList<Screen>? allScreens)
     {
-        if (theme?.IsLiquidGlass != true || !LiquidGlassBridge.IsAvailable) return null;
+        if (theme?.UsesRenderedGlass != true || !LiquidGlassBridge.IsAvailable) return null;
 
         targetScreen ??= allScreens?.FirstOrDefault();
         if (targetScreen == null) return null;

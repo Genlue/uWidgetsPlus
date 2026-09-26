@@ -978,9 +978,11 @@ public static class LiquidGlassRenderer
         // Manual wallpaper alignment (DIPs → render px): the user calibrates the
         // sampled position against the real desktop when the display layer's own
         // layout cannot be trusted (taskbar replacements, wallpaper engines).
-        var optics2 = frame.Theme.EffectiveLiquidGlass;
-        var offX = (float)(optics2.WallpaperOffsetX * frame.Scale);
-        var offY = (float)(optics2.WallpaperOffsetY * frame.Scale);
+        // Read through the active material's pipeline settings so both glass materials
+        // keep their own alignment.
+        var glass = frame.Theme.EffectiveGlass;
+        var offX = (float)(glass.WallpaperOffsetX * frame.Scale);
+        var offY = (float)(glass.WallpaperOffsetY * frame.Scale);
 
         // Live desktop capture: the bitmap IS the virtual desktop at physical
         // pixels (captured on Progman), so placement is identity — no style math,

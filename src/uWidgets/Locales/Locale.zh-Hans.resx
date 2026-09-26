@@ -688,7 +688,40 @@
         <value>组件数：{0}</value>
     </data>
     <data name="Settings_Appearance_Surface_LiquidGlass" xml:space="preserve">
+        <value>柔光玻璃</value>
+    </data>
+    <data name="Settings_Appearance_Surface_LiquidGlassV2" xml:space="preserve">
         <value>液态玻璃</value>
+    </data>
+    <data name="Settings_Appearance_V2_Blur" xml:space="preserve">
+        <value>模糊</value>
+    </data>
+    <data name="Settings_Appearance_V2_BlurHint" xml:space="preserve">
+        <value>轻微的背景模糊——玻璃后依然可读，如同 iOS 材质。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Refraction" xml:space="preserve">
+        <value>折射</value>
+    </data>
+    <data name="Settings_Appearance_V2_RefractionHint" xml:space="preserve">
+        <value>边缘透镜：沿轮廓达到峰值的四分之一圆弯曲并放大背景，内部保持原样。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Dispersion" xml:space="preserve">
+        <value>色散</value>
+    </data>
+    <data name="Settings_Appearance_V2_DispersionHint" xml:space="preserve">
+        <value>沿边缘位移的七档光谱分离，在受光对角线上最强。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Highlight" xml:space="preserve">
+        <value>边缘高光</value>
+    </data>
+    <data name="Settings_Appearance_V2_HighlightHint" xml:space="preserve">
+        <value>发丝描边：加色混合的白光，左上与右下对角受光，如同 iOS 的双亮边。</value>
+    </data>
+    <data name="Settings_Appearance_V2_Vibrancy" xml:space="preserve">
+        <value>活力</value>
+    </data>
+    <data name="Settings_Appearance_V2_VibrancyHint" xml:space="preserve">
+        <value>iOS vibrancy 色彩提升；33 ≈ 参考配方的饱和 ×1.5。</value>
     </data>
     <data name="Settings_Appearance_Surface_SoftGlow" xml:space="preserve">
         <value>柔光玻璃</value>

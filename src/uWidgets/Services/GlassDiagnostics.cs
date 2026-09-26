@@ -18,7 +18,9 @@ namespace uWidgets.Services;
 /// </summary>
 internal static class GlassDiagnostics
 {
-    private const int MaxLines = 800;
+    // 2400 lines: the steady-state trace is throttled to roughly one line per second, so this is
+    // ~40 minutes of context. (800 capped in four seconds back when every sampling round logged.)
+    private const int MaxLines = 2400;
 
     /// <summary>Set to false to silence the trace entirely.</summary>
     public static bool Enabled { get; set; } = true;

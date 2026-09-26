@@ -50,12 +50,59 @@ public static class LiquidGlassWallpaper
     /// <summary>How long a run of unusable captures is masked with the previous frame before the normal fallback chain takes over.</summary>
     private const int UnusableGraceMs = 250;
 
+    /// <summary>
+    /// Resolution of the identity grid the probe compares captures on. Two cells per 80 desktop
+    /// pixels: any change a viewer could see through the glass spans many cells, while a change
+    /// strictly inside one cell is under 0.3% of the desktop and dissolves in the backdrop blur.
+    /// </summary>
+    private const int IdentityColumns = 32;
+
+    /// <summary>The row count of the identity grid; see <see cref="IdentityColumns"/>.</summary>
+    private const int IdentityRows = 18;
+
+    /// <summary>
+    /// Per-channel slack of the identity comparison, in 255ths. Absorbs the sub-perceptual
+    /// re-encode noise of a "paused" video wallpaper; any real animation moves cells further
+    /// than this and publishes.
+    /// </summary>
+    private const int IdentityTolerance = 2;
+
+    /// <summary>
+    /// Longest the sampler stretches between probes while the desktop stays unchanged. The
+    /// stretch exists so an idle desktop costs a few captures per second instead of the
+    /// pipeline's maximum rate; it does not throttle a changing one — the first probe that
+    /// finds new content snaps the interval back to the user's setting.
+    /// </summary>
+    private const int MaxIdleIntervalMs = 500;
+
     // Coarse grid of the last accepted capture, and the host it came from. The grid is the
     // reference for the temporal check (a frame that replaced nearly everything at once is an
     // MPO overlay transition, not wallpaper content); the host handle lets a genuinely NEW host
     // (a wallpaper engine restarting with different content) skip the check entirely.
     private static int[]? lastAcceptedSamples;
     private static IntPtr lastAcceptedHost;
+
+    // The finer identity grid of the frame that is actually published, under its own gate: the
+    // probe runs on a worker outside the wallpaper Gate while CaptureOnce (under the Gate)
+    // touches the same fields. The reference the identity check compares against must move
+    // exactly when a new frame is published, never in between — comparing against a grid that
+    // was updated without its frame being published would silently freeze the glass.
+    private static readonly object SampleGate = new();
+    private static int[]? lastPublishedSamples;
+
+    // The probe's reusable capture buffer. A probe that finds the desktop unchanged hands the
+    // bitmap straight back: the steady state — a static desktop probed over and over — then
+    // allocates nothing, instead of feeding the large-object-heap a full desktop bitmap per
+    // round. Only a published frame consumes the buffer (it becomes the snapshot's pixels), so
+    // a buffer is never both pooled and reachable by a render.
+    private static SKBitmap? probeBuffer;
+
+    // Single-flight flag for the probe: the sampler tick is async and the timer fires again
+    // while a capture is still running.
+    private static int probing;
+
+    // Consecutive probes that found the desktop unchanged; drives the idle backoff.
+    private static int idleRounds;
 
     private static bool liveSamplingEnabled = true;
     private static int liveIntervalMs = DefaultIntervalMs;
@@ -71,6 +118,7 @@ public static class LiquidGlassWallpaper
     {
         liveSamplingEnabled = enabled;
         liveIntervalMs = Math.Clamp(intervalMs, MinIntervalMs, MaxIntervalMs);
+        Volatile.Write(ref idleRounds, 0);
 
         if (!OperatingSystem.IsWindows()) return;
         try
@@ -148,28 +196,31 @@ public static class LiquidGlassWallpaper
     }
 
     /// <summary>
-    /// One sampling tick: drop the cached frame and let the glass surfaces pick up a new one.
+    /// One sampling tick: capture one probe frame off the UI thread and refresh the glass surfaces
+    /// only when its pixels actually differ from what they are already showing.
     /// <para>
-    /// The tick deliberately does <b>not</b> capture on the UI thread — it only invalidates, and the
-    /// capture happens on the render worker that calls <see cref="Get"/>.
+    /// The glass is a pure function of the captured frame, the widget geometry and the optics —
+    /// republishing an identical frame re-runs the whole pipeline (a full desktop capture, a
+    /// full-desktop blur, one prepare per card, a GPU draw each) for zero visual change, and at a
+    /// 5 ms interval that is what the tick used to demand unconditionally: ~20 captures and ~180
+    /// card publishes per second on a desktop that had not moved a pixel. The probe inverts the
+    /// cost: an unchanged frame is the cheapest outcome (the capture buffer is reused, nothing is
+    /// republished, and consecutive idle rounds stretch the period out to
+    /// <see cref="MaxIdleIntervalMs"/>), while the first changed frame publishes exactly as before
+    /// and snaps the interval back. A static wallpaper therefore idles at a few captures per
+    /// second and an animated one runs at the full pipeline rate, identical visuals either way.
     /// </para>
     /// <para>
-    /// <b>Only ask for a frame that something can consume.</b> A capture plus its shared backdrop
-    /// costs ~47 ms on a 2560×1440 desktop, so while every widget is mid-prepare there is nothing to
-    /// hand a new frame to. Invalidating anyway used to be actively harmful: it discarded the frame
-    /// the busy widgets were rendering from and left a frame "pending", which then held the sampler
-    /// back for a fixed retry floor. The net effect was that a <i>smaller</i> interval produced a
-    /// <i>slower</i> glass — 3 ms measured 24 publishes/s across six widgets against 60/s at 100 ms,
-    /// i.e. 4 fps per widget instead of 10. The interval is therefore a floor on the period between
-    /// captures, never a target, and a tick that finds no idle surface simply comes back next time.
+    /// The capture does not run on the UI thread — the tick awaits it on a worker, single-flighted
+    /// through <see cref="probing"/> so a slow capture cannot stack ticks.
     /// </para>
     /// <para>
     /// The staleness guard is the safety net: if nothing has been captured for a long time while
-    /// widgets are still asking, the tick forces a frame anyway, so a surface that somehow never
+    /// widgets are still asking, the tick forces a round anyway, so a surface that somehow never
     /// reports itself idle cannot stall live sampling permanently.
     /// </para>
     /// </summary>
-    private static void OnLiveSamplingTick(object? sender, EventArgs e)
+    private static async void OnLiveSamplingTick(object? sender, EventArgs e)
     {
         if (!liveSamplingEnabled || suspended) { UpdateTimerState(); return; }
         if (!LiquidGlassSurface.HasActiveSurfaces) { UpdateTimerState(); return; }
@@ -178,15 +229,48 @@ public static class LiquidGlassWallpaper
         // The period is measured from the start of the previous round, not from its capture. A
         // capture lands a few milliseconds after the round begins, so measuring from it made every
         // other tick arrive "too early" and halved the rate — 30 publishes/s instead of 60 at a
-        // 100 ms interval.
-        if (now - Interlocked.Read(ref lastRoundAt) < liveIntervalMs) return;
+        // 100 ms interval. While the desktop sits still the period is the backoff-stretched one.
+        if (now - Interlocked.Read(ref lastRoundAt) < EffectiveIntervalMs) return;
         if (LiquidGlassSurface.AnySurfaceRendering && now - Interlocked.Read(ref lastCaptureAt) < StallGuardMs)
             return;
 
-        Invalidate();
-        // Immediate: the interval can be shorter than the surface's move/resize debounce, and a
-        // debounce restarted on every tick would never elapse — freezing the glass entirely.
-        LiquidGlassSurface.RefreshAllImmediate();
+        Interlocked.Exchange(ref lastRoundAt, now);
+        if (Interlocked.Exchange(ref probing, 1) == 1) return;
+        try
+        {
+            var published = await Task.Run(ProbeCapture);
+            if (published)
+            {
+                Volatile.Write(ref idleRounds, 0);
+                // Immediate: the interval can be shorter than the surface's move/resize debounce,
+                // and a debounce restarted on every tick would never elapse — freezing the glass.
+                LiquidGlassSurface.RefreshAllImmediate();
+            }
+            else
+            {
+                Interlocked.Increment(ref idleRounds);
+            }
+        }
+        catch (Exception ex)
+        {
+            // A failing capture must not kill the timer's async tick; the next one retries.
+            GlassDiagnostics.Failure(ex);
+        }
+        finally
+        {
+            Volatile.Write(ref probing, 0);
+        }
+    }
+
+    /// <summary>The period the sampler actually waits for: the configured interval, stretched while the desktop stays unchanged.</summary>
+    private static int EffectiveIntervalMs
+    {
+        get
+        {
+            var idle = Math.Min(Volatile.Read(ref idleRounds), 6);
+            var stretched = liveIntervalMs << idle;
+            return Math.Min(Math.Max(stretched, liveIntervalMs), Math.Max(liveIntervalMs, MaxIdleIntervalMs));
+        }
     }
 
     /// <summary>When the desktop was last captured; the stall guard is measured from here.</summary>
@@ -275,6 +359,10 @@ public static class LiquidGlassWallpaper
             cachedKey = null;
         }
 
+        // A real invalidation means content is changing (or about to): the probe must not idle
+        // through it at the backoff rate.
+        Volatile.Write(ref idleRounds, 0);
+
         Interlocked.Exchange(ref lastRoundAt, Environment.TickCount64);
         previousStale?.Dispose();
 
@@ -304,6 +392,9 @@ public static class LiquidGlassWallpaper
             oldStale = stale;
             stale = null;
         }
+
+        // The probe buffer is one more full-desktop allocation nothing can see right now.
+        Interlocked.Exchange(ref probeBuffer, null)?.Dispose();
 
         old?.Dispose();
         oldStale?.Dispose();
@@ -340,6 +431,19 @@ public static class LiquidGlassWallpaper
 
             if (bmp != null && !flat)
             {
+                var identity = DesktopCapturer.SampleGrid(bmp, IdentityColumns, IdentityRows);
+                if (MatchesLastPublished(identity) && stale != null)
+                {
+                    // The desktop is pixel-identical to the frame the surfaces already render
+                    // from (stale is exactly that frame — Invalidate parks the outgoing one
+                    // there). Publishing would rebuild every card for zero visual change, and
+                    // returning nothing would drop the caller to the static-file fallback —
+                    // different pixels entirely. Hand back the identical frame.
+                    bmp.Dispose();
+                    firstUnusableAt = 0;
+                    return stale;
+                }
+
                 var samples = DesktopCapturer.SampleGrid(bmp);
                 if (lastAcceptedSamples != null
                     && lastAcceptedHost == DesktopCapturer.ResolvedHost
@@ -354,7 +458,11 @@ public static class LiquidGlassWallpaper
                 }
                 else
                 {
-                    lastAcceptedSamples = samples;
+                    lock (SampleGate)
+                    {
+                        lastAcceptedSamples = samples;
+                        lastPublishedSamples = identity;
+                    }
                 }
             }
             else if (bmp != null && flat)
@@ -370,20 +478,8 @@ public static class LiquidGlassWallpaper
                 // the usual cause clears within a few sampling rounds. Once the failure outlives
                 // the grace, the normal fallback chain takes over; a persistently unusable host
                 // is also forgiven so it is re-resolved with full validation instead of trusted.
+                NoteUnusableCapture(flat, jumped);
                 var now = Environment.TickCount64;
-                if (firstUnusableAt == 0)
-                {
-                    firstUnusableAt = now;
-                    GlassDiagnostics.Event(flat ? "wallpaper capture flat — masking with the previous frame"
-                        : jumped ? "wallpaper capture jumped (overlay transition?) — masking with the previous frame"
-                        : "wallpaper capture failed — masking with the previous frame");
-                }
-                else if ((flat || jumped) && now - firstUnusableAt >= UnusableGraceMs)
-                {
-                    DesktopCapturer.ForgetResolvedHost();
-                    GlassDiagnostics.Event("unusable wallpaper capture persisted — re-resolving the wallpaper host");
-                }
-
                 if (now - firstUnusableAt < UnusableGraceMs && stale != null)
                     return stale;
                 continue;
@@ -411,6 +507,169 @@ public static class LiquidGlassWallpaper
             return snapshot;
         }
         return null;
+    }
+
+    /// <summary>
+    /// One live-sampling probe: capture the wallpaper host and publish the frame only when its
+    /// pixels differ from the one every glass surface is already showing. Returns true when a new
+    /// frame was published (the caller refreshes the surfaces); false when the desktop is
+    /// unchanged (nothing to refresh — the capture buffer is parked for the next probe) or the
+    /// capture was unusable (masked by the previous frame as before).
+    /// <para>
+    /// Runs on a worker outside the wallpaper Gate and single-flighted by the tick; the only
+    /// shared mutable state it touches is swap-under-lock (the published snapshot, the sample
+    /// grids) and the atomics the rest of the class already uses.
+    /// </para>
+    /// </summary>
+    private static bool ProbeCapture()
+    {
+        // The enabled/suspended state is re-checked here: the tick queued this probe a moment ago
+        // and a fullscreen transition may have landed in between.
+        if (!liveSamplingEnabled || suspended) return false;
+
+        var pooled = Interlocked.Exchange(ref probeBuffer, null);
+        SKBitmap? bmp = null;
+        var published = false;
+        try
+        {
+            bmp = DesktopCapturer.CaptureBitmap(out var flat, pooled);
+            if (bmp != null && !ReferenceEquals(bmp, pooled))
+            {
+                // A fresh bitmap came back, so the pooled one no longer matches the desktop size.
+                pooled?.Dispose();
+            }
+
+            if (bmp == null)
+            {
+                // The capture failed but nothing consumed the pooled buffer: park it for the next
+                // probe (the size is still the desktop's).
+                Volatile.Write(ref probeBuffer, pooled);
+                NoteUnusableCapture(flat: false, jumped: false);
+                return false;
+            }
+            if (flat)
+            {
+                // A flat frame is worthless as wallpaper and the pooled buffer with it — the next
+                // probe allocates a fresh one.
+                bmp.Dispose();
+                NoteUnusableCapture(flat: true, jumped: false);
+                return false;
+            }
+
+            var identity = DesktopCapturer.SampleGrid(bmp, IdentityColumns, IdentityRows);
+            if (MatchesLastPublished(identity))
+            {
+                // Pixel-identical to the published frame: publish nothing, and keep the capture
+                // as the next probe's buffer so an idle desktop costs no allocation at all.
+                firstUnusableAt = 0;
+                Volatile.Write(ref probeBuffer, bmp);
+                return false;
+            }
+
+            var samples = DesktopCapturer.SampleGrid(bmp);
+            bool jumped;
+            lock (SampleGate)
+            {
+                jumped = lastAcceptedSamples != null
+                         && lastAcceptedHost == DesktopCapturer.ResolvedHost
+                         && DesktopCapturer.IsWildJump(samples, lastAcceptedSamples);
+            }
+            if (jumped)
+            {
+                bmp.Dispose();
+                NoteUnusableCapture(flat: false, jumped: true);
+                return false;
+            }
+
+            // Genuinely new content: publish it exactly as CaptureOnce would.
+            var snapshot = WallpaperSnapshot.FromBitmap(null, new SKColor(32, 38, 48), bmp, live: true);
+            WallpaperSnapshot? old;
+            lock (Gate)
+            {
+                old = cached;
+                cached = snapshot;
+                cachedKey = null;
+                DropStale();
+            }
+            lock (SampleGate)
+            {
+                lastAcceptedSamples = samples;
+                lastPublishedSamples = identity;
+                lastAcceptedHost = DesktopCapturer.ResolvedHost;
+            }
+            firstUnusableAt = 0;
+            Interlocked.Exchange(ref lastCaptureAt, Environment.TickCount64);
+            Interlocked.Increment(ref captureCount);
+            // Only the cache's reference goes; a render still using the previous frame keeps it.
+            old?.Dispose();
+            // The glyph glass (the clock) and the popups re-render against the newer frame; the
+            // live tick used to raise this every round through Invalidate, so this keeps their
+            // contract while only real change raises it now.
+            NotifyInvalidated();
+            // The buffer's pixels now belong to the snapshot — the next probe captures fresh.
+            published = true;
+            return true;
+        }
+        catch
+        {
+            // Ownership by stage: nothing was published → the capture bitmap (pooled or fresh) is
+            // still ours; once published the snapshot owns the pixels and the buffer is gone.
+            if (!published) bmp?.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Shared bookkeeping for a capture that produced nothing usable: the grace window, the
+    /// diagnostics event and, once the failure persists, forgiving the remembered host so it is
+    /// re-resolved with full validation. Reentrant on <see cref="Gate"/>: CaptureOnce calls this
+    /// holding the wallpaper Gate, the probe does not.
+    /// </summary>
+    private static void NoteUnusableCapture(bool flat, bool jumped)
+    {
+        lock (Gate)
+        {
+            var now = Environment.TickCount64;
+            if (firstUnusableAt == 0)
+            {
+                firstUnusableAt = now;
+                GlassDiagnostics.Event(flat ? "wallpaper capture flat — masking with the previous frame"
+                    : jumped ? "wallpaper capture jumped (overlay transition?) — masking with the previous frame"
+                    : "wallpaper capture failed — masking with the previous frame");
+            }
+            else if ((flat || jumped) && now - firstUnusableAt >= UnusableGraceMs)
+            {
+                DesktopCapturer.ForgetResolvedHost();
+                GlassDiagnostics.Event("unusable wallpaper capture persisted — re-resolving the wallpaper host");
+            }
+        }
+    }
+
+    /// <summary>
+    /// True when <paramref name="samples"/> matches the identity grid of the frame that is already
+    /// published — every cell within <see cref="IdentityTolerance"/> per channel. A match means
+    /// the desktop has not visibly moved since the surfaces last rendered: the glass they show is
+    /// still exactly what a fresh render would produce.
+    /// </summary>
+    private static bool MatchesLastPublished(int[] samples)
+    {
+        lock (SampleGate)
+        {
+            var previous = lastPublishedSamples;
+            if (previous == null || previous.Length != samples.Length) return false;
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var a = samples[i];
+                var b = previous[i];
+                if (Math.Abs(((a >> 16) & 255) - ((b >> 16) & 255)) > IdentityTolerance
+                    || Math.Abs(((a >> 8) & 255) - ((b >> 8) & 255)) > IdentityTolerance
+                    || Math.Abs((a & 255) - (b & 255)) > IdentityTolerance)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     /// <summary>Drop the masking frame. Callers must hold <see cref="Gate"/>; in-flight renders keep their own references.</summary>
@@ -554,7 +813,14 @@ public static class DesktopCapturer
     /// the next source on every flat frame would flip a genuinely dark animated scene back to
     /// Progman, a visible jump the fast path exists to avoid.
     /// </summary>
-    public static SKBitmap? CaptureBitmap(out bool flat)
+    /// <param name="reuse">
+    /// Optional bitmap to capture into instead of allocating a new one; it must already be the
+    /// virtual-screen size (verified below) and is never disposed here. The identity probe uses
+    /// this so its steady state — the same unchanged desktop captured over and over — costs no
+    /// allocation. A successful capture hands the buffer to the caller; a failure leaves it
+    /// untouched for the next attempt.
+    /// </param>
+    public static SKBitmap? CaptureBitmap(out bool flat, SKBitmap? reuse = null)
     {
         flat = false;
         var width = GetSystemMetrics(SmCXVirtualScreen);
@@ -570,7 +836,7 @@ public static class DesktopCapturer
         lock (HostGate) remembered = resolvedHost;
         if (remembered != IntPtr.Zero && IsWindow(remembered))
         {
-            var fast = CaptureWindow(remembered, width, height);
+            var fast = CaptureWindow(remembered, width, height, reuse);
             if (fast != null)
             {
                 if (!LooksLikeWallpaper(fast))
@@ -587,7 +853,7 @@ public static class DesktopCapturer
         // monitor hot-plug, a shell restart). Re-resolve from scratch.
         foreach (var (hwnd, description) in ResolveCandidates())
         {
-            var bmp = CaptureWindow(hwnd, width, height);
+            var bmp = CaptureWindow(hwnd, width, height, reuse);
             if (bmp == null) continue;
             if (!LooksLikeWallpaper(bmp))
             {
@@ -628,16 +894,17 @@ public static class DesktopCapturer
     }
 
     /// <summary>
-    /// Sample the same coarse 16x9 grid the validity check uses, as RGB ints. Cheap enough to run
-    /// once per sampled frame.
+    /// Sample a coarse grid of the bitmap as RGB ints, as the validity check uses. Cheap enough to
+    /// run once per sampled frame; the identity probe samples a finer grid with explicit
+    /// <paramref name="columns"/> / <paramref name="rows"/>.
     /// </summary>
-    public static int[] SampleGrid(SKBitmap bmp)
+    public static int[] SampleGrid(SKBitmap bmp, int columns = 16, int rows = 9)
     {
-        var stepX = Math.Max(1, bmp.Width / 16);
-        var stepY = Math.Max(1, bmp.Height / 9);
+        var stepX = Math.Max(1, bmp.Width / columns);
+        var stepY = Math.Max(1, bmp.Height / rows);
         var cols = Math.Max(1, (bmp.Width + stepX - 1) / stepX);
-        var rows = Math.Max(1, (bmp.Height + stepY - 1) / stepY);
-        var samples = new int[rows * cols];
+        var gridRows = Math.Max(1, (bmp.Height + stepY - 1) / stepY);
+        var samples = new int[gridRows * cols];
         var index = 0;
         for (var y = stepY / 2; y < bmp.Height; y += stepY)
         for (var x = stepX / 2; x < bmp.Width; x += stepX)
@@ -764,7 +1031,7 @@ public static class DesktopCapturer
         return buffer.ToString();
     }
 
-    private static SKBitmap? CaptureWindow(IntPtr hwnd, int width, int height)
+    private static SKBitmap? CaptureWindow(IntPtr hwnd, int width, int height, SKBitmap? reuse = null)
     {
         var screenDc = GetDC(IntPtr.Zero);
         if (screenDc == IntPtr.Zero) return null;
@@ -774,7 +1041,7 @@ public static class DesktopCapturer
         try
         {
             if (!PrintWindow(hwnd, memDc, PwRenderFullContent)) return null;
-            return ReadBitmap(memDc, bitmap, width, height);
+            return ReadBitmap(memDc, bitmap, width, height, reuse);
         }
         catch (Exception ex)
         {
@@ -816,21 +1083,24 @@ public static class DesktopCapturer
         return sum / seen.Count > 4; // not a pure-black capture
     }
 
-    private static SKBitmap? ReadBitmap(IntPtr memDc, IntPtr bitmap, int width, int height)
+    private static SKBitmap? ReadBitmap(IntPtr memDc, IntPtr bitmap, int width, int height, SKBitmap? reuse = null)
     {
         var info = CreateHeader(width, height);
-        var skInfo = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque);
-        var skBitmap = new SKBitmap(skInfo);
+        // Reuse is only honoured at the exact size the desktop reports — anything else decodes
+        // into a fresh allocation, and the caller retires the mismatched buffer.
+        SKBitmap? skBitmap = reuse is { Width: var rw, Height: var rh } && rw == width && rh == height
+            ? reuse
+            : new SKBitmap(new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Opaque));
         var pixels = skBitmap.GetPixels();
         if (pixels == IntPtr.Zero)
         {
-            skBitmap.Dispose();
+            if (!ReferenceEquals(skBitmap, reuse)) skBitmap.Dispose();
             return null;
         }
 
         if (GetDIBits(memDc, bitmap, 0, (uint)height, pixels, ref info, 0) != height)
         {
-            skBitmap.Dispose();
+            if (!ReferenceEquals(skBitmap, reuse)) skBitmap.Dispose();
             return null;
         }
 

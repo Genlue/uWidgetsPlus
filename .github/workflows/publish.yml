@@ -6,6 +6,11 @@ on:
     branches:
       - beta
 
+# The release job creates a tag and a release, and update-docs pushes to the wiki —
+# both need write access, which the default GITHUB_TOKEN does not carry.
+permissions:
+  contents: write
+
 jobs:
   publish:
     runs-on: windows-latest
@@ -194,7 +199,7 @@ jobs:
           ls .\build
           xmldoc2md .\build\uWidgets.Core.dll `
           --output .\new-wiki\API `
-          --github-pages `
+          --platform github-pages `
           --index-page-name API `
   
       - name: Checkout wiki repository
